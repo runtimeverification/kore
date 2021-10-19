@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="unification%2Fmatching-modulo-overloaded-constructors">Unification/matching modulo overloaded constructors</h1>
+<h2 id="summary">Summary</h2>
+<p>Proposal:</p>
+<ol>
+<li>Identify overloaded constructors and overloading axioms by collecting and
+structuring the <code>overload</code> attributes of axioms</li>
+<li>Simplify terms using the overloading axioms to push injections towards top</li>
+<li>Solve most unification/matching problems by using regular constructor
+non-confusion rules, treating overloaded constructors as constructor-like.</li>
+<li>Use overload attributes to handle the special case of overloaded constructor
+vs. injection</li>
+</ol>
+<h2 id="background">Background</h2>
+<p>K allows overloading of operators by associating the same label to multiple
+productions.  Example (derived from the <a href="https://github.com/kframework/wasm-semantics" target="_blank" rel="noopener">K WASM semantics</a>):</p>
+<pre class="language-text"><code>    syntax IValType ::= &quot;i32&quot; | &quot;i64&quot;
+    syntax FValType ::= &quot;f32&quot; | &quot;f64&quot;
+    syntax AValType ::= IValType | FValType
+    syntax Number ::= Int | Float
+    syntax IVal ::= &quot;&lt;&quot; IValType &quot;&gt;&quot; Int    [klabel(&lt;_&gt;_)]
+    syntax FVal ::= &quot;&lt;&quot; FValType &quot;&gt;&quot; Float  [klabel(&lt;_&gt;_)]
+    syntax  Val ::= &quot;&lt;&quot; AValType &quot;&gt;&quot; Number [klabel(&lt;_&gt;_)]
+                  | IVal | FVal
+</code></pre>
+<p>Here the <code>klabel</code> annotations allow for the <code>Val ::= &quot;&lt;&quot; AValType &quot;&gt;&quot; Number</code>
+production to encompass both <code>IVal</code> and <code>FVal</code> productions and to be used to
+construct terms referring to both of them (as well as to proper <code>Val</code>s).</p>
+<p>This is K&apos;s way to deal with overloading.  An additional restriction imposed by
+K implementations is that of <strong>SingleOverloadPerSort</strong>:</p>
+<blockquote>
+<p>Given sort <code>s</code> and label <code>l</code> there exists at most one production of result
+sort <code>s</code> annotated with <code>klabel(l)</code>.</p>
+</blockquote>
+<p>TODO: check that the above restriction holds</p>
+<p>To capture the relation between these constructors, the K to KORE compilation
+pipeline, while keeping the associated labels distinct, generates overloading
+axioms of the form:</p>
+<pre class="language-text"><code>&lt; inj{IValType, AValType}(IT:IValType) &gt; inj{Int, Number}(I:Int)
+  = inj{IVal,Val}(&lt; IT:IValType &gt; I:Int) 
+  [overload(&apos;&lt;_&gt;__AValType_Number_Val, &apos;&lt;_&gt;__IValType_Int_IVal)]
+
+&lt; inj{FValType, AValType}(FT:FValType) &gt; inj{Float, Number}(F:Float)
+  = inj{FVal,Val}(&lt; FT:FValType &gt; F:Float) 
+  [overload(&apos;&lt;_&gt;__AValType_Number_Val, &apos;&lt;_&gt;__FValType_Float_FVal)]
+</code></pre>
+<p>Note that, given the pair of overloaded symbols, these axioms can be
+automatically inferred. To assist tooling, the compilation process
+annotates these generated axioms with an <code>overload</code> attribute
+having the two symbols involved as arguments.</p>
+<h2 id="problems">Problems</h2>
+<p>Although overloading introduces a higher degree of modularization through
+some form of subtype-polymorphism, it puts a higher burden on the
+unification/matching procedure.</p>
+<ol>
+<li>
+<p>Due to axioms like the above being generated, the overloaded constructors
+are no longer proper constructors and therefore are not marked as such,
+which hinders unification/matching, given that usually the lhs of a rule is
+expected to be constructor-based. This is especially bad because it also
+makes disproving of unification harder and thus generates more (im)possible
+constrainted solutions.</p>
+</li>
+<li>
+<p>Unification of these constructs needs to be performed modulo overloading
+axioms like the ones above.</p>
+</li>
+</ol>
+<h2 id="proposed-solution">Proposed solution</h2>
+<p>First observation is that although overloaded constructors are not proper
+constructors, they behave as such in most instances: they are injective, so
+no-confusion-same-constructor applies naturally, but also they are subject to
+most no-confusion-different-constructors rules.  Indeed, due to the
+<strong>SingleOverloadPerSort</strong> constraint, the only confusion possible for an
+oveloaded operation is that with an injection operation as given by the
+overloading axioms.</p>
+<h3 id="decision-1">Decision 1</h3>
+<p>Hence, the proposed solution for handling problem (1) specified above is to
+detect overloaded constructors from the <code>overload</code> annotations associated to the
+overloading axioms and to and use that information in the unification/matching
+algorithm, handling overloaded constructors as constructor-like symbols.</p>
+<p>For the second problem, the issue comes from the fact that the unifying modulo
+the overloading axioms might require applying them either way (left-to-right or
+right-to-left).</p>
+<p>One advantage of left-to-right application of overloading axioms is that it
+helps computing the lowest sort for a term.</p>
+<h3 id="example">Example</h3>
+<p>For example, consider lists of
+expressions overloaded by lists of values as in
+<a href="https://github.com/kframework/k/blob/master/k-distribution/tutorial/2_languages/1_simple/1_untyped/simple-untyped.k" target="_blank" rel="noopener">SIMPLE</a>:</p>
+<pre class="language-text"><code>  syntax Exps ::= List{Exp,&quot;,&quot;}          [strict]  // automatically hybrid now
+  syntax Vals ::= List{Val,&quot;,&quot;}
+</code></pre>
+<p>Consider the definition of <code>Val</code>ues (including <code>lambda</code>), the syntax for
+function call, and the function call rule itself:</p>
+<pre class="language-text"><code>  syntax Exp ::= Exp &quot;(&quot; Exps &quot;)&quot;        [strict]
+
+  syntax Val ::= Int | Bool | String
+               | array(Int,Int)
+               | lambda(Ids,Stmt)
+  syntax Exp ::= Val
+  syntax Exps ::= Vals
+
+  rule &lt;k&gt; lambda(Xs,S)(Vs:Vals) ~&gt; K =&gt; mkDecls(Xs,Vs) S return; &lt;/k&gt;
+       &lt;control&gt;
+         &lt;fstack&gt; .List =&gt; ListItem((Env,K,C)) ...&lt;/fstack&gt;
+         C
+       &lt;/control&gt;
+       &lt;env&gt; Env =&gt; GEnv &lt;/env&gt;
+       &lt;genv&gt; GEnv &lt;/genv&gt;
+</code></pre>
+<p>The rule above requires that the second argument of the application expression
+(which should be a list of expressions, is actually a list of values).
+For example, if overloading axioms are applied left-to-right, then the term</p>
+<pre class="language-text"><code>(1) inj{Int,Exp}(3), inj{Int,Exp}(7), inj{Val,Exp}(lambda(.Ids, skip)), .Exps
+</code></pre>
+<p>would be simplified to</p>
+<pre class="language-text"><code>inj{Vals, Exps}(inj{Int, Val}(3), inj{Int, Val}(7), lambda(.Ids, skip), .Vals)
+</code></pre>
+<p>which would alow for it to be direcly matched by <code>inj{Vals, Exps}(Vs:Vals)</code>.</p>
+<p>However, if the rules were to be applied from right to left, then the normalized
+term would look as the expression (1) above, and it would be much harder to
+unify it with <code>inj{Vals, Exps}(Vs:Vals)</code>.</p>
+<h3 id="decision-2">Decision 2</h3>
+<p>Based on the example presented above, we will keep the term normalized by
+applying the overloading axioms in a left-to-right fashion.</p>
+<h3 id="unification%2Fmatching-cases">Unification/matching cases</h3>
+<ul>
+<li>
+<p>overloaded constructor vs. same overloaded constructor: works the same as for
+other constructors, as overloaded constructors are injective</p>
+</li>
+<li>
+<p>overloaded constructor vs. different (overloaded) constructor:
+return bottom, similarly to the other constructors</p>
+</li>
+<li>
+<p>overloaded constructor vs. injection of (overloaded) constructor</p>
+<ul>
+<li>If the two constructors form an <code>overload</code> pair, then use the sorting
+information for the two overloaded constructors to directly derive the new
+goals (apply the overload axiom right-to-left on the right and retry)</li>
+<li>otherwise, return bottom, as the constructors are incompatible</li>
+</ul>
+</li>
+<li>
+<p><code>\inj{S1,injTo}(firstHead(firstChildren)) &#x2227; \inj{S2,injTo}(secondHead(secondChildren))</code></p>
+<ul>
+<li>
+<p>If there exists a common overloaded constructor <code>headUnion</code> overloading both
+constructors, such that</p>
+<pre><code>\inj{S1,injTo}(firstHead(firstChildren)) =
+  \inj{S,injTo}(headUnion(inj1(firstChildren)))
+</code></pre>
+<p>and</p>
+<pre><code>inj{S2,injTo}(secondHead(secondChildren)) =
+  inj{S,injTo}(headUnion(inj2(secondChildren)))
+</code></pre>
+<p>then apply the overload axioms right-to-left to get both terms to use
+the common overloaded constructor and retry with</p>
+<pre><code>\inj{S,injTo}(headUnion(inj1(firstChildren)))
+&#x2227;
+\inj{S,injTo}(headUnion(inj2(secondChildren)))
+</code></pre>
+</li>
+<li>
+<p>otherwise, return bottom, as the constructors are incompatible</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>c1(overloadingChildren) &#x2227; \inj{s2,injTo}(x2)</code></p>
+<ol>
+<li>
+<p>Find a constructor <code>c2&apos;</code> overloaded by <code>c1</code> whose sort <code>s2&apos;</code> is at most
+<code>s2</code>, satisfying the overloading equation</p>
+<pre><code>inj{s2&apos;,injTo}(c2&apos;(freshVars)) = c1(inj2(freshVars))
+</code></pre>
+<ul>
+<li>If there are more, pick the one overloading all the others.</li>
+<li>If cannot compute one overloading all the others, we cannot decide which
+to choose and decide not to handle the case (ambiguity).</li>
+</ul>
+</li>
+<li>
+<p>narrow <code>x2</code> to <code>\inj{s2&apos;,s2}(c2&apos;(freshVars))</code> where <code>freshVars</code> are
+fresh</p>
+</li>
+<li>
+<p>apply the right-to-left overloading axiom to transform <code>c2&apos;</code> into <code>c1</code>
+reducing the unification problem to</p>
+<pre><code>c1(overloadingChildren)  &#x2227; c1(inj2(freshVars))
+</code></pre>
+</li>
+<li>
+<p>hope that the new unification returns bottom; if not build the conjunction
+of the result with the equality for <code>x2</code> and existentially quantify them
+using <code>freshVars</code></p>
+</li>
+</ol>
+</li>
+<li>
+<p><code>\inj{s1,s}(c1(children1)) &#x2227; \inj{s2,s}(x2)</code></p>
+<ol>
+<li>
+<p>For each constructor <code>c1&apos;</code> overloading <code>c1</code> whose sort <code>s1&apos;</code> is
+at most <code>s</code>, find a constructor <code>c2&apos;</code> overloaded by <code>c1&apos;</code> whose sort <code>s2&apos;</code>
+is at most <code>s2</code> with overloading equations</p>
+<pre><code>\inj{s1,s}(c1(children1)) = \inj{s1&apos;,s}(c1&apos;(inj1(children1)))
+</code></pre>
+<p>and</p>
+<pre><code>\inj{s2&apos;,s}(c2&apos;(freshVars)) = \inj{s1&apos;, s}(c1&apos;(inj2(freshVars)))
+</code></pre>
+<ul>
+<li>If there are more such <code>c2&apos;</code>, pick the one overloading all the others.</li>
+<li>If cannot compute one overloading all the others, we cannot decide which
+to choose and decide not to handle the case (ambiguity).</li>
+</ul>
+</li>
+<li>
+<p>narrow <code>x2</code> to <code>\inj{s2&apos;,s2}(c2&apos;(freshVars))</code> where <code>freshVars</code> are fresh</p>
+</li>
+<li>
+<p>apply the right-to-left overloading axioms to transform <code>c1</code> into <code>c1&apos;</code> and
+<code>c2&apos;</code> into <code>c1&apos;</code>, reducing the unification problem to</p>
+<pre><code>\inj{s1&apos;,s}(c1&apos;(inj1(children1))) &#x2227; \inj{s1&apos;,s}(c1&apos;(inj2(freshVars)))
+</code></pre>
+</li>
+<li>
+<p>hope that the new unification returns bottom; if not build the conjunction
+of the result with the equality for <code>x2</code> and existentially quantify them
+using <code>freshVars</code></p>
+</li>
+</ol>
+</li>
+<li>
+<p>otherwise, for now, throw an unsupported exception, as this
+would prevent increasing the number of variable and possible decompositions</p>
+</li>
+</ul>
+<h4 id="example-1">Example 1</h4>
+<p>Assume we have two subsorted / overloaded lists and a definition of length</p>
+<pre class="language-text"><code>syntax Exp ::= Int | Exp &quot;+&quot; Exp | ...
+syntax Ints ::= List{Int, &quot;,&quot;}
+syntax Exps ::= List{Exp, &quot;,&quot;}
+syntax Exps ::= Ints // overloading
+
+syntax Int ::= length(Exps) [function]
+rule length(.Exps) =&gt; 0
+rule length((_:Exp, Es:Exps)) =&gt; lenght(Es)
+</code></pre>
+<p>Say now we&apos;d like to apply this function on a list of integers, which, after
+being normalized using the overloading axioms, would look as:
+<code>length(inj{Ints, Exps}(1,2,.Ints))</code>.</p>
+<p>This reduces to matching <code>inj{Ints, Exps}(1,2,.Ints)</code> with the pattern
+<code>(_:Exp, Es:Exps)</code>. By noting that the list constructor on top of the
+pattern and the list constructor below the inj form an overload pair,
+we can transform the pattern to be matched to
+<code>inj{Int,Exp}(1), inj{Ints, Exps}(2, .Ints)</code>, after which the matching becomes
+possible and generates the substitution In the Name of the Grandfather</p>
+<pre class="language-text"><code>_:Exp = inj{int,Exp}(1)
+Es:Exps = inj{Ints, Exps}(2, .Ints)
+</code></pre>
+<h4 id="example-2">Example 2</h4>
+<p>Assume we have the following list definitions:</p>
+<pre class="language-text"><code>  syntax Exp ::= Val
+  syntax Exp ::= Exp &quot;+&quot; Exp             [strict]
+  syntax Exp ::= &quot;[&quot; Exps &quot;]&quot;            [strict]
+  syntax Exps ::= List{Exp,&quot;,&quot;}          [klabel(_,_), strict]
+
+  syntax Val ::= Int
+  syntax Vals ::= List{Val,&quot;,&quot;}          [klabel(_,_), strict]
+  syntax Exps ::= Vals
+
+  syntax KResult ::= Val | Vals
+</code></pre>
+<p>and consider the rules for <code>isKResult</code>:</p>
+<pre class="language-text"><code>isKResult(\inj{KResult, KItem}(R:KResult)) =&gt; true
+isKResult(K:KItem) =&gt; false [owise]
+</code></pre>
+<p>Suppose now one wants to check whether the list <code>1, 1 + 1</code> is a <code>KResult</code>.</p>
+<p>Its representation in KORE is of the form
+<code>\inj{Exps, KItem}(ExpsCons(\inj{Val, Exp}(1), ExpsCons(1 + 1, \inj{Vals, Exps}(.Vals))))</code></p>
+<p>In order to apply the <code>owise</code> rule for <code>KResult</code>, one must compute</p>
+<p><code>\not(\ceil(\inj{Exps, KItem}(ExpsCons(\inj{Int, Exp}(1), ExpsCons(1 + 1, \inj{Vals, Exps}(.Vals)))) &#x2227; \inj{KResult, KItem}(R:KResult)))</code></p>
+<p>At this moment, the narrowing kicks in (<code>unifyOverloadingVsOverloadedVariable</code>),
+and it could narrow <code>R:KResult</code> to <code>inj{Vals, KResult}(ValsCons(V:Val, Vs:Vals))</code>,
+then reattempt unification between
+<code>inj{Exps, KItem}(ExpsCons(inj{Int, Exp}(1), ExpsCons(1 + 1, inj{Vals, Exps}(.Vals))))</code> and
+<code>inj{Vals, KItem}(ValsCons(V:Val, Vs:Vals))</code>,
+where the latter can be transformed to
+<code>inj{Exps, KItem}(ExpCons(inj{Val,Exp}(V:Val), inj{Vals, Exps}(Vs:Vals)))</code>
+This unification reduces to <code>V =  \inj{Int, Val}(1)</code> and with
+<code>ExpsCons(1 + 1, inj{Vals, Exps}(.Vals))</code> unified to <code> inj{Vals, Exps}(Vs:Vals)</code></p>
+<p>Applying again narrowing (this time <code>unifyOverloadingInjVsVariable</code>) we narrow
+<code>Vs:Vals</code> to <code>ValsCons(V&apos;:Val, Vs&apos;:Vals)</code> and use overloading to attempt
+unification  between <code>ExpsCons(1 + 1, inj{Vals, Exps}(.Vals))</code> and
+<code>inj{Vals, Exps}(ValsCons(V&apos;:Val, Vs&apos;:Vals))</code>, which gets to <code>1 + 1</code> being
+unified with <code>\inj{Val, Exp}(V&apos;:Val)</code>, which fails, returning <code>\bottom</code>.</p>
+<p>Thus, <code>\not(\ceil(\inj{Exps, KItem}(ExpsCons(\inj{Val, Exp}(1), ExpsCons(1 + 1, \inj{Vals, Exps}(.Vals)))) &#x2227; \inj{KResult, KItem}(R:KResult)))</code>
+simplifies to <code>\not(\ceil(\bottom))</code>, which is <code>\top</code>, thus making <code>isKresult</code>
+evaluate to <code>false</code>.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unification%2Fmatching-modulo-overloaded-constructors" class="bd-toc-link">Unification/matching modulo overloaded constructors</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#summary"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Summary
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problems"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problems
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proposed-solution" class="bd-toc-link">Proposed solution</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Decision 1
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Example
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Decision 2
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unification%2Fmatching-cases" class="bd-toc-link">Unification/matching cases</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-1"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Example 1
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-2"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Example 2
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
