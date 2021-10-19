@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="rewrite-rules-with-priorities">Rewrite rules with priorities</h1>
+<h2 id="background">Background</h2>
+<p>Priorities allow writing case-based <code>K</code> code that closer resembles functional
+languages, i.e. it allows saying things like &quot;Apply this rule first,
+if that doesn&apos;t work try this other one, if that also doesn&apos;t work try
+this, and so on&quot;. The <code>owise</code> attribute is a special case of this.</p>
+<h3 id="k-syntax">K syntax</h3>
+<p>The <code>K</code> code looks roughly like this:</p>
+<pre class="language-text"><code>rule t(X) &#x21D2; s(X) requires P(X) [priority(&lt;number&gt;)]
+</code></pre>
+<p>where the highest priority is the one with the lowest number.</p>
+<p>As an example, if <code>A(X)</code> rewrites to</p>
+<ul>
+<li><code>B(X)</code> if <code>X&lt;0</code></li>
+<li><code>C(X)</code> if <code>X&#x2265;0 &#x2227; X&lt;1</code></li>
+<li><code>D(X)</code> if <code>X&#x2265;1</code>,
+we could write the following rules:</li>
+</ul>
+<pre class="language-text"><code>rule A(X) &#x21D2; B(X) requires X &lt;Int 0 [priority(1)]
+rule A(X) &#x21D2; C(X) requires X &lt;Int 1 [priority(2)]
+rule A(X) &#x21D2; D(X)                   [priority(3)]
+</code></pre>
+<h3 id="non-priority-rules-in-kore">Non-priority rules in Kore</h3>
+<p>When transformed into <code>Kore</code>, non-priority rewrite rules usually look like</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x21D2; &#x3C8;(X)
+</code></pre>
+<p>Where <code>&#x3C6;(X)</code> can be written as <code>t(X) &#x2227; P(X)</code> where <code>t(X)</code> is a
+(function-like) term and <code>P(X)</code> is a predicate, corresponding to the
+left-hand term and the requires clause in the <code>K</code> rule.</p>
+<p>Applying a rule to a configuration <code>C(Y)</code> is equivalent to unifying
+<code>C(Y)</code> with <code>&#x3C6;(X)</code> and transforming <code>&#x3C8;(X)</code> with the result, i.e.
+computing <code>&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;(X) &#x2309; &#x2227; &#x3C8;(X)</code>.</p>
+<p>A rule cannot be applied if unification fails, i.e. if
+<code>&#x2308; C(Y) &#x2227; &#x3C6;(X) &#x2309;</code> is <code>&#x22A5;</code>.</p>
+<h2 id="encoding-priority-rules-in-kore">Encoding priority rules in Kore</h2>
+<p>There are at least two options for encoding these rules: we can encode
+the requirement that we couldn&apos;t use the higher-priority rules as a predicate,
+which would allow us to use the same format for rules (<code>&#x3C6;(X) &#x21D2; &#x3C8;(X)</code>
+where <code>&#x3C6;(X)</code> can be written as <code>t(X) &#x2227; P(X)</code> where <code>t</code> is a term and
+<code>P(X)</code> is a predicate) or we could encode that requirement as an expression
+that is neither a term, a predicate, or a combination of these.</p>
+<p>The <code>K</code> frontend currently uses the &quot;expression&quot; option. We will discuss
+the two options in detail below.</p>
+<h3 id="priority-expression-(non-predicate%2Fterm)">Priority expression (non-predicate/term)</h3>
+<p>Let us notice that, given a rule <code>&#x3C6;(X) &#x21D2; &#x3C8;(X)</code>, we could describe
+all configurations to which it applies with <code>&#x2203; X . phi(X)</code>. Therefore,
+if we have only two rules (<code>&#x3C6;&#x1D62;</code> includes the requires predicate):</p>
+<pre class="language-text"><code>&#x3C6;&#x2081;(X) &#x21D2; &#x3C8;&#x2081;(X) [priority(p&#x2081;)]
+&#x3C6;&#x2082;(X) &#x21D2; &#x3C8;&#x2082;(X) [priority(p&#x2082;)]
+</code></pre>
+<p>and, if we also know that <code>p&#x2081; &lt; p&#x2082;</code>, we could replace them with</p>
+<pre class="language-text"><code>&#x3C6;&#x2081;(X) &#x21D2; &#x3C8;&#x2081;(X)
+(&#x3C6;&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;)) &#x21D2; &#x3C8;&#x2082;(X)
+</code></pre>
+<p>Let us see that this is, indeed, the case. We would like to show that the
+result of applying the second rule is the same.</p>
+<p>The result of applying the second non-priority rule to <code>C(Y)</code> is</p>
+<pre class="language-text"><code>&#x2203; X . &#x2308; C(Y) &#x2227; (&#x3C6;&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;)) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+</code></pre>
+<p>Applying the second rule when the first one doesn&apos;t work makes most sense for
+function-like patterns. For non-function-like patterns understanding what it
+means to apply the rules separately is slightly trickier, but it can be
+reduced to splitting the pattern into function like ones (if possible) and
+applying the rules on the functional components.</p>
+<p>If C(Y) is functional, then the first rule does not apply iff
+<code>&#xAC; &#x2203; X&#x2081; &#x2308; C(Y) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2309;</code>, so
+applying the second rule when the first one does
+not work is equivalent to computing</p>
+<pre class="language-text"><code>&#x2203; X .
+    &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2309;
+    &#x2227; &#xAC; &#x2203; X&#x2081; &#x2308; C(Y) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+</code></pre>
+<p>Let&apos;s see if the two are equivalent:</p>
+<pre class="language-text"><code>&#x2203; X .
+    &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2309;
+    &#x2227; &#xAC; &#x2203; X&#x2081; . &#x2308; C(Y) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// &#x2308;&#x2309; commutes with &#x2203;
+&#x2203; X .
+    &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2309;
+    &#x2227; &#xAC; &#x2308; &#x2203; X&#x2081; . C(Y) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// &#x2203; X . A &#x2227; B(X)  ===  A &#x2227; &#x2203; X . B(X)
+&#x2203; X .
+    &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2309;
+    &#x2227; &#xAC; &#x2308; C(Y) &#x2227; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// If P is a predicate, &#x2308; A &#x2309; &#x2227; P === &#x2308; A &#x2227; P &#x2309;
+&#x2203; X .
+    &#x2308;
+        C(Y) &#x2227; &#x3C6;&#x2082;(X)
+        &#x2227; &#xAC; &#x2308; C(Y) &#x2227; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// A &#x2227; &#xAC; (A &#x2227; B) = A &#x2227; &#xAC; B
+&#x2203; X .
+    &#x2308;
+        C(Y) &#x2227; &#x3C6;&#x2082;(X)
+        &#x2227; &#xAC; (C(Y) &#x2227; &#x2308; C(Y) &#x2227; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2309;)
+    &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// if A is functional, then A &#x2227; B = A &#x2227; &#x2308; A &#x2227; B &#x2309;
+&#x2203; X .
+    &#x2308;
+        C(Y) &#x2227; &#x3C6;&#x2082;(X)
+        &#x2227; &#xAC; (C(Y) &#x2227; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;))
+    &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+===
+// A &#x2227; &#xAC; (A &#x2227; B) = A &#x2227; &#xAC; B
+&#x2203; X .
+    &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2309;
+    &#x2227; &#x3C8;&#x2082;(X)
+</code></pre>
+<p>We can generalize this in the following way:</p>
+<p>For a rule <code>&#x3C6;(X) &#x21D2; &#x3C8;(X) requires P(X) [priority p]</code> we take the all
+rules at previous priorities:</p>
+<pre class="language-text"><code>&#x3C6;&#x2081;(X) &#x21D2; &#x3C8;&#x2081;(X) requires P&#x2081;(X)
+...
+&#x3C6;n(X) &#x21D2; &#x3C8;n(X) requires Pn(X)
+</code></pre>
+<p>and we encode the rule as:</p>
+<pre class="language-text"><code>    &#x3C6;(X) &#x2227; P(X)
+    &#x2227; &#xAC; (&#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2227; P&#x2081;(X&#x2081;))
+    ...
+    &#x2227; &#xAC; (&#x2203; X&#x2099; . &#x3C6;&#x2099;(X&#x2099;) &#x2227; P&#x2099;(X&#x2099;))
+    &#x21D2; &#x3C8;(X)
+</code></pre>
+<p>Strictly speaking, we should have the left hand side of the encoding of the
+respective rules under <code>&#x2203; X&#x1D62;</code> above, but the two forms should be
+equivalent.</p>
+<h3 id="priority-predicate">Priority predicate</h3>
+<p>If we have only two rules</p>
+<pre class="language-text"><code>&#x3C6;&#x2081;(X) &#x21D2; &#x3C8;&#x2081;(X) requires P&#x2081;(X) [priority(p&#x2081;)]
+&#x3C6;&#x2082;(X) &#x21D2; &#x3C8;&#x2082;(X) requires P&#x2082;(X) [priority(p&#x2082;)]
+</code></pre>
+<p>and, if we also know that <code>p&#x2081; &lt; p&#x2082;</code>, we could replace them with</p>
+<pre class="language-text"><code>&#x3C6;&#x2081;(X) &#x21D2; &#x3C8;&#x2081;(X) requires P&#x2081;(X)
+&#x3C6;&#x2082;(X) &#x21D2; &#x3C8;&#x2082;(X)
+    requires P&#x2082;(X)
+        &#x2227; &#xAC; &#x2203; X&#x2081; . &#x2308;&#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;)&#x2309; &#x2227; P&#x2081;(X&#x2081;)
+</code></pre>
+<p>Applying the second rule with a priority predicate means computing:</p>
+<pre class="language-text"><code>&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x2308;&#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;)&#x2309; &#x2227; P&#x2081;(X&#x2081;)&#x2309; &#x2227; &#x3C8;&#x2082;(X)
+===
+// A &#x2227; &#xAC; B = A &#x2227; &#xAC; (A &#x2227; B)
+&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2082;(X) &#x2227; &#x2308;&#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;)&#x2309; &#x2227; P&#x2081;(X&#x2081;) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+===
+// Assuming &#x3C6;&#x2082;(X) is functional,
+// &#x3C6;&#x2082;(X) &#x2227; &#x2308;&#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;)&#x2309; === &#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;)
+&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2082;(X) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2227; P&#x2081;(X&#x2081;) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+===
+// &#x2203; X&#x2081; . A &#x2227; B(X)  ===  A &#x2227; &#x2203; X&#x2081; . B(X)
+&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; (&#x3C6;&#x2082;(X) &#x2227; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2227; P&#x2081;(X&#x2081;)) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+===
+// A &#x2227; &#xAC; (A &#x2227; B) = A &#x2227; &#xAC; B
+&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . &#x3C6;&#x2081;(X&#x2081;) &#x2227; P&#x2081;(X&#x2081;) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+===
+// A &#x2227; &#xAC; (A &#x2227; B) = A &#x2227; &#xAC; B
+&#x2203; X . &#x2308; C(Y) &#x2227; &#x3C6;&#x2082;(X) &#x2227; P&#x2082;(X) &#x2227; &#xAC; &#x2203; X&#x2081; . C(Y) &#x2227; &#x3C6;&#x2081;(X&#x2081;) &#x2227; P&#x2081;(X&#x2081;) &#x2309; &#x2227; &#x3C8;&#x2082;(X)
+</code></pre>
+<p>which is the same as above (above <code>P&#x2081;</code> and <code>P&#x2082;</code> are included in <code>&#x3C6;&#x2081;</code> and <code>&#x3C6;&#x2082;</code>).</p>
+<h3 id="discussion">Discussion</h3>
+<p>Using the priority expression (the option that&apos;s currently implemented)
+is cleaner form a theoretical point of view since it requires only that the
+configuration is function-like, and, arguably, not even that is needed,
+i.e. the priority expression could work as the definition of applying priority
+rules. It also matches what the Haskell backend produces for remainder pattern
+when rewriting.</p>
+<p>The priority predicate requires, additionally, that the left hand side of any
+priority rule is function-like. This means that it would prevent people from
+using rules containing <code>#Or</code>. It is possible that one could overcome this
+limitation, though that would require furhter investigations.</p>
+<p>It also makes it easier to implement rule merging, since a <code>LHS &#x21D2; RHS</code>
+rule would always have a  <code>LHS</code> of the form <code>t &#x2227; P</code> where <code>t</code> is a term and
+<code>P</code> is a predicate. This would not make a difference for the Haskell backend
+because priority expression/predicate is removed from the <code>LHS</code> and is not
+evaluated explicitly when rewriting anyway, so, in practice, the <code>LHS</code> can
+be treated as if it is of the form <code>t &#x2227; P</code>.</p>
+<p>I recommend using the priority expression.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#rewrite-rules-with-priorities" class="bd-toc-link">Rewrite rules with priorities</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#background" class="bd-toc-link">Background</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#k-syntax"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                K syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#non-priority-rules-in-kore"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Non-priority rules in Kore
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#encoding-priority-rules-in-kore" class="bd-toc-link">Encoding priority rules in Kore</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#priority-expression-(non-predicate%2Fterm)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Priority expression (non-predicate/term)
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#priority-predicate"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Priority predicate
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#discussion"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Discussion
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
