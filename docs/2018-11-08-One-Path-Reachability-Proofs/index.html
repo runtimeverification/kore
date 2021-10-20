@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="using-a-rule-to-advance-a-one-path-reachability-proof">Using a rule to advance a one-path reachability proof</h1>
+<p>This document describes how to transform a given a one-step reachability goal
+by advancing it using a given rewrite axiom.</p>
+<p>This document <em>does not describe</em> how to select an axiom to be used for
+advancing the goal.</p>
+<h2 id="background">Background</h2>
+<p>Unless otherwise specified, we assume all pattern variables used in this
+document to be <em>extended function-like patterns</em>, that is patterns which
+can be written as <code>t &#x2227; p</code> where the interpretation of <code>t</code> contains at most one
+element and <code>p</code> is a predicate.</p>
+<p><em>Extended constructor patterns</em> will be those extended function-like patterns
+for which <code>t</code> is a functional term, composed out of constructor-like symbols
+and variables.</p>
+<h3 id="and-not-exists-simplification">And-Not-Exists Simplification</h3>
+<hr>
+<p>We will use the algorithm for simplifying patterns of the form
+<code>&#x3C6;(X) &#x2227; &#xAC;&#x2203; Y . &#x3C8;(X, Y)</code>
+to a extended function-like pattern described in
+<a href="../2018-11-08-Configuration-Splitting-Simplification/">Configuration Splitting Simplification</a>.</p>
+<p>This algorithm will be named <code>AndNotExistsSimplification</code> in the sequel.</p>
+<p>Note: the process is quite similar to unification, and the result is either
+<code>&#x3C6;(X)</code>, if <code>&#x3C6;(X)</code> and <code>&#x3C8;(X, Y)</code> are not unifiable, or
+<code>&#x3C6;(X) &#x2227; p(X)</code>, where <code>p(X)</code> is the negation of the predicate of <code>&#x3C8;(X, Y)</code>
+on which the unifying substitution of <code>&#x3C6;(X)</code> and <code>&#x3C8;(X, Y)</code> was applied, if
+the two are unifiable.</p>
+<h2 id="algorithm">Algorithm</h2>
+<p>Consider the following &quot;one-path&quot; reachability goal</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2192; &#x25C7;w &#x2203; Y . &#x3C8;(X, Y)
+</code></pre>
+<p>where <code>X</code> and <code>Y</code> are sets of variables and <code>&#x25C7;w</code> denotes &quot;weak-eventually&quot;</p>
+<p>Consider also the axiom</p>
+<p><code>&#x2200; Z . &#x3B1;(Z) &#x2192; &#x2022;&#x3B2;(Z)</code>.</p>
+<p>where <code>&#x2022;</code> denotes &quot;strong-next&quot; (<code>&#x3B1;(Z)</code> is an extended constructor pattern).</p>
+<p>The steps below show how the given goal is transformed by &quot;applying&quot; the
+given axiom.</p>
+<h3 id="unrolling-%22weak-eventually%22">Unrolling &quot;weak-eventually&quot;</h3>
+<p>Let <code>&#x394; = &#x3BD; f . &#x2022;f</code> denote the formula for diverging computation.
+Then,  for any formula &#x3C8;:</p>
+<ul>
+<li><code>&#x25C7;w &#x3C8; = &#x25C7; &#x3C8; &#x2228; &#x394;</code> by the definition of &quot;weak eventually&quot;</li>
+<li><code>    = &#x3C8; &#x2228; &#x2022;&#x25C7; &#x3C8; &#x2228; &#x394;</code> by unrolling <code>&#x25C7;</code></li>
+<li><code>    = &#x3C8; &#x2228; &#x2022;&#x25C7; &#x3C8; &#x2228; &#x2022;&#x394;</code> by unrolling <code>&#x394;</code></li>
+<li><code>    = &#x3C8; &#x2228; &#x2022;(&#x25C7; &#x3C8; &#x2228; &#x394;)</code>
+because <code>&#x2022;</code> commutes with <code>&#x2228;</code></li>
+<li><code>    = &#x3C8; &#x2228; &#x2022;&#x25C7;w &#x3C8;</code></li>
+</ul>
+<p>Therefore proving</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2192; &#x25C7;w &#x2203; Y . &#x3C8;(X, Y)
+</code></pre>
+<p>is equivalent to proving</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2192;  &#x2203; Y . &#x3C8;(X, Y) &#x2228; &#x2022;&#x25C7;w &#x2203; Y . &#x3C8;(X, Y)`
+</code></pre>
+<p>We can now move <code>&#x2203; Y . &#x3C8;(X, Y)</code> to the left of the implication,
+and (assuming law of excluded middle) we obtain the equivalent:</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2227; &#xAC;&#x2203; Y . &#x3C8;(X, Y) &#x2192;  &#x2022;&#x25C7;w &#x2203; Y . &#x3C8;(X, Y)`
+</code></pre>
+<h3 id="applying-the-axiom-%E2%88%80-z-.-%CE%B1(z)-%E2%86%92-%E2%80%A2%CE%B2(z)">Applying the axiom <code>&#x2200; Z . &#x3B1;(Z) &#x2192; &#x2022;&#x3B2;(Z)</code></h3>
+<p>In the following let <code>&#x3A8;(X) = &#x25C7;w &#x2203; Y . &#x3C8;(X, Y)</code> and let <code>&#x3A6;(X)</code> be the extended
+function-like pattern obtained from applying the
+<code>AndNotExistsSimplification</code> algorithm to <code>&#x3C6;(X) &#x2227; &#xAC;&#x2203; Y . &#x3C8;(X, Y)</code>.</p>
+<p>We can now split the original goal on <code>&#x2203; Y. &#x3B1;(Y)</code> to obtain
+the equivalent goal:</p>
+<pre class="language-text"><code>(&#x2200; X . &#x3A6;(X) &#x2227; (&#x2203; Z. &#x3B1;(Z)) &#x2192; &#x2022;&#x3A8;(X))
+&#x2227;
+(&#x2200; X . &#x3A6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) &#x2192; &#x2022;&#x3A8;(X))
+</code></pre>
+<p>Now we know, from the <a href="../2018-11-08-Applying-Axioms/">basic symbolic execution algorithm</a>
+that</p>
+<pre class="language-text"><code>&#x3A6;(X) &#x2227; (&#x2203; Y .&#x3B1;(Y)) &#x2192; &#x2022;&#x3A6;&apos;(X)    (Step)
+</code></pre>
+<p>for some <code>&#x3A6;&apos;</code> determined by the algorithm.</p>
+<p>It is then sound to replace the first conjunct in the goal above with</p>
+<pre class="language-text"><code>&#x2200; X . &#x3A6;&apos;(X) &#x2192; &#x3A8;(X)
+</code></pre>
+<p>That is indeed so, because</p>
+<p><code>&#x2200; X . &#x3A6;&apos;(X) &#x2192; &#x3A8;(X)</code> implies <code>&#x2200; X . &#x2022;&#x3A6;&apos;(X) &#x2192; &#x2022;&#x3A8;(X)</code>
+which, by using <code>(Step)</code> and implication transitivity, implies that</p>
+<pre class="language-text"><code>&#x3A6;(X) &#x2227; (&#x2203; Y . &#x3B1;(Y)) &#x2192; &#x2022;&#x3A8;(X)
+</code></pre>
+<p>Moreover, we can apply the <code>AndNotExistsSimplification</code> algorithm on
+<code>&#x3A6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z))</code> to obtain an extended function-like pattern <code>&#x3A6;&#x3B1;(X)</code>.</p>
+<p>Therefore, it is sound to replace the original goal with</p>
+<pre class="language-text"><code>(&#x2200; X . &#x3A6;&apos;(X) &#x2192; &#x25C7;w &#x2203; Y . &#x3C8;(X, Y))
+&#x2227;
+(&#x2200; X . &#x3A6;&#x3B1;(X) &#x2192; &#x2022;&#x25C7;w &#x2203; Y . &#x3C8;(X, Y))
+</code></pre>
+<p>The process of applying an axiom can then be restarted on the second conjunct,
+using a different axiom, until <code>&#x3A6;&#x3B1;(X)</code> becomes <code>&#x22A5;</code>.</p>
+<h2 id="examples-of-using-the-above-procedure">Examples of using the above procedure</h2>
+<p>When applying an axiom on a symbolic configuration new constraints may be
+introduced on symbolic variables, coming from side conditions, or directly
+from the unification process.</p>
+<h3 id="example-(from-side-conditions)">Example (from side conditions)</h3>
+<p>Consider proving that</p>
+<pre class="language-text"><code>&#x2200; A:Int . 3 / A -&gt; &#x25C7;w &#x2203; B:Int . B
+</code></pre>
+<p>using axiom</p>
+<pre class="language-text"><code>&#x2200; X:Int, Y:Int .  (Y =/=Int 0 = true) &#x2227; X / Y -&gt; &#x2022; X /Int Y
+</code></pre>
+<p>Then the goal will simplify to</p>
+<pre class="language-text"><code>(&#x2200; A:Int . 3 /Int A &#x2227; (A =/=Int 0 = true)-&gt; &#x25C7;w &#x2203; B:Int . B)
+&#x2227;
+(&#x2200; A:Int . 3 / A &#x2227; &#xAC; (A =/=Int 0 = true) -&gt; &#x2022; &#x25C7;w &#x2203; B:Int . B)
+</code></pre>
+<p>The first conjunct can be discharged immediately, leaving the second
+one as a goal.</p>
+<pre class="language-text"><code>(&#x2200; A:Int . 3 / A &#x2227; &#xAC; (A =/=Int 0 = true) -&gt; &#x2022; &#x25C7;w &#x2203; B:Int . B
+</code></pre>
+<h3 id="example-(from-unification)">Example (from unification)</h3>
+<p>Consider proving the goal</p>
+<pre class="language-text"><code>&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 -&gt; &#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1)
+</code></pre>
+<p>using axioms</p>
+<pre class="language-text"><code>&#x2200; E1:Exp, E2:Exp . if true then E1 else E2 -&gt; &#x2022; E1
+</code></pre>
+<p>and</p>
+<pre class="language-text"><code>&#x2200; E1:Exp, E2:Exp . if false then E1 else E2 -&gt; &#x2022; E2
+</code></pre>
+<p>First, we unroll <code>&#x25C7;w</code> to get</p>
+<pre class="language-text"><code>&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 &#x2227; &#xAC;(&#x2203; B:Int . B = -1 &#x2228;  B = 1) -&gt; &#x2022;&#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1)
+</code></pre>
+<p>Now, since the <code>if</code> construct is not an integer, this simplifies to</p>
+<pre class="language-text"><code>&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 -&gt; &#x2022;&#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1)
+</code></pre>
+<p>Then, by using the first axiom, the goal will simplify to</p>
+<pre class="language-text"><code>(&#x2200; A:Int . -1 &#x2227; A &lt;Int 0 = true -&gt; &#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1))
+&#x2227;
+(&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 &#x2227; &#xAC;(A &lt;Int 0 = true) -&gt; &#x2022;&#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1))
+</code></pre>
+<p>The first conjunct can be discharged immediately. Also, using that <code>true</code> and
+<code>false</code> are the only constructors for <code>Bool</code>, <code>&#xAC;(A &lt;Int 0 = true)</code> can
+be simplified to <code>A &lt;Int 0 = false</code>, making the goal:</p>
+<pre class="language-text"><code>(&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 &#x2227; A &lt;Int 0 = false -&gt; &#x2022;&#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1))
+</code></pre>
+<p>By applying next the &quot;else&quot; axiom,  we obtain the goal:</p>
+<pre class="language-text"><code>(&#x2200; A:Int . 1 &#x2227; A &lt;Int 0 = false -&gt; &#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1))
+&#x2227;
+(&#x2200; A:Int . if A &lt;Int 0 then -1 else 1 &#x2227; &#xAC;(A &lt;Int 0 = true)  &#x2227; &#xAC;(A &lt;Int 0 = false)-&gt; &#x2022;&#x25C7;w (&#x2203; B:Int . B = -1 &#x2228;  B = 1))
+</code></pre>
+<p>Now both conjuncts are discharged immediately
+(the first because it matches the conclusion while the second because
+its premise has became <code>false</code>).</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#using-a-rule-to-advance-a-one-path-reachability-proof" class="bd-toc-link">Using a rule to advance a one-path reachability proof</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#background" class="bd-toc-link">Background</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#and-not-exists-simplification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                And-Not-Exists Simplification
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#algorithm" class="bd-toc-link">Algorithm</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unrolling-%22weak-eventually%22"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Unrolling &quot;weak-eventually&quot;
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#applying-the-axiom-%E2%88%80-z-.-%CE%B1(z)-%E2%86%92-%E2%80%A2%CE%B2(z)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Applying the axiom <code>&#x2200; Z . &#x3B1;(Z) &#x2192; &#x2022;&#x3B2;(Z)</code>
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#examples-of-using-the-above-procedure" class="bd-toc-link">Examples of using the above procedure</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-(from-side-conditions)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Example (from side conditions)
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-(from-unification)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Example (from unification)
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

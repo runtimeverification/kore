@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="interpretation-of-function-rules">Interpretation of function rules</h1>
+<p>Applying function rules in the form of equations is implemented in <a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Equation/Application.hs" target="_blank" rel="noopener"><code>Kore.Equation.Application</code></a>.</p>
+<h2 id="purpose">Purpose</h2>
+<p>This document</p>
+<ol>
+<li>describes how function rules are currently interpreted in Kore,</li>
+<li>exposes some problems with the current approach, and</li>
+<li>explains how function rules will be interpreted in Kore in the future to solve these problems.</li>
+</ol>
+<h2 id="notation">Notation</h2>
+<p><code>X&#x1D62;</code> and <code>Y&#x1D62;</code> refer to element variables.
+<code>{X}</code> and <code>{Y}</code> refer to all variables in the respective family of element variables.
+<code>fun(...)</code> is a function symbol.
+<code>&#x3C6;</code> are arbitrary patterns appearing as the arguments of a function rule.
+<code>&#x3C8;</code> are arbitrary patterns appearing on the right-hand side of function rules.
+<code>Pre</code> and <code>Post</code> are respectively pre- and post-condition patterns.</p>
+<h2 id="background">Background</h2>
+<p>This section will briefly describe how function rules are interpreted in Kore,
+before we continue in the next section to expose some problems with this interpretation.
+Consider a K function <code>fun</code> described by a family of rules,</p>
+<pre class="language-text"><code>rule fun(&#x3C6;&#x2081;&#x1D62;({Y}), &#x3C6;&#x2082;&#x1D62;({Y}), ...) =&gt; &#x3C8;&#x1D62;({Y}) requires Pre&#x1D62;({Y}) ensures Post&#x1D62;({Y})
+</code></pre>
+<p>Each rule is interpreted in Kore as an axiom,</p>
+<pre class="language-text"><code>axiom \implies(Pre&#x1D62;({Y}), (fun(&#x3C6;&#x2081;&#x1D62;({Y}), &#x3C6;&#x2082;&#x1D62;({Y}), ...) = (&#x3C8;&#x1D62;({Y}) &#x2227; Post&#x1D62;({Y})))).
+</code></pre>
+<h2 id="problems">Problems</h2>
+<h3 id="partial-heads">Partial heads</h3>
+<p>See also: <a href="https://github.com/kframework/kore/issues/1146" target="_blank" rel="noopener">kframework/kore#1146</a></p>
+<p>Rules with partial heads are potentially unsound.
+Consider the family of rules</p>
+<pre class="language-text"><code>rule sizeMap(_ |-&gt; _ M:Map) = 1 +Int sizeMap(M)
+rule sizeMap(_ |-&gt; _) = 1
+rule sizeMap(.Map) = 0
+</code></pre>
+<p>producing axioms</p>
+<pre class="language-text"><code>axiom sizeMap(concatMap(elementMap(_1, _2), M:Map)) = +Int(1, sizeMap(M))
+axiom sizeMap(elementMap(_, _)) = 1
+axiom sizeMap(.Map) = 0.
+</code></pre>
+<p>Note that the first rule has a partial head;
+we can instantiate it at <code>M = elementMap(_1, _2)</code> to prove</p>
+<pre class="language-text"><code>sizeMap(concatMap(elementMap(_1, _2), elementMap(_1, _2))) = +Int(1, sizeMap(elementMap(_1, _2)))
+sizeMap(\bottom) = +Int(1, sizeMap(elementMap(_1, _2)))
+sizeMap(\bottom) = +Int(1, 1)
+\bottom = 2.
+</code></pre>
+<h3 id="or-patterns">Or patterns</h3>
+<p>See also: <a href="https://github.com/kframework/kore/issues/1245" target="_blank" rel="noopener">kframework/kore#1245</a></p>
+<p>Consider this family of rules defining function <code>fun</code>,</p>
+<pre class="language-text"><code>rule fun(A) =&gt; C
+rule fun(B) =&gt; C
+</code></pre>
+<p>which is interpreted in Kore as two axioms,</p>
+<pre class="language-text"><code>axiom \implies(\top, (fun(A) = (C &#x2227; \top)))
+axiom \implies(\top, (fun(B) = (C &#x2227; \top))).
+</code></pre>
+<p>The K language offers a shorthand notation,</p>
+<pre class="language-text"><code>rule fun(A #Or B) =&gt; C
+</code></pre>
+<p>which is intended to be equivalent to the pair of rules above.
+Under the current interpretation, this rule produces an axiom,</p>
+<pre class="language-text"><code>axiom \implies(\top, (fun(A &#x2228; B) = (C &#x2227; \top)))
+</code></pre>
+<p>which is <strong>not</strong> equivalent to the first interpretation.
+Specifically, the first interpretation is satisfied if and only if
+<code>fun(A) = C &#x2227; fun(B) = C</code>,
+but the second interpretation can be satisfied if
+<code>fun(A) = C &#x2227; fun(B) = \bottom</code>
+or if
+<code>fun(A) = \bottom &#x2227; fun(B) = C</code>.
+Therefore, the current interpretation of function rules is not faithful to the user&apos;s intent.</p>
+<h3 id="priority">Priority</h3>
+<p>The <code>priority</code> attribute is not properly supported.
+The <code>owise</code> attribute is supported, but its implementation is inefficient:
+work is duplicated by re-checking that the other rules in the family do not apply.</p>
+<h2 id="solution">Solution</h2>
+<p>The interpretation of simplification rules will not change,
+but the family of K rules defining <code>fun</code>,</p>
+<pre class="language-text"><code>rule fun(&#x3C6;&#x2081;&#x1D62;({Y}), &#x3C6;&#x2082;&#x1D62;({Y}), ...) =&gt; &#x3C8;&#x1D62;({Y}) requires Pre&#x1D62;({Y}) ensures Post&#x1D62;({Y})
+</code></pre>
+<p>will be interpreted in Kore as</p>
+<pre class="language-text"><code>axiom \implies(Pre&#x1D62;({Y}) &#x2227; Args&#x1D62;({X}, {Y}) &#x2227; Prio&#x1D62;({X}), (fun(X&#x2081;, X&#x2082;, ...) = (&#x3C8;&#x1D62;({Y}) &#x2227; Post&#x1D62;({Y}))))
+</code></pre>
+<p>where</p>
+<pre class="language-text"><code>Args&#x1D62;({X}, {Y}) = (X&#x2081; &#x2208; &#x3C6;&#x2081;&#x1D62;({Y})) &#x2227; (X&#x2082; &#x2208; &#x3C6;&#x2082;&#x1D62;({Y})) &#x2227; ...
+Prio&#x1D62;({X}) = &#x2227;&#x2C7C; &#xAC; &#x2203; {Y}. Pre&#x2C7C;({Y}) &#x2227; Args&#x2C7C;({X}, {Y})
+    for all j that priority(rule j) &lt; priority(rule i).
+</code></pre>
+<p>The predicate <code>Args&#x1D62;</code> interprets the argument patterns <code>&#x3C6;&#x2081;&#x1D62;</code> element-wise,
+matching the user&apos;s intent and (as we will see below) avoiding the problems described above.
+The predicate <code>Prio&#x1D62;</code> encodes the <code>priority</code> attribute in the pre-condition of the rule,
+which is now possible only because we have moved argument matching into the <code>Args&#x1D62;</code> pre-condition.</p>
+<h3 id="partial-heads-1">Partial heads</h3>
+<p>The troublesome example,</p>
+<pre class="language-text"><code>rule sizeMap(_ |-&gt; _ M:Map) = 1 +Int sizeMap(M)
+</code></pre>
+<p>is interpreted in Kore as</p>
+<pre class="language-text"><code>axiom \implies(X &#x2208; concatMap(elementMap(_1, _2), M:Map), sizeMap(X) = +Int(1, sizeMap(M))).
+</code></pre>
+<p>If <code>concatMap(_, _)</code> is undefined,
+then the pre-condition <code>X &#x2208; concatMap(_, _)</code> is not satisfied;
+therefore, the rule is sound.</p>
+<h3 id="or-patterns-1">Or patterns</h3>
+<p>The example or-pattern rule,</p>
+<pre class="language-text"><code>rule fun(A #Or B) =&gt; C
+</code></pre>
+<p>will be interpreted as</p>
+<pre class="language-text"><code>axiom \implies(X &#x2208; (A &#x2228; B), fun(X) = C).
+</code></pre>
+<p>The disjunction distributes over <code>_ &#x2208; _</code></p>
+<pre class="language-text"><code>X &#x2208; (A &#x2228; B)
+= (X &#x2208; A) &#x2228; (X &#x2208; B)
+</code></pre>
+<p>and over <code>\implies</code></p>
+<pre class="language-text"><code>\implies(X &#x2208; (A &#x2228; B), fun(X) = C)
+= \implies(X &#x2208; A, fun(X) = C) &#x2227; \implies(X &#x2208; B, fun(X) = C)
+</code></pre>
+<p>so that the original axiom is equivalent to two axioms, as intended:</p>
+<pre class="language-text"><code>axiom \implies(X &#x2208; A, fun(X) = C)
+axiom \implies(X &#x2208; B, fun(X) = C).
+</code></pre>
+<h3 id="priority-1">Priority</h3>
+<p>The <code>priority</code> and <code>owise</code> attributes are now encoded explicitly in the
+pre-condition of the axiom.
+Consider a function,</p>
+<pre class="language-text"><code>rule L:Int &lt;= X:Int &lt; _     =&gt; false requires notBool L &lt;=Int X
+rule _     &lt;= X:Int &lt; U:Int =&gt; false requires notBool X  &lt;Int U [priority(51)]
+rule _     &lt;= _     &lt; _     =&gt; true                             [owise]
+</code></pre>
+<p>which will be interpreted in Kore as axioms</p>
+<pre class="language-text"><code>axiom
+    \implies(
+        \and(
+            true = notBool(&lt;=Int(L, X)),
+            (X&#x2081; &#x2208; L) &#x2227; (X&#x2082; &#x2208; X)
+        ),
+        _&lt;=_&lt;_(X&#x2081;, X&#x2082;, X&#x2083;) = \and (
+            false,
+            \top
+        )
+    )
+axiom
+    \implies(
+        \and(
+            true = notBool(&lt;Int(X, U)),
+            (X&#x2082; &#x2208; X) &#x2227; (X&#x2083; &#x2208; U),
+            \not \exists L X.
+                \and(
+                    true = notBool(&lt;=Int(L, X)),
+                    (X&#x2081; &#x2208; L) &#x2227; (X&#x2082; &#x2208; X)
+                )
+        ),
+        _&lt;=_&lt;_(X&#x2081;, X&#x2082;, X&#x2083;) = \and(
+            false,
+            \top
+        )
+    )
+axiom
+    \implies(
+        \and(
+            \top,
+            \top,
+            \and(
+                \not \exists L X.
+                    \and(
+                        true = notBool(&lt;=Int(L, X)),
+                        (X&#x2081; &#x2208; L) &#x2227; (X&#x2082; &#x2208; X)
+                    ),
+                \not \exists X U.
+                    \and(
+                        true = notBool(&lt;Int(X, U)),
+                        (X&#x2082; &#x2208; X) &#x2227; (X&#x2083; &#x2208; U)
+                    )
+            )
+        ),
+        _&lt;=_&lt;_(X&#x2081;, X&#x2082;, X&#x2083;) = \and(
+            true,
+            \top
+        )
+    )
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#interpretation-of-function-rules" class="bd-toc-link">Interpretation of function rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#purpose"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Purpose
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#notation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Notation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#problems" class="bd-toc-link">Problems</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#partial-heads"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Partial heads
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#or-patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Or patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#priority"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Priority
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#solution" class="bd-toc-link">Solution</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#partial-heads-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Partial heads
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#or-patterns-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Or patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#priority-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Priority
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
