@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><p>These are the tests for integration between the K frontend and the Haskell backend.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>test</code>: Run the tests.</li>
+<li><code>golden</code>: Update the expected outputs.</li>
+<li><code>clean</code></li>
+</ul>
+<p>Each directory contains a number of tests based on a single K definition.
+The tests require the K frontend to be installed;
+by default a suitable version will be installed at <code>../.build/k</code>.</p>
+<h2 id="program-tests">Program tests</h2>
+<p>Program tests run a concrete program with <code>krun</code>
+and compare the output to an expected (&quot;golden&quot;) file.
+Program tests have filenames of the form <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;</code>
+where <code>&#x27E8;name&#x27E9;</code> is the (arbitrary) name of the test
+and <code>&#x27E8;ext&#x27E9;</code> is the filename extension used by the definition.
+By default, if the definition filename is <code>&#x27E8;def&#x27E9;.k</code> then <code>&#x27E8;ext&#x27E9; = &#x27E8;def&#x27E9;</code>,
+otherwise the <code>Makefile</code> will contain the line <code>EXT = &#x27E8;ext&#x27E9;</code>.
+A test fails when the actual and expected output differ.
+The exit code of <code>krun</code> is not considered,
+so one may write program tests which encounter errors.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>make &#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out</code>:
+Run the named test and compare the output to <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out.golden</code>.
+The test passes if the expected and actual output are identical.
+The test will not run again until the test prerequisites change
+or <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out</code> is deleted.
+If the test fails, the actual output is moved
+from <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out</code> to <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out.fail</code>.</li>
+<li><code>make &#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out.golden</code>:
+Run the test to construct <code>&#x27E8;name&#x27E9;.&#x27E8;ext&#x27E9;.out.golden</code>.</li>
+</ul>
+<h2 id="specification-tests">Specification tests</h2>
+<p>Specification tests prove a number of claims with <code>kprove</code>
+and compare the output to an expected (&quot;golden&quot;) file.
+Specification tests have filenames of the form <code>&#x27E8;name&#x27E9;-spec.k</code>.
+The specification must have the following form:</p>
+<pre class="language-text"><code>module VERIFICATION
+  imports &#x27E8;DEF&#x27E9;  // &#x27E8;DEF&#x27E9; is the definition module defined in &#x27E8;def&#x27E9;.k
+endmodule
+
+module &#x27E8;NAME&#x27E9;-SPEC  // &#x27E8;NAME&#x27E9; must be the upper-case of &#x27E8;name&#x27E9;
+  imports VERIFICATION
+
+  // CLAIMS
+
+endmodule
+</code></pre>
+<p>A test fails when the actual and expected output differ.
+The exit code of <code>kprove</code> is not considered,
+so one may write program tests which encounter errors.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>make &#x27E8;name&#x27E9;-spec.k.out</code>:
+Run the named test and compare the output to <code>&#x27E8;name&#x27E9;-spec.k.out.golden</code>.
+The test passes if the expected and actual output are identical.
+The test will not run again until the test prerequisites change
+or <code>&#x27E8;name&#x27E9;-spec.k.out</code> is deleted.
+If the test fails, the actual output is moved
+from <code>&#x27E8;name&#x27E9;-spec.k.out</code> to <code>&#x27E8;name&#x27E9;-spec.k.out.fail</code>.</li>
+<li><code>make &#x27E8;name&#x27E9;-spec.k.out.golden</code>:
+Run the test to construct <code>&#x27E8;name&#x27E9;-spec.k.out.golden</code>.</li>
+</ul>
+<h3 id="kbmc">KBMC</h3>
+<p>To run a specification test with <code>kbmc</code> instead of <code>kprove</code>,
+it should be named like <code>&#x27E8;name&#x27E9;-bmc-spec.k</code>.
+In the <code>Makefile</code>, the depth should be set by a target-specific variable:</p>
+<pre class="language-text"><code>&#x27E8;name&#x27E9;-bmc-spec.k: KBMC_DEPTH = 20
+</code></pre>
+<h3 id="repl">REPL</h3>
+<p>To run a specification test with <code>kore-repl</code> instead of <code>kore-exec</code>,
+it should be named like <code>&#x27E8;name&#x27E9;-repl-spec.k</code>.
+To run a specification test with <code>kore-repl</code> using a specific script,
+it should be named like <code>&#x27E8;name&#x27E9;-repl-script-spec.k</code>
+and the script should be in a file named <code>&#x27E8;name&#x27E9;-repl-script-spec.k.repl</code>.</p>
+<h2 id="saving-proofs">Saving proofs</h2>
+<p>To save intermediate proofs from a specification test,
+set the target-specific variable <code>STORE_PROOFS</code>:</p>
+<pre class="language-text"><code>test-1-spec.k.out: STORE_PROOFS = $(@:.out=.save-proofs.kore)
+</code></pre>
+<p>The test will now compare <code>test-1-spec.k.out</code> to <code>test-1-spec.k.out.golden</code>
+and compare <code>test-1-spec.k.save-proofs.kore</code> to <code>test-1-spec.k.save-proofs.kore.golden</code>.</p>
+<p>To re-use intermediates from a previous test,
+set the target-specific variable <code>RECALL_PROOFS</code>:</p>
+<pre class="language-text"><code>test-2-spec.k.out: RECALL_PROOFS = test-1-spec.k.save-proofs.kore
+test-2-spec.k.out: test-1-spec.k.save-proofs.kore
+</code></pre>
+<p>You must add a dependency on the saved proofs
+as in the second line above!</p>
+<h2 id="rule-merging-tests">Rule merging tests</h2>
+<p>A rule merging test checks the specification generated by <code>kore-exec --merge-rules</code>.
+The rules to merge should be listed in a file named like <code>&#x27E8;name&#x27E9;.merge</code>
+with one rule name per line.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>make &#x27E8;name&#x27E9;.merge.out</code>:
+Run the named test and compare the output to <code>&#x27E8;name&#x27E9;.merge.out.golden</code>.
+The test passes if the expected and actual output are identical.
+The test will not run again until the test prerequisites change
+or <code>&#x27E8;name&#x27E9;.merge.out</code> is deleted.
+If the test fails, the actual output is moved
+from <code>&#x27E8;name&#x27E9;.merge.out</code> to <code>&#x27E8;name&#x27E9;.merge.out.fail</code>.</li>
+<li><code>make &#x27E8;name&#x27E9;.merge.out.golden</code>:
+Run the test to construct <code>&#x27E8;name&#x27E9;.merge.out.golden</code>.</li>
+</ul>
+<h2 id="scripted-tests">Scripted tests</h2>
+<p>Any script named <code>test-&#x27E8;name&#x27E9;.sh</code> will be treated as a test.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>make test-&#x27E8;name&#x27E9;.sh.out</code>:
+Run the named test and compare the output to <code>test-&#x27E8;name&#x27E9;.sh.out.golden</code>.
+The test passes if the expected and actual output are identical.
+The prerequisites are any files matching the pattern <code>test-&#x27E8;name&#x27E9;-*</code>.
+The test will not run again until the test prerequisites change
+or <code>test-&#x27E8;name&#x27E9;.sh.out</code> is deleted.
+If the test fails, the actual output is moved
+from <code>test-&#x27E8;name&#x27E9;.sh.out</code> to <code>test-&#x27E8;name&#x27E9;.sh.out.fail</code>.</li>
+<li><code>make test-&#x27E8;name&#x27E9;.sh.out.golden</code>:
+Run the test to construct <code>test-&#x27E8;name&#x27E9;.sh.out.golden</code>.</li>
+</ul>
+<h2 id="definitions">Definitions</h2>
+<p>To add a new definition, create a new directory containing one-line <code>Makefile</code>:</p>
+<pre class="language-text"><code>include $(CURDIR)/../include.mk
+</code></pre>
+<p>In the new directory, create a K definition named <code>test.k</code>.
+Add program or specification tests as described above.</p>
+<p><code>Makefile</code> targets:</p>
+<ul>
+<li><code>make test-kompiled/definition.kore</code>:
+<code>kompile</code> the definition.</li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#program-tests"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Program tests
+              </a></div><details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#specification-tests" class="bd-toc-link">Specification tests</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kbmc"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                KBMC
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#repl"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                REPL
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#saving-proofs"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Saving proofs
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#rule-merging-tests"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Rule merging tests
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#scripted-tests"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Scripted tests
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#definitions"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Definitions
+              </a></div>
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
