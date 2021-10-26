@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><p><a name="BMC"></a><em>BMC</em></p>
+<ol>
+<li>(noun, acronym)
+Bounded model checking. Execute the program on all paths for a given number of steps (a.k.a. bound), attempting to identify given properties (bugs, unexpected behaviours, and so on) in the execution graph.</li>
+</ol>
+<p><a name="constructor-like"></a><em>constructor-like</em></p>
+<ol>
+<li>(adjective)
+A pattern is <em>constructor-like</em> if logical equality is syntactic equality.  A
+pattern is constructor-like if it is logically equal (in the <code>\equals</code> sense)
+to another constructor-like pattern if and only if the patterns are
+syntactically equal. The constructor-like patterns of a sort comprise a
+normal form of elements in that sort.</li>
+<li>(adjective)
+A symbol is <em>constructor-like</em> if it may form the head of a constructor-like
+application pattern (in the sense defined above). Roughly, this means the
+symbol has injectivity and no-confusion axioms.</li>
+</ol>
+<p><a name="function"></a><em>function</em></p>
+<ol>
+<li>(noun)
+An application symbol that, when applied to <a href="#functionlike">function-like</a>
+patterns, produces function-like patterns.</li>
+<li>(noun/adjective)
+A <a href="#functionlike">function-like</a> pattern.</li>
+</ol>
+<p><a name="functionlike"></a><em>function-like</em></p>
+<ol>
+<li>(adjective)
+A function-like pattern can have at most one value, i.e. it satisfies
+<code>(&#x2203;x . x=&#x3C6;) &#x2228; &#xAC;&#x2308;&#x3C6;&#x2309;</code>.</li>
+</ol>
+<p><a name="functional"></a><em>functional</em></p>
+<ol>
+<li>(adjective)
+A functional pattern has exactly one value, i.e. it satisfies <code>(&#x2203;x . x=&#x3C6;)</code>.</li>
+</ol>
+<p><a name="pattern"></a><em>pattern</em></p>
+<ol>
+<li>(noun)
+A syntactic element constructed according to the rules described in the
+<a href="http://github.com/kframework/kore/blob/master/docs/kore-syntax.md#patterns" target="_blank" rel="noopener">kore-syntax document</a>.</li>
+<li>(noun)
+The internal representation of such a syntactic element. It may have
+constructs which cannot be represented directly into syntactic elements
+(e.g. map domain values), but it is expected that it is possible to create
+an equivalent syntactic representation.</li>
+</ol>
+<p><a name="predicate"></a><em>predicate</em></p>
+<ol>
+<li>(noun)
+A <a href="#pattern">pattern</a> that can be evaluate only to top and bottom.
+Application patterns that can only evaluate to top and bottom are hard to
+identify, so some of the code that identifies predicates fails on these.
+Whenever a <a href="#substitution">substitution</a> can be extracted efficiently,
+the &quot;predicate&quot; term may refer to the non-substitution part of the predicate.</li>
+</ol>
+<p><a name="SBC"></a><em>SBC</em></p>
+<ol>
+<li>(noun, acronym)
+Semantics-based compilation. Compilation that uses the semantics of the
+language to analyze the behaviour of the program (e.g. through symbolic
+execution), and uses what it learned to improve the compilation result.</li>
+</ol>
+<p><a name="sort-injection"></a><em>sort injection</em></p>
+<ol>
+<li>(noun)
+A <a href="#symbol">symbol</a> with the <code>sortInjection</code> attribute. The sort injection
+symbol is used to represent the K sub-sort relation in Kore: K sorts contain
+symbols and sorts (their sub-sorts), but Kore sorts contain only symbols; the
+sort injection symbol wraps patterns of a sub-sort so they can be included
+(<em>injected</em>) into the super-sort. Two important properties follow from this
+definition: first, that sort injection symbols are injective; second, that
+the sort injection symbol from a particular sub-sort is distinct (in the
+no-confusion-different-constructors sense) from the super-sort&apos;s
+constructors.</li>
+<li>(noun)
+A <a href="#sort-injection">sort injection</a> is a <a href="#pattern">pattern</a> of the form,<pre class="language-text"><code>inj{Sub{}, Super{}}(&#x3C6;:Sub{})
+</code></pre>
+where <code>inj{Sub{}, Super{}}</code> is a sort injection symbol (described
+above). Where the K sort <code>Super</code> contains <code>Sub</code>, the pattern <code>&#x3C6;</code> with
+least-sort <code>Sub</code> can appear anywhere that a term of sort <code>Super</code> is
+required. In Kore, this is represented with the injection above because all
+sorts are regarded as distinct.</li>
+</ol>
+<p><a name="substitution"></a><em>substitution</em></p>
+<ol>
+<li>(noun)
+A <a href="#predicate">predicate</a> of the form <code>x1=&#x3C6;1 &#x2227; x2=&#x3C6;2 &#x2227; ... &#x2227; xn=&#x3C6;n</code> where
+<code>xi</code> are variables and <code>&#x3C6;i</code> are patterns.</li>
+</ol>
+<p><a name="termpattern"></a><em>term pattern</em></p>
+<ol>
+<li>(noun)
+A <a href="#pattern">pattern</a> of a specific type. A term pattern is usually
+constructed with variables and function application patterns, but,
+in many cases, it is used for any pattern with the expectation that it
+will be reduced, as much as reasonably possible,
+to a variable-application from.</li>
+</ol>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
