@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="meaning-of-%3F-variables-in-k">Meaning of <code>?</code> variables in K</h1>
+<h2 id="summary">Summary</h2>
+<p>The frontend syntax uses question mark variables of the form <code>?X</code> to refer to
+existential variables, and uses <code>ensures</code> to specify logical constraints on
+those variables.
+These variables are only allowed to appear in the RHS of a rule.</p>
+<p>When K rules are translated to Kore axioms,  the <code>ensures</code> clause is and-ed to
+the RHS.
+If the rules represent rewrite (semantic) steps or verification claims,
+then the <code>?</code> variables are existentially quantified at the top of the RHS;
+otherwise, if they represent equations, the <code>?</code> variables are quantified at the
+top of the entire rule.</p>
+<p>Note that when both <code>?</code>-variables and regular variables are present,
+regular variables are (implictly) universally quantified on top of the rule
+(already containing the existential quantifications).
+This essentially makes all <code>?</code> variables depend on all regular variables.</p>
+<p>This design document presents four typical language constructs or mathematical
+functions that have unspecified or nondeterministic behaviors and shows their
+axiomatization in Kore.</p>
+<p>We also propose the corresponding K frontend syntax to define some of these
+behaviors.</p>
+<h3 id="k-frontend-syntax-proposal">K-Frontend Syntax Proposal</h3>
+<p>Currently, the K frontend uses the keyword <code>rule</code> to mean both rewrite
+(semantic) step axioms and equations for functions.
+As we have seen above, these two cases are treated differently, but to
+distinguish them, one needs to go back to where the PL constructs or functions
+are declared, often in a syntax module that is far away from the rules.
+In addition, it can be confusing when the same rule keyword yields completely
+different encodings when translated to backend.
+Therefore, we propose to</p>
+<ol>
+<li>throw a deprecation warning for using <code>rule</code> to declare equations; and</li>
+<li>define a new front-end syntax <code>eq LHS == RHS</code> for defining equations.</li>
+</ol>
+<p>This is also an effort towards the goal of writing explicitly KORE
+patterns in the frontend.</p>
+<h3 id="implementation-concerns">Implementation concerns</h3>
+<p>Except for the <code>fresh</code> variants (Example B), none of the other are currently
+supported by either the K frontend or the Haskell backend.</p>
+<h2 id="example-a%3A-random-number-construct-rand()">Example A: Random Number Construct <code>rand()</code></h2>
+<p>The random number construct <code>rand()</code> is a language construct which could be
+easily conceived to be part of the syntax of a programming language:</p>
+<pre class="language-text"><code>Exp ::= &quot;rand&quot; &quot;(&quot; &quot;)&quot;
+</code></pre>
+<h3 id="axioms">Axioms</h3>
+<p>The intended semantics of <code>rand()</code> is that it can rewrite to any integer in
+a single step.
+Here is its axiom</p>
+<pre class="language-text"><code>(RAND) \forall I:Int . rand() -&gt; * I
+// equivalent form(s)
+//     rand() -&gt; \forall I:Int . * I
+//     rand() -&gt; * I
+// non-equivalent form(s)
+//     rand() -&gt; * (\forall I:Int . I)
+</code></pre>
+<p>Note that the <code>(RAND)</code> axiom is logically equivalent to the following infinitely
+many axioms.</p>
+<pre class="language-text"><code>(RAND0)  rand() -&gt; * 0
+(RAND1)  rand() -&gt; * 1
+(RAND2)  rand() -&gt; * 2
+  ...    ...
+(RAND-1) rand() -&gt; * (-1)
+(RAND-2) rand() -&gt; * (-2)
+  ...    ...
+</code></pre>
+<p>One can define variants of <code>rand()</code> by further constraining the output variable
+as a precondition to the rule.</p>
+<h4 id="rand-like-examples">Rand-like examples</h4>
+<ol>
+<li>
+<p><code>randBounded(M,N)</code> can rewrite to any integer between <code>M</code> and <code>N</code></p>
+<pre class="language-text"><code>\forall M:Int.\forall N:Int.\forall I:Int.
+    I &gt;= M /\ I &lt;= N -&gt; randBounded(M, N) -&gt; * I
+</code></pre>
+</li>
+<li>
+<p><code>randInList(Is)</code> takes a list <code>Is</code> of items
+and can rewrite in one step to any item in <code>Is</code>.</p>
+<pre class="language-text"><code>\forall Is:List . \forall I . inList(I, Is) -&gt; randInList(Is) -&gt; * I
+</code></pre>
+</li>
+<li>
+<p><code>randNotInList(Is)</code> takes a list <code>Is</code> of items
+and can rewrite in one step to any item <em>not</em> in <code>Is</code>.</p>
+<pre class="language-text"><code>\forall Is:List . \forall I . \not(I \in Is) -&gt; randNotInList(Is) -&gt; * I
+</code></pre>
+</li>
+<li>
+<p><code>randPrime()</code>, can rewrite to any <em>prime number</em>.</p>
+<pre class="language-text"><code>\forall P:Int . isPrime(P) -&gt; randPrime() -&gt; * P
+</code></pre>
+<p>where <code>isPrime(_)</code> is a predicate that can be defined in the usual way.</p>
+</li>
+</ol>
+<h3 id="frontend-syntax">Frontend Syntax</h3>
+<p>Since all variables are universally quantified, <code>rand()</code> and its variants could
+be written in the K frontend using regular rules and variables:</p>
+<pre class="language-text"><code>syntax Exp ::= rand ()
+rule rand() =&gt; X:Int
+
+syntax Exp ::= randBounded(Int, Int)
+rule randBounded(M, N) =&gt; I
+  requires M &lt;=Int I andBool I &lt;=Int N
+
+syntax Exp ::= randInList (List)
+rule randInList(Is) =&gt; I
+  requires I inList Is
+
+syntax Exp ::= randNotInList (List)
+rule randNotInList(Is) =&gt; I
+  requires notBool(I inList Is)
+
+syntax Exp ::= randPrime ()
+rule randPrime() =&gt; X:Int
+  requires isPrime(X)
+</code></pre>
+<p>Note 1: all above are not function symbols, but language constructs.</p>
+<p>Note 2: Currently the frontend does not allow rules with universally quantified
+variables in the RHS which are not bound in the LHS.</p>
+<p>Note 3. Allowing these rules in a concrete execution engine would require an
+algorithm for generating concrete instances for such variables, satisfying the
+given constraints.
+Hence, it might be useful to mark these rules with a specific keyword to signal
+this fact.</p>
+<h2 id="example-b%3A-fresh-integer-construct-fresh(is)">Example B: Fresh Integer Construct <code>fresh(Is)</code></h2>
+<p>The fresh integer construct <code>fresh(Is)</code> is a language construct and part of the
+PL syntax.</p>
+<pre class="language-text"><code>Exp ::= ... | &quot;fresh&quot; &quot;(&quot; List{Int} &quot;)&quot;
+</code></pre>
+<h3 id="axioms-1">Axioms</h3>
+<p>The intended semantics of <code>fresh(Is)</code> is that it can always rewrite to an integer
+that in not in <code>Is</code>.</p>
+<p>Note that <code>fresh(Is)</code> and <code>randNotInList(Is)</code> are different; the former
+does not <em>need</em> to be able to rewrite to every integers not in <code>Is</code>,
+while the latter requires so.</p>
+<p>For example, it is <em>correct</em> to implement <code>fresh(Is)</code> so it always returns the
+smallest positive integer that is not in <code>Is</code>, but same implementation for
+<code>randNotInList(Is)</code> might be considered <em>inadequate</em>.
+In other words, there exist multiple correct implementations of <code>fresh(Is)</code>,
+some of which may be deterministic, but there only exists a unique
+implementation of <code>randNotInList(Is)</code>.
+Finally, note that <code>randNotInList(Is)</code> is a <em>correct</em> implementation
+for <code>fresh(Is)</code>.</p>
+<p>Here is the axiom of <code>fresh(Is)</code></p>
+<pre class="language-text"><code>(FRESH) \forall Is:List{Int} . \exists I:Int .
+    \neg( I \in Is) /\ (fresh(Is) -&gt; * I)
+
+// equivalent form(s)
+//  \forall Is:List{Int} . fresh(Is) -&gt; \exists I:Int . \neg( I \in Is) /\ * I
+//  \forall Is:List{Int} . fresh(Is) -&gt; \exists I:Int . * (\neg( I \in Is) /\ I)
+//  \forall Is:List{Int} . fresh(Is) -&gt; * \exists I:Int . \neg( I \in Is) /\ I
+</code></pre>
+<h3 id="frontend-syntax-1">Frontend Syntax</h3>
+<p>We use the following K syntax to define <code>fresh(Is)</code></p>
+<pre class="language-text"><code>syntax Exp ::= fresh (List{Int})
+rule fresh(Is:List{Int}) =&gt; ?I:Int
+  ensures notBool (?I inList{Int} Is)
+</code></pre>
+<p>A variant of this would be a <code>choiceInList(Is)</code> language construct which would
+choose some number from a list:</p>
+<pre class="language-text"><code>syntax Exp ::= choiceInList (List{Int})
+rule choiceInList(Is:List{Int}) =&gt; ?I:Int
+  ensures ?I inList{Int} Is
+</code></pre>
+<h2 id="example-c%3A-arbitrary-number-(unspecific-function)-arb()">Example C: Arbitrary Number (Unspecific Function) <code>arb()</code></h2>
+<p>The function <code>arb()</code> is not a PL construct, but a mathematical function.
+Therefore, its axioms do not use rewrites but equalities.</p>
+<h3 id="axioms-2">Axioms</h3>
+<p>The intended semantics of <code>arb()</code> is that it is an unspecified nullary function.
+The exact return value of <code>arb()</code> is unspecified in the semantics but up to the
+implementations.
+However, being a mathematical function, <code>arb()</code> must return the same value in
+any one implementation.</p>
+<p>The axiom of <code>arb()</code> is</p>
+<pre class="language-text"><code>(ARB) \exists I:Int . arb() = I
+//    this is exactly the (Function) axiom
+//    this is not equivalent to
+//      arb() = (\exists I:Int . I)
+</code></pre>
+<p>There are many variants of <code>arb()</code>. For example, <code>arbInList(Is)</code> is
+an unspecified function whose return value must be an element from <code>Is</code>.
+Here is its axiom</p>
+<pre class="language-text"><code>(ARB) \forall Is:List{Is} . \exists I:Int . I \in Is /\ arbNotInList(Is) = I
+</code></pre>
+<p>Note that <code>arbInList(Is)</code> is different from <code>choiceInList(Is)</code>, because
+<code>choiceInList(Is)</code> <em>transitions</em> to an integer in <code>Is</code> (could be a different one
+each time it is used), while <code>arbInList(Is)</code> <em>is equal to</em> a (fixed)
+integer not in <code>Is</code>.</p>
+<h3 id="frontend-syntax-2">Frontend Syntax</h3>
+<p>We do not need special frontend syntax to define <code>arb()</code>.
+We only need to define it in the usual way as a function
+(instead of a language construct), and provide no axioms for it
+(the <code>(Function)</code> axiom is generated automatically from the <code>function</code>
+attribute annotation).</p>
+<p>W.r.t. the <code>arb</code> variants, we can use <code>?</code> variables and the <code>function</code>
+annotation to signal that the defining rules should be Skolemized when
+kompiled to KORE (<a href="#skolemization">see below</a>) for the defining rules.
+For example, <code>arbInList</code> could be defined in K as</p>
+<pre class="language-text"><code>syntax Int ::= arbInList(List{Int}) [function]
+rule arbInList(Is:List{Int}) =&gt; ?I:Int
+  ensures ?I inList{Int} Is
+</code></pre>
+<h3 id="skolemization">Skolemization</h3>
+<p>One possible approach to implementing the above would be through
+<a href="https://en.wikipedia.org/wiki/Skolem_normal_form" target="_blank" rel="noopener">Skolemization</a>,
+i.e., by replacing the existential variables with fresh uninterpreted functions
+applied to the universally quantified variables.</p>
+<p>For example, the <code>(ARB)</code> rule above could be Skolemized to</p>
+<pre class="language-text"><code>(ARB&apos;) \forall Is:List{Is} . arbI(Is) \in Is /\ arbInList(Is) = arbI(Is)
+</code></pre>
+<p>where</p>
+<pre class="language-text"><code>arbI : List{Int} -&gt; Int
+</code></pre>
+<p>is a symbol satisfying the <code>(Function)</code> axiom, without further constraints.</p>
+<p>We propose to implement a Skolemization compilation step triggered by a
+<code>function</code> annotation in the syntax definition, together with the use of <code>?</code>
+variables in the <code>rhs</code> of the rule and the <code>ensures</code>.</p>
+<h2 id="example-d%3A-interval-(non-function-symbols)-interval()">Example D: Interval (Non-function Symbols) <code>interval()</code></h2>
+<p>The symbol <code>interval(M,N)</code> is not a PL construct, nor a function in the
+first-order sense, but a proper matching-logic symbol, whose interpretation is
+in the powerset of its domain.
+Its axioms will not use rewrites but equalities.</p>
+<h3 id="axioms-3">Axioms</h3>
+<p>The intended semantics of <code>interval(M,N)</code> is that it equals the <em>set</em> of
+integers that are larger than or equal to <code>M</code> and smaller than or equal to <code>N</code>.
+Its axiom is</p>
+<pre class="language-text"><code>(INTERVAL) \forall M:Int . \forall N:Int .
+    interval(M,N) = \exists X:Int . X:Int /\ X &gt;= M /\ X &lt;= N
+</code></pre>
+<h3 id="frontend-syntax-3">Frontend Syntax</h3>
+<p>Since expressing the axiom for <code>interval</code> requires an an existential
+quantification on the right-hand-side, thus making it a non-functional symbol
+defined through an equation, using <code>?</code> variables might be confusing since their
+usage would be different from that presented in the previous sections.</p>
+<p>Hence, the proposal to support this would be to write this as a proper ML rule.
+A possible syntax for this purpose would be:</p>
+<pre class="language-text"><code>eq  interval(M,N)
+    ==
+    #Exists X:Int .
+        (X:Int #And { X &gt;=Int M #Equals true } #And { X &lt;=Int N #Equals true })
+</code></pre>
+<p>Additionally, the symbol declaration would require a special attribute to
+signal the fact that it is not a constructor but a <em>defined</em> symbol.</p>
+<p>Since this feature is not clearly needed by K users at the moment, it is only
+presented here as an example; its implementation will be postponed for such time
+when its usefulness becomes apparent.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#meaning-of-%3F-variables-in-k" class="bd-toc-link">Meaning of <code>?</code> variables in K</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#summary" class="bd-toc-link">Summary</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#k-frontend-syntax-proposal"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                K-Frontend Syntax Proposal
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-concerns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Implementation concerns
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#example-a%3A-random-number-construct-rand()" class="bd-toc-link">Example A: Random Number Construct <code>rand()</code></a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#axioms" class="bd-toc-link">Axioms</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#rand-like-examples"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Rand-like examples
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#frontend-syntax"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Frontend Syntax
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#example-b%3A-fresh-integer-construct-fresh(is)" class="bd-toc-link">Example B: Fresh Integer Construct <code>fresh(Is)</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#axioms-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Axioms
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#frontend-syntax-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Frontend Syntax
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#example-c%3A-arbitrary-number-(unspecific-function)-arb()" class="bd-toc-link">Example C: Arbitrary Number (Unspecific Function) <code>arb()</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#axioms-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Axioms
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#frontend-syntax-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Frontend Syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#skolemization"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Skolemization
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#example-d%3A-interval-(non-function-symbols)-interval()" class="bd-toc-link">Example D: Interval (Non-function Symbols) <code>interval()</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#axioms-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Axioms
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#frontend-syntax-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Frontend Syntax
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
