@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="attributes-as-patterns">Attributes as Patterns</h1>
+<h2 id="background">Background</h2>
+<p>Attributes are used in Kore in order to provide hints for manipulating symbols,
+axioms, sorts and so on.
+When translating from K, the Kore attributes are a
+fairly direct translation of the K ones.</p>
+<p>Each Kore backend can have its own set of attributes, and backends must be able
+to ignore unknown attributes.</p>
+<p>Examples include the <code>constructor</code> attribute which
+specifies that a certain symbol is a constructor, so, say, it
+cannot be unified with different constructors.</p>
+<h2 id="questions-asked">Questions asked</h2>
+<ol>
+<li>What kind of structure do attributes have?</li>
+<li>What syntax should we use?</li>
+<li>How can we make sure that attributes have some documentation?</li>
+</ol>
+<p>The answer to the first two questions comes from a Slack discussion on
+<code>runtimeverification/#haskell</code>(https://runtimeverification.slack.com/messages/C9B9QBF46/) on 2018-17-25</p>
+<ul>
+<li>between @grosu, @bmmoore, @dwightguth, @u--, @njohnwalker, @traiansf, @hreada.</li>
+<li>Starting at: https://runtimeverification.slack.com/archives/C9B9QBF46/p1532543176000083</li>
+<li>Ending at: https://runtimeverification.slack.com/archives/C9B9QBF46/p1532562323000104</li>
+</ul>
+<p>The answer to the third
+comes from a face-to-face discussion between @traiansf and @virgil-serbanuta.</p>
+<h2 id="attribute-structure">Attribute structure</h2>
+<p>Attributes are identified by a name and might have (or not) parameters.</p>
+<p>When present, attribute parameters are usually very simple, e.g. the <code>strict</code> attribute
+can have a list of argument indexes in which it is strict.</p>
+<p>Sometimes we may
+want to refer to user-defined symbols, e.g. we may use the <code>unit</code> attribute
+to specify the neutral element for an symbol, and we may want to use this
+attribute both for the symbol declaration and for the axioms that
+make it a neutral element.</p>
+<p>Similarly, we may want to use an <code>refersTo</code>
+attribute with a symbol as argument to, say,
+link an associativity axiom with the symbol.</p>
+<p>However, we can&apos;t tell what&apos;s the general structure of an attribute.</p>
+<h2 id="attribute-syntax">Attribute syntax</h2>
+<p>We could encode each attribute as a string (name/key) or as a pair of
+strings (key-value).
+However, that does not seem a natural way of encoding
+the structure that they have, and each backend would need its own
+string-parsing library.
+Also, we may get some performance benefits since looking up a string key in a
+map is slower than looking up a constant key from a finite and (likely)
+very small set of such constants. However, note that the design of
+backend-specific data structures for attributes may remove the need for
+lookups.</p>
+<p>We could also encode attributes as Kore patterns which must be fully correct.
+This has some drawbacks:</p>
+<ul>
+<li>We would need a central definition of all attributes that might be used by
+backends, and all backends would need to be aware of this definition.
+This certainly has some benefits (e.g. one can find all the
+attributes and their documentation in a single place).
+As long as all attributes are generated by the frontend,
+this may be feasible, but having such a central repository would mean
+that independent backends cannot introduce their own attributes.</li>
+<li>Mentioning symbols and sorts in attributes becomes harder and unnatural.
+E.g. we wouldn&apos;t just be able to write <code>ac_axiom_for{}(plus{}())</code>, we would
+need to write either <code>ac_axiom_for{}(\dv(symbol{}(&quot;plus&quot;))</code> which means that
+we partly give up on having structured data or
+<code>ac_axiom_for{}(plus{}(x:Int{},y:Int{}))</code>
+which would make it harder to manipulate these attributes.</li>
+<li>The syntax may be hard to read.
+This is not that important since K is meant to be readable, Kore is meant
+to be machine-readable.</li>
+</ul>
+<h2 id="decision">Decision</h2>
+<p>We will encode each attribute as a Kore pattern that uses only
+application and string literals. This pattern will be an application
+of a symbol to a list of parameters,
+the (name of the) symbol identifying the
+attribute and the list of parameters being the arguments of the attribute.
+Numbers will be encoded as string literals.
+Therefore the following may be valid attributes:</p>
+<pre class="language-text"><code>constructor{}()
+strict{}(&quot;1&quot;, &quot;2&quot;)
+unit{}(epsilon{}())
+unit{}(epsilon{}(), zero{}())
+refersTo{}(plus{}())
+</code></pre>
+<p>We will <em>not</em> check that this attributes are well-formed in the usual sense,
+e.g. we will not check whether the <code>plus</code> symbol in the example above has
+two arguments or that the <code>strict</code> symbol arguments are object patterns or have
+the <code>#Pattern</code> sort.
+We <em>will</em> check that the top-level element is an application pattern since we
+must be able to find its name.
+We <em>may</em> check that the pattern uses only application and string literals.
+We <em>will</em> require a backend to provide a validation function for each attribute
+it can understand.</p>
+<h2 id="encouraging-documentation">Encouraging documentation</h2>
+<p>While we cannot make sure that people document their attributes, we will do
+the following:</p>
+<p>When indexing a definition (or maybe when parsing), a backend must
+provide a collection of default attributes for each entity that can have
+attributes (e.g. module, symbol, axiom).</p>
+<p>A backend must also provide a map from attribute names to a structure which
+contains:</p>
+<ul>
+<li>A function which adds the attribute to an existing collection of attributes.</li>
+<li>A plain text description of the attribute.</li>
+<li>A plain text description of the attribute syntax.</li>
+<li>A validation function. We may provide a way of representing a
+hierarchical structure with documentation for each field, in which case the
+plain-text syntax and part of the attribute documentation may be generated
+automatically.</li>
+</ul>
+<p>On the command line, we may add a flag which makes the verifier print all known
+attributes with their documentation and syntax.</p>
+<p>Attributes not present in this map will be wrapped in an opaque wrapper that,
+in principle, can only be unwrapped by the unparsing code.
+This parser will also be given to the function that adds attributes, in case
+the backend wants to unparse them at some later point.</p>
+<p>Attributes that do not pass validation will be provided in a list of
+separate opaque wrappers, together with the error message provided by the
+validator.</p>
+<p>The indexed version of a Kore definition will only contain the backend&apos;s view of
+the attributes.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#attributes-as-patterns" class="bd-toc-link">Attributes as Patterns</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#questions-asked"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Questions asked
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#attribute-structure"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Attribute structure
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#attribute-syntax"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Attribute syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#encouraging-documentation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Encouraging documentation
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
