@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="checking-implication">Checking Implication</h1>
+<p>Checking implication is an important step for proving one-path and all-path reachability claims.
+This document will describe logically how this step will be performed.</p>
+<h2 id="background">Background</h2>
+<p>The reader should be familiar with the algorithm for proving one-path and all-path reachability claims:</p>
+<ul>
+<li><a href="../2018-11-08-One-Path-Reachability-Proofs/">One-Path</a></li>
+<li><a href="../2019-03-28-All-Path-Reachability-Proofs/">All-Path</a></li>
+</ul>
+<h2 id="problem">Problem</h2>
+<p>Consider a reachability claim,</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2192; &#x2218; &#x2203; Y. &#x3C8;(X, Y)
+</code></pre>
+<p>where <code>&#x2218;</code> denotes the appropriate one-path or all-path modality
+and <code>X</code> and <code>Y</code> denote <em>distinct</em> families of variables.
+We will assume that <code>&#x3C6;(X)</code> and <code>&#x3C8;(X, Y)</code> are function-like patterns (matching at most one value)
+because this is true in typical use.</p>
+<p>The reachability proof algorithm will unroll the modality, giving</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2192; &#x2203; Y. &#x3C8;(X, Y) &#x2228; &#x2022; &#x2218; &#x2203; Y. &#x3C8;(X, Y)
+===
+&#x3C6;(X) &#x2227; &#xAC; &#x2203; Y. &#x3C8;(X, Y) &#x2192; &#x2022; &#x2218; &#x2203; Y. &#x3C8;(X, Y)
+</code></pre>
+<p>If the direct implication holds, then</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; &#xAC; &#x2203; Y. &#x3C8;(X, Y)
+</code></pre>
+<p>is unsatisfiable.
+Otherwise, the reachability proof algorithm continues by rewriting the configuration.</p>
+<h2 id="solution">Solution</h2>
+<p>Checking that the formula</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; &#xAC; &#x2203; Y. &#x3C8;(X, Y)
+</code></pre>
+<p>is unsatisfiable is equivalent to checking</p>
+<pre class="language-text"><code>&#x2308;&#x3C6;(X) &#x2227; &#xAC; &#x2203; Y. &#x3C8;(X, Y)&#x2309;.
+</code></pre>
+<p>Because we assume that <code>&#x3C6;(X)</code> is a function-like pattern,
+we can move the negation outside of <code>&#x2308; &#x2309;</code>:</p>
+<pre class="language-text"><code>&#x2308;&#x3C6;(X) &#x2227; &#xAC; &#x2203; Y. &#x3C8;(X, Y)&#x2309;
+===
+&#xAC; &#x2308;&#x3C6;(X) &#x2227; &#x2203; Y. &#x3C8;(X, Y)&#x2309; &#x2227; &#x2308;&#x3C6;(X)&#x2309;.
+</code></pre>
+<p>By alpha-equivalence, we can also move the quantifier outside of <code>&#x2308; &#x2309;</code>:</p>
+<pre class="language-text"><code>(&#xAC; &#x2308;&#x3C6;(X) &#x2227; &#x2203; Y. &#x3C8;(X, Y)&#x2309;) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+===
+(&#xAC; &#x2203; Y. &#x2308;&#x3C6;(X) &#x2227; &#x3C8;(X, Y)&#x2309;) &#x2227; &#x2308;&#x3C6;(X)&#x2309;.
+</code></pre>
+<h2 id="optimization">Optimization</h2>
+<p>We can optimize this solution in the typical case where</p>
+<pre class="language-text"><code>&#x3C6;(X) = t(X) &#x2227; P(X)
+&#x3C8;(X, Y) = &#x22C1;&#x1D62; t&#x1D62;(X, Y) &#x2227; P&#x1D62;(X, Y)
+</code></pre>
+<p>where <code>t(X)</code> and <code>t&#x1D62;(X, Y)</code> are term-like patterns
+and <code>P(X)</code> and <code>P&#x1D62;(X, Y)</code> are predicates.
+The unification of the left- and right-hand sides is</p>
+<pre class="language-text"><code>&#x2203; Y. &#x2308;&#x3C6;(X) &#x2227; &#x3C8;(X, Y)&#x2309;
+===
+&#x22C1;&#x1D62; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P(X) &#x2227; P&#x1D62;(X, Y)
+===
+P(X) &#x2227; &#x22C1;&#x1D62; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P&#x1D62;(X, Y)
+</code></pre>
+<p>so that</p>
+<pre class="language-text"><code>(&#xAC; &#x2203; Y. &#x2308;&#x3C6;(X) &#x2227; &#x3C8;(X, Y)&#x2309;) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+===
+  &#xAC; P(X) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+&#x2228;
+  (&#xAC; &#x22C1;&#x1D62; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P&#x1D62;(X, Y)) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+</code></pre>
+<p>The first term of the above disjuntion is <code>&#x22A5;</code>,</p>
+<pre class="language-text"><code>&#xAC; P(X) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+===
+&#xAC; P(X) &#x2227; &#x2308;t(X)&#x2309; &#x2227; P(X)
+===
+&#x22A5;
+</code></pre>
+<p>leaving only</p>
+<pre class="language-text"><code>(&#xAC;    &#x2203; Y. &#x2308;&#x3C6;(X) &#x2227; &#x3C8;(X, Y)&#x2309;            ) &#x2227; &#x2308;&#x3C6;(X)&#x2309;
+===
+(&#xAC; &#x22C1;&#x1D62; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P&#x1D62;(X, Y)) &#x2227; &#x2308;t(X)&#x2309; &#x2227; P(X).
+===
+(&#x22C0;&#x1D62; &#xAC; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P&#x1D62;(X, Y)) &#x2227; &#x2308;t(X)&#x2309; &#x2227; P(X).
+</code></pre>
+<p>The sub-terms <code>&#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309;</code> are unification problems with an efficient internal implementation.
+The unification problems should be solved first because</p>
+<pre class="language-text"><code>&#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2192; &#x2308;t(X)&#x2309;
+</code></pre>
+<p>so that if unification succeeds on any branch, there is no need to explicitly consider <code>&#x2308;t(X)&#x2309;</code>.
+If unification fails, then the negative conjunct is <code>\top</code> so that the implication is satisified only when <code>&#x2308;t(X)&#x2309; &#x2227; P(X)</code> is unsatisfiable.
+Now, the implication is checked in two cases:
+after a configuration is rewritten (in which case the configuration may be rewritten again)
+or after a configuration can no longer be rewritten (a remainder pattern).
+In the case of a rewritten configuration, when unification fails, there is no need to check the rest of the implication pattern:
+the condition <code>t(X) &#x2227; P(X)</code> itself implies the condition <code>&#x2308;t(X)&#x2309; &#x2227; P(X)</code>.</p>
+<h2 id="summary">Summary</h2>
+<p>The algorithm follows:</p>
+<p>Given the implication</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2192; &#x2203; Y. &#x3C8;(X, Y)
+</code></pre>
+<p>with</p>
+<pre class="language-text"><code>&#x3C6;(X) = t(X) &#x2227; P(X)
+&#x3C8;(X, Y) = &#x22C1;&#x1D62; t&#x1D62;(X, Y) &#x2227; P&#x1D62;(X, Y)
+</code></pre>
+<p>where <code>t(X)</code> and <code>t&#x1D62;(X, Y)</code> are term-like patterns
+and <code>P(X)</code> and <code>P&#x1D62;(X, Y)</code> are predicates,</p>
+<ol>
+<li>Solve the unification problems <code>&#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309;</code>.</li>
+<li>If unification succeeds on any branch, evaluate
+<code>(&#x22C0;&#x1D62; &#xAC; &#x2203; Y. &#x2308;t(X) &#x2227; t&#x1D62;(X, Y)&#x2309; &#x2227; P&#x1D62;(X, Y)) &#x2227; &#x2308;t(X)&#x2309; &#x2227; P(X)</code>.
+<ol>
+<li>If the predicate is unsatisfiable,
+then the implication is valid.</li>
+<li>If the predicate is satisfiable,
+conjoin it with the configuration and continue rewriting.
+(Note: At the time of writing,
+the backend does not conjoin the predicate with the configuration.
+This is sound, but not complete.)</li>
+</ol>
+</li>
+<li>If unification fails on all branches,
+<ol>
+<li>If <code>&#x3C6;(X)</code> is a remainder pattern, evaluate
+<code>&#x2308;t(X)&#x2309; &#x2227; P(X)</code>.
+The implication is valid iff the predicate is unsatisfiable.</li>
+<li>If <code>&#x3C6;(X)</code> is a rewritten pattern, assume the implication is not valid.
+(Aside: If we checked <code>&#x2308;t(X)&#x2309; &#x2227; P(X)</code> here,
+then we could infer that the configuration is defined,
+allowing us to do subsequent rewriting without generating extra definedness conditions.
+The efficiency of this method merits investigation.)</li>
+</ol>
+</li>
+</ol>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#checking-implication" class="bd-toc-link">Checking Implication</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#solution"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Solution
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#optimization"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Optimization
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#summary"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Summary
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

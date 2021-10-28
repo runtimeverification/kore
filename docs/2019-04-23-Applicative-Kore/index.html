@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="applicative-kore">Applicative Kore</h1>
+<p><em>Applicative matching mu-logic</em> (AML) is the applicative/functional fragment of matching mu-logic. AML is unsorted. It has a simple syntax that consists of variables, constants, propositional connectives, FOL binders, fixpoint binders, and application.</p>
+<p><em>Applicative Kore</em> (AppKore) is the language to write AML theories. We call the existing Kore language for full ML as <em>FullKore</em>.</p>
+<p>AppKore/AML differs from FullKore/ML in two ways. Firstly, AppKore has a simpler syntax. It is unsorted and only contains constant symbols. Secondly, AppKore has support for fixpoint reasoning. This makes it capable of precisely capturing many mathematical domains, such as natural numbers, which FullKore/ML cannot.</p>
+<h2 id="appkore-parser">AppKore parser</h2>
+<h3 id="keywords">Keywords</h3>
+<p>AppKore has the following keywords:</p>
+<pre class="language-text"><code>module import axiom symbol notation meta-notation endmodule
+</code></pre>
+<p>Compared with FullKore/ML, we made three changes on the choice of keywords.</p>
+<p>Firstly, we remove <code>sort</code> and <code>hooked-sort</code>, because sorts in FullKore can be captured as (constant) symbols in AppKore.</p>
+<p>Secondly, we remove hooked sorts/symbols, because many mathematical domains (such as natural numbers) that cannot be captured in ML (without support for fixpoints) or FullKore can now be precisely captured in AppKore/AML. In other words, we can precisely capture the semantics of these &quot;hooked&quot; sorts/symbols by writing sufficient axioms in AML, instead of leaving it to backends and implementation. Note that backends and implementation still can and should hook these sorts/symbols and have builtin support for them. These &quot;hooking&quot; information will be declared as attributes. What is different from FullKore is that the way backends implement these hooked sorts/symbols does not affect the semantics, because they are completely axiomatized in AML.</p>
+<p>Thirdly, we add <code>notation</code> and <code>meta-notation</code>. <code>notation</code> is a replacement of <code>alias</code> in FullKore. <code>meta-notation</code> is like <code>notation</code> but it declares meta-level notations such as capture-avoiding-substitution, whose precisely definition only exists on paper and cannot be formalized in AML. Mostly we only use <code>notation</code> in practice. <code>meta-notation</code> is rarely used.</p>
+<h3 id="identifiers">Identifiers</h3>
+<p><em>Identifiers</em> in AppKore are used as the names of variables, constants, notations, and modules.</p>
+<pre class="language-text"><code>&lt;id&gt; ::= ...   // The precise regular expression is to be defined.
+               // Ideally, it should allow anything except those starting with a &quot;#&quot;.
+               // Some examples: X, X1, X2, X_1, _1, _2, ...
+               //                x, x1, x2, x_1, Xx, XX, ...
+               //                Int, Nat, List, plus, mult, ...
+               //                \and, \or, \iff, \equals, \ceil, ...
+               //                _+_, _plus_, Nat+Nat:Nat, ...
+               //                &quot;abc&quot;, &quot;ABC&quot;, &quot;\n&quot;, &quot;\&quot;&quot;, &quot;&quot;, ...
+               //                1, 2, -1, -2, 0, 0xF, ...
+&lt;sharp-id&gt; ::= // &quot;#&quot;, or &quot;#&quot; followed by &lt;id&gt; (no space between them)
+</code></pre>
+<p><em>Remark.</em> There are some conventions in using identifiers. For example, module names are often all in capital letters; constants that represent <em>sorts</em> are often capital in their first letters (such as <em>Nat, Int</em>); constants that represent <em>functions/predicates</em> are often all in lower case (such as <em>plus, mult</em>). We can enforce these conventions and embed them into the syntax of AppKore, but for now, these are merely conventions.</p>
+<h3 id="patterns">Patterns</h3>
+<pre class="language-text"><code>&lt;atom-pattern&gt; ::=
+| &lt;id&gt;                // can mean either an element variable, 
+                      // or a constant, or a notation (alias);
+                      // this has to be decided later by the *verifier*
+| &lt;sharp-id&gt;          // a set variable
+| &quot;\bottom&quot;           // the bottom
+| &quot;(&quot; &lt;pattern&gt; &quot;)&quot;   // parentheses used for grouping
+
+&lt;app-pattern&gt; ::=
+| &lt;atom-pattern&gt;
+| &lt;app-pattern&gt; &lt;atom-pattern&gt; // a b c is parsed as ((a b) c)
+
+&lt;pattern&gt; ::=
+| &quot;\implies&quot; &lt;atom-pattern&gt; &lt;atom-pattern&gt;     // implication
+| &quot;\forall&quot; &lt;element-variable&gt; &lt;atom-pattern&gt;  // FOL binders
+| &quot;\mu&quot; &lt;set-variable&gt; &lt;atom-pattern&gt;          // fixpoint binders
+
+&lt;element-variable&gt; ::= &lt;id&gt;
+&lt;set-variable&gt;     ::= &lt;sharp-id&gt;
+</code></pre>
+<p>Some examples:</p>
+<pre class="language-text"><code>\implies a        ... ... not wellformed: too few arguments
+\implies a b      ... ... wellformed
+\implies a b c    ... ... not wellformed: too many arguments
+\implies (a b) c  ... ... wellformed
+</code></pre>
+<h3 id="sentences-and-modules">Sentences and modules</h3>
+<p>An AppKore module consisting of a sequence of <em>sentences</em>. <em>Import sentence</em> imports a module; <em>symbol sentence</em> declares a constant symbol; <em>notation sentence</em> declares a notation (a.k.a. alias); <em>axiom sentence</em> specifies a pattern as an axiom of the module; a <em>hooked symbol sentence</em> declares a constant symbol whose semantics is not given by the axioms, but given by the implementation; a <em>hooked notation sentence</em> declares a notation whose definition is not given in the declaration, but given by the implementation.</p>
+<p>Each sentence/module is associated with zero, one, or more <em>attributes</em>. Attributes provide information and hints for the backends but cannot carry <em>additional</em> semantic meaning.</p>
+<pre class="language-text"><code>&lt;sentence&gt; ::=
+| &lt;import-sentence&gt;
+| &lt;symbol-sentence&gt;
+| &lt;notation-sentence&gt;
+| &lt;axiom-sentence&gt;
+| &lt;hooked-symbol-sentence&gt;
+| &lt;hooked-notation-sentence&gt;
+
+&lt;import-sentence&gt; ::= &quot;import&quot; &lt;id&gt; &lt;attribute&gt;
+&lt;symbol-sentence&gt; ::= &quot;symbol&quot; &lt;id&gt; &lt;attribute&gt;
+&lt;notation-sentence&gt; ::= &quot;notation&quot; &lt;id&gt; &lt;ids&gt; &quot;=&quot; &lt;pattern&gt; &lt;attribute&gt;
+&lt;axiom-sentence&gt; ::= &quot;axiom&quot; &lt;pattern&gt; &lt;attribute&gt;
+&lt;hooked-symbol-sentence&gt; ::= &quot;hooked-symbol&quot; &lt;id&gt; &lt;attribute&gt;
+&lt;hooked-notation-sentence&gt; ::= &quot;hooked-notation&quot; &lt;id&gt; &lt;ids&gt; &lt;attribute&gt;
+
+&lt;module&gt; ::= &quot;module&quot; &lt;id&gt; &lt;sentences&gt; &quot;endmodule&quot; &lt;attribute&gt;
+
+&lt;ids&gt; ::= &quot;&quot; | &lt;id&gt; | &lt;id&gt; &lt;ids&gt;
+&lt;attribute&gt; ::= &quot;[&quot; &quot;]&quot; | &quot;[&quot; &lt;id&gt; &lt;comma-ids&gt; &quot;]&quot;
+&lt;comma-ids&gt; ::= &quot;&quot; | &quot;,&quot; &lt;id&gt; &lt;comma-ids&gt; 
+&lt;sentences&gt; ::= &quot;&quot; | &lt;sentence&gt; &lt;sentences&gt;
+</code></pre>
+<h2 id="some-remarks-on-notations">Some remarks on notations</h2>
+<h4 id="main-principle-of-notations">Main principle of notations</h4>
+<p>AppKore allows the users to define notations (a.k.a. aliases). The <strong>main principle of notations</strong> is that they can be desugared in a unique and well-founded way. Notations differ from symbols in many aspects, even though they share the same syntax in the AppKore grammar shown above. In the following, we illustrate some of the main differences between notations and symbols by examples. These differences will taken into consideration by no the parser, but the verifier, which we discuss later.</p>
+<p>The purpose of this section is to show some examples of notations.</p>
+<h4 id="basic-notations">Basic notations</h4>
+<p>A basic notation declaration has the following form:</p>
+<pre class="language-text"><code>notation foo X1 X2 ... Xn = P []
+</code></pre>
+<p>Here,  <code>foo</code> is the name of the notation; <code>n</code> is the <em>arity</em> of <code>foo</code>; <code>X1</code>,...,<code>Xn</code> are <em>placeholders</em> which may appear in pattern <code>P</code>. We require that <code>foo</code> does not appear in <code>P</code>; that is, we forbid recursive notation declarations. We require that <code>foo</code>,<code>X1</code>,...,<code>Xn</code> are all different identifiers. More of such <em>wellformedness conditions</em> will be discussed in detail in the <strong>AppKore Verifier</strong> section.</p>
+<p>As an example, <em>negation</em> can be defined as a notation using implication and bottom, both of which are primitive logic constructs in AppKore.</p>
+<pre class="language-text"><code>notation \neg P = \implies P \bottom []
+</code></pre>
+<p>Then, <code>\neg</code> is a notation that takes 2 arguments. Therefore:</p>
+<pre class="language-text"><code>\neg       ... ... not wellformed (captured by verifier, not parser) 
+\neg a     ... ... wellformed
+\neg a b   ... ... not wellformed (captured by verifier, not parser)
+</code></pre>
+<p><em>Remark.</em> For most cases in practice, backends may not want to desugar notations but simply keep the notations as they are.</p>
+<h4 id="notations-with-binders">Notations with binders</h4>
+<p>As an example, consider the following notation declaration of the <code>exists</code>-binder defined in the usual way:</p>
+<pre class="language-text"><code>notation \exists X P = \neg (\forall X (\neg P)) [binder]
+</code></pre>
+<p>Here, <code>\exists</code> is the name of the notation, whose arity is 2. The two placeholders are <code>X</code> and <code>P</code>. In usual cases, placeholders are <em>metavariables over patterns</em>. However, in the above example, <code>X</code> is not a metavariable over patterns, but a <em>metavariable over element variables</em>. This can be told by analyzing the body of the declaration, <code>\neg (\forall X (\neg P))</code>. Since <code>X</code> occurs as the first argument of <code>\forall</code>, it must be of the nonterminal <code>&lt;element-variable&gt;</code>, and thus <code>X</code> ranges over element variables instead of all patterns.</p>
+<p>Another noticeable fact about <code>\exists</code> is its <em>binding behavior</em>; that is, it binds all free occurrences of the variable <code>X</code> in <code>P</code>. Binding behavior is important when using <em>substitution</em>, which is also defined as a notation and we will discuss about it later. In short, substitution is the so-called <em>capture-avoiding-substitution</em>, meaning that bound variables are renamed automatically to prevent unintended variable capture. The binding behavior of <code>\exists X P</code> means that its first argument <code>X</code> may be renamed in substitution. Finally, note that we put the <code>binder</code> attribute along with the declaration, so that the backends do not need to reverse engineer the information from the declaration.</p>
+<h4 id="notations-with-assoc-attribute">Notations with <code>assoc</code> attribute</h4>
+<p>Some <em>binary notations</em> are <em>associative</em>. One typical example is <code>\or</code>. It is inconvenient to write a disjunction of multiple patterns using the binary notation <code>\or</code>. Instead, we want to abbreviate <code>\or (\or (\or a b) c) d</code> as <code>\or a b c d</code>. This is achieved by using the <code>assoc</code> attribute in notation declarations.</p>
+<p>Specifically speaking, if <code>foo</code> is a binary notation, then we can use the <code>left-assoc</code> (or <code>right-assoc</code>) to specify that <code>foo</code> is left (or right) associative. Therefore,</p>
+<table class="table">
+<thead>
+<tr>
+<th></th>
+<th>[left-assoc]</th>
+<th>[right-assoc]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>foo a1 a2</code></td>
+<td><code>foo a1 a2</code></td>
+<td><code>foo a1 a2</code></td>
+</tr>
+<tr>
+<td><code>foo a1 a2 a3</code></td>
+<td><code>foo (foo a1 a2) a3</code></td>
+<td><code>foo a1 (foo a2 a3)</code></td>
+</tr>
+<tr>
+<td><code>foo a1 a2 a3 a4</code></td>
+<td><code>foo (foo (foo a1 a2) a3) a4</code></td>
+<td><code>foo a1 (foo a2 (foo a3 a4))</code></td>
+</tr>
+<tr>
+<td>etc.</td>
+<td>etc.</td>
+<td>etc.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Remark.</em> The attributes <code>left-assoc</code> and <code>right-assoc</code> do not carry semantic meaning. They carry only syntactic meaning. Specifically speaking, they tell the <em>verifier</em> to accept patterns of the form <code>foo a1 a2 a3</code>, even if <code>foo</code> has been declared to have arity 2. Without these attributes, the verifier will reject the pattern <code>foo a1 a2 a3</code> because it is not wellformed.</p>
+<p>As an example, here is the declaration of <code>\or</code> using <code>left-assoc</code> attribute:</p>
+<pre class="language-text"><code>notation \or P Q = \implies (\neg P) Q [left-assoc]
+</code></pre>
+<p>Another neat example is a variant of <code>\forall</code> and <code>\exists</code> that allows multiple binders:</p>
+<pre class="language-text"><code>notation \forall* X P = \forall X P [binder, right-assoc]
+notation \exists* X P = \exists X P [binder, right-assoc]
+</code></pre>
+<p>Here, the <code>right-assoc</code> attribute tells the verifier to accept patterns of the form <code>\forall* X1 X2 ... Xn P</code> as a notation of the pattern <code>(\forall X1 ... (\forall Xn P) ...)</code>.</p>
+<h4 id="meta-notations">Meta-notations</h4>
+<p>Some notations are not definable in the logic. One such examples is <em>capture-avoiding substitution</em>. Specifically, we want to define <code>\subst X P Q</code> as a notation that represents the pattern obtained by substituting all free occurrences of <code>X</code> in <code>P</code> for <code>Q</code>, where alpha-renaming happens explicitly to prevent unintended variable capturing.</p>
+<p>We call such notations whose definitions cannot be formalized in AML <em>meta-notations</em>. Meta-notations are necessary in practice. The most important meta-notation is capture-avoiding-substitution, <code>\subst</code>, which is declared as a meta-notation as follows:</p>
+<pre class="language-text"><code>meta-notation \subst X P Q [required, desugar]
+</code></pre>
+<p>What the declaration says is that <code>\subst</code> expects three arguments, and the precise definition of <code>\subst</code> is given by the backends. All backends must provide an appropriate implementation of <code>\subst</code> as specified by the <code>[required]</code> attribute. The attribute <code>desugar</code> specifies that <code>\subst</code> should always be desugared (during runtime).</p>
+<h2 id="builtin-modules">Builtin modules</h2>
+<p>We present some builtin modules. There modules define all the basic derived constructs in AML. They will be implicitly imported by all AppKore modules.</p>
+<h3 id="basic-derived-constructs">Basic derived constructs</h3>
+<pre class="language-text"><code>module BASIC-DERIVED-CONSTRUCTS
+  meta-notation \subst X P Q                                    [required, desugar]
+  notation \neg P = \implies P \bot                             []
+  notation \or P Q = \implies (\neg P) Q                        [left-assoc]
+  notation \and P Q = \neg (\or (\neg P) (\neg Q))              [left-assoc]
+  notation \iff P Q = \and (\implies P Q) (\implies Q P)        []
+  notation \top = \neg \bot                                     []
+  notation \exists X P = \neg \forall X \neg P                  [binder]
+  notation \forall* X P = \forall X P                           [binder, right-assoc]
+  notation \exists* X P = \exists X P                           [binder, right-assoc]
+  notation \nu X P = \neg \mu X (\neg (\subst X (\neg X) P))    [binder]
+  notation \mu* X P = \mu X P                                   [binder, right-assoc]
+  notation \nu* X P = \nu X P                                   [binder, right-assoc]
+endmodule
+</code></pre>
+<p><em><strong>QUESTION.</strong></em> Suppose we want to write <code>\iff a b c</code> as a notation of <code>\and (\iff a b) (\iff b c)</code>, what should we do?</p>
+<h3 id="definedness">Definedness</h3>
+<pre class="language-text"><code>module DEFINEDNESS
+  import BASIC-DERIVED-CONSTRUCTS                             []
+  symbol \ceil                                                []
+  axiom \ceil X                                               []
+  notation \floor P = \neg (\ceil \neg P)                     []
+  notation \member x P = \ceil (\and x P)                     []
+  notation \equals P Q = \floor (\iff P Q)                    []
+  notation \subset P Q = \floor (\implies P Q)                []
+endmodule
+</code></pre>
+<h3 id="inhabitant">Inhabitant</h3>
+<pre class="language-text"><code>module INHABITANT
+  import DEFINEDNESS                                                  []
+  symbol \Sort                                                        []
+  symbol \inh                                                         []
+  notation \typeof X S = \subset X (\inh S)                           []
+  notation \forallIn X S P = \forall X (\implies (\typeof X S) P)     [binder]
+  notation \existsIn X S P = \exists X (\and (\typeof X S) P)         [binder]
+  notation \muIn X S P = \mu X (\and P (\inh S))                      [binder]
+  notation \nuIn X S P = \nu X (\and P (\inh S))                      [binder]
+endmodule
+</code></pre>
+<h2 id="appkore-verifier">AppKore verifier</h2>
+<p>It takes two processes to fully parse an AppKore module. The <em>parser</em> simply parses it following the grammar. Note that the grammar does not distinguish element variables from symbols and notations. Therefore, we need the second process, where a <em>verifier</em> analyzes the module and figures out which are element variables, which are symbols, and which are notations. In addition, the verifier checks if the module is wellformed.</p>
+<h4 id="identifier-analysis">Identifier analysis</h4>
+<p>In the grammar of AppKore, we use identifiers for element variables, symbols, and notations. The parser does not distinguish them. The verifier needs to. This process is called <em>identifier analysis</em>.</p>
+<p>Process <code>Identifier Analysis</code> is:</p>
+<ol>
+<li>If an identifier <code>id</code> has been declared as a symbol (or a hooked symbol) in the current module, or a module that is imported by the current module, then <code>id</code> is a symbol (or a hooked symbol);</li>
+<li>If an identifier <code>id</code> has been declared as a notation (or a hooked notation) in the current module, or a module that is imported by the current module, then <code>id</code> is a notation (or a hooked notation);</li>
+<li>Otherwise, <code>id</code> is an element variable.</li>
+</ol>
+<p>We use the term <em>current scope</em> to mean the current module or a module that is imported by the current module.</p>
+<h4 id="wellformedness-conditions-about-(hooked)-notations">Wellformedness conditions about (hooked) notations</h4>
+<p>In a notation declaration <code>notation foo X1 ... Xn = P [...]</code> or a hooked notation declaration <code>hooked-notation foo X1 ... Xn [...]</code>,  we require that:</p>
+<ol>
+<li><code>foo,X1,...,Xn</code> are distinct identifiers;</li>
+<li><code>foo</code> has not been declared in the current scope;</li>
+<li><code>P</code> doesn&apos;t contain <code>foo</code> (for notations);</li>
+<li><code>P</code> doesn&apos;t contain free variables (except placeholders <code>X1,...,Xn</code>) (for notations);</li>
+<li>If <code>left-assoc</code> or <code>right-assoc</code> is one of the attributes, then <code>n</code> is 2;</li>
+<li><code>left-assoc</code> and <code>right-assoc</code> cannot both be attributes;</li>
+</ol>
+<p>In a module, we require that:</p>
+<ol>
+<li>There is no cyclic (hooked) notation declarations;</li>
+</ol>
+<h4 id="wellformedness-conditions-about-patterns">Wellformedness conditions about patterns</h4>
+<p>We require that:</p>
+<ol>
+<li>All notations have the right number of arguments;</li>
+</ol>
+<h4 id="wellformedness-conditions-about-modules">Wellformedness conditions about modules</h4>
+<h2 id="translation-from-fullkore-to-appkore-(do-not-review)">Translation from FullKore to AppKore (DO NOT REVIEW)</h2>
+<p><strong>[Rule App-1].</strong> Translating applications (with <code>&gt;=1</code> argument patterns)</p>
+<pre class="language-text"><code>f{S1,...,Sk}(P1,...,Pn) =&gt; f P1 ... Pn
+
+For example:
+cons{S}(X:S,L:List{S}) =&gt; cons tr(X:S) tr(L:List{S})
+cons{List{S}}(X:List{S},L:List{List{S}}) =&gt; cons tr(X:List{S}) tr(L:List{List{S}})
+</code></pre>
+<p>Intuitively, we can overload <code>cons</code> in applicative Kore and do not specify the sort parameters. The drawback of this rule is that the <code>parse2</code> is harder to implement as it needs to reverse engineer the sort parameters. Also, it requires that the return sort of <code>f</code> is fully determined by the sorts of its arguments.</p>
+<p><strong>[Rule App-0].</strong> Translating applications (with no argument patterns)</p>
+<pre class="language-text"><code>f{S1,...,Sk}() =&gt; f S1 ... Sk
+</code></pre>
+<p><strong>[Rule EVar].</strong></p>
+<pre class="language-text"><code>X:S =&gt; x:S  // element variables are lower cases
+</code></pre>
+<p><strong>[Rule Propopositional].</strong></p>
+<pre class="language-text"><code>\and{S}(P,Q)     =&gt; \and P Q
+\or{S}(P,Q)      =&gt; \or P Q
+\implies{S}(P,Q) =&gt; \implies P Q
+\iff{S}(P,Q)     =&gt; \iff P Q
+\not{S}(P)       =&gt; \not_ S P
+</code></pre>
+<p><strong>[Rule Quantifier].</strong></p>
+<pre class="language-text"><code>\exists{S,R}(X:S,P) =&gt; \exists X:S P
+\forall{S,R}(X:S,P) =&gt; \forall X:S P
+</code></pre>
+<p><strong>[Rule Ceil/Floor].</strong></p>
+<pre class="language-text"><code>\ceil{S,R}(P)  =&gt; \ceil P
+\floor{S,R}(P) =&gt; \floor P
+</code></pre>
+<p><strong>[Rule Next/Rewrite].</strong></p>
+<pre class="language-text"><code>\next{S}(P,Q)     =&gt; \next P Q
+\rewrites{S}(P,Q) =&gt; \rewrites P Q
+</code></pre>
+<p><strong>[Rule Equallity].</strong></p>
+<pre class="language-text"><code>\equals{S,R}(P,Q) =&gt; \equals P Q
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#applicative-kore" class="bd-toc-link">Applicative Kore</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#appkore-parser" class="bd-toc-link">AppKore parser</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#keywords"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Keywords
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#identifiers"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Identifiers
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#sentences-and-modules"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Sentences and modules
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#some-remarks-on-notations"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Some remarks on notations
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#builtin-modules" class="bd-toc-link">Builtin modules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#basic-derived-constructs"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Basic derived constructs
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#definedness"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Definedness
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#inhabitant"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Inhabitant
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#appkore-verifier"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                AppKore verifier
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#translation-from-fullkore-to-appkore-(do-not-review)"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Translation from FullKore to AppKore (DO NOT REVIEW)
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
