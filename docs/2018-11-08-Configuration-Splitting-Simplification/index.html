@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="configuration-splitting-simplification">Configuration Splitting Simplification</h1>
+<h2 id="summary">Summary</h2>
+<p>If <code>&#x3C6;(X)</code> and <code>&#x3B1;(Z)</code> are function-like formulae, then</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) = &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;)
+</code></pre>
+<h3 id="implementation-concerns">Implementation concerns</h3>
+<p>We assume that</p>
+<ol>
+<li><code>&#x3C6;(X) = &#x3C6;t(X) &#x2227; &#x3C6;p(X)</code> where <code>&#x3C6;t(X)</code> is a function-like <strong>term</strong>
+and <code>&#x3C6;p(X)</code> is a predicate</li>
+<li><code>&#x3B1;(Z) = &#x3B1;t(Z) &#x2227; &#x3B1;p(Z)</code> where <code>&#x3B1;t(Z)</code> is a function-like <strong>term</strong>,
+and <code>&#x3B1;p(Z)</code> is a predicate</li>
+</ol>
+<p>If <code>&#x3C6;t(X)</code> and <code>&#x3B1;t(Z)</code> don&apos;t unify then</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) = &#x3C6;(X)
+</code></pre>
+<p>If <code>&#x3C6;t(X)</code> and <code>&#x3B1;t(Z)</code> unify with substitution <code>&#x3B8;</code> binding all variables from <code>Z</code>
+and with the unification predicate <code>&#x3B8;p(X)</code>, then</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) = &#x3C6;(X) &#x2227; &#xAC;(&#x3B8;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z)))
+</code></pre>
+<h2 id="background">Background</h2>
+<h3 id="functional-and-function-like-patterns">Functional and function-like patterns</h3>
+<p>See the <code>glossary.md</code> file for term definitions (e.g.
+<a href="../glossary/#functional">functional</a> and
+<a href="../glossary/#functionlike">function-like</a>).</p>
+<p>If <code>t</code> is functional (or function-like) and <code>&#x3C6;</code> is a predicate,
+then <code>t &#x2227; &#x3C6;</code> is function-like.</p>
+<p>In the sequel all of our pattern meta-variables will be assumes to denote
+function-like patterns unless otherwise stated.</p>
+<h3 id="obtaining-and-not-exists-patterns-from-unrolling-eventually.">Obtaining And-Not-Exists patterns from unrolling eventually.</h3>
+<p>As documented in <a href="../2018-11-08-One-Path-Reachability-Proofs/">One path reachability proofs</a>,</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2192; &#x25C6; &#x2203; Y . &#x3C8;(X, Y)
+</code></pre>
+<p>where <code>&#x3C6;</code> and <code>&#x3C8;</code> are function-like patterns, is equivalent to proving</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2192; &#x2203; Y . &#x3C8;(X, Y) &#x2228; &#x2022;&#x25C6; &#x2203; Y . &#x3C8;(X, Y)`
+</code></pre>
+<p>We can now move <code>&#x2203; Y . &#x3C8;(X, Y)</code> to the left of the implication,
+and (assuming law of excluded middle) we obtain the equivalent:</p>
+<pre class="language-text"><code>&#x2200; X . &#x3C6;(X) &#x2227; &#xAC;&#x2203; Y . &#x3C8;(X, Y) &#x2192; &#x2022;&#x25C6; &#x2203; Y . &#x3C8;(X, Y)`
+</code></pre>
+<h3 id="obtaining-and-not-exists-patterns-from-applying-one-step">Obtaining And-Not-Exists patterns from applying one step</h3>
+<p>When doing one-path reachability proofs and applying an axiom,
+<code>&#x2200; Z . &#x3B1;(Z) &#x2192; &#x2022;&#x3B2;(Z)</code>, where <code>&#x2022;</code> is the strong-next symbol (aka &apos;next&apos;),
+to the following reachability goal</p>
+<pre class="language-text"><code>&#x2200; X . &#x3A6;(X) &#x2192; &#x2022;&#x25C6; &#x2203; Y . &#x3C8;(X, Y)
+</code></pre>
+<p>the result will look something like</p>
+<pre class="language-text"><code>(&#x2200; X . &#x3A6;&apos;(X) &#x2192; &#x25C6; &#x2203; Y . &#x3C8;(X, Y))
+&#x2227;
+(&#x2200; X . &#x3A6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) &#x2192; &#x2022;&#x25C6; &#x2203; Y . &#x3C8;(X, Y))
+</code></pre>
+<h2 id="problem">Problem</h2>
+<p>We want to rewrite <code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z))</code> part of the pattern above
+to something more manageable, preferably something that does not use <code>not</code>
+and <code>exists</code>, except in cases where it can be handled by an SMT solver.</p>
+<p>We assume that <code>&#x3C6;(X)</code> and <code>&#x3B1;(Z)</code> are function-like formulae.</p>
+<h3 id="justification">Justification</h3>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z))
+    =  &#x3C6;(X) &#x2227; (&#x2200; Z. &#xAC;&#x3B1;(Z))           -- &#xAC; &#x2203; = &#x2200; &#xAC;
+    =  &#x2200; Z. (&#x3C6;(X) &#x2227; &#xAC;&#x3B1;(Z))           -- &#x3C6;(X) not depending on Z
+    =  &#x2200; Z. (&#x3C6;(X) &#x2227; &#x2308;&#x3C6;(X) &#x2227; &#xAC;&#x3B1;(Z)&#x2309;)  -- &#x3C6;(x) is function-like
+    =  &#x2200; Z. (&#x3C6;(X) &#x2227; &#x2308;&#x3C6;(X)&#x2309; &#x2227; &#xAC;&#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;) -- proven below
+    =  &#x2200; Z. (&#x3C6;(X) &#x2227; &#xAC;&#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;)
+    =  &#x3C6;(X) &#x2227; (&#x2200; Z. &#xAC;&#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;)  -- &#x3C6;(X) not depending on Z
+    =  &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;) -- &#xAC; &#x2203; = &#x2200; &#xAC;
+</code></pre>
+<h3 id="missing-details">Missing details</h3>
+<h4 id="%E2%8C%88%CF%86-%E2%88%A7-%C2%AC%CE%B2%E2%8C%89-%3D-%E2%8C%88%CF%86%E2%8C%89-%E2%88%A7-%C2%AC%E2%8C%88%CF%86-%E2%88%A7-%CE%B2%E2%8C%89"><code>&#x2308;&#x3C6; &#x2227; &#xAC;&#x3B2;&#x2309; = &#x2308;&#x3C6;&#x2309; &#x2227; &#xAC;&#x2308;&#x3C6; &#x2227; &#x3B2;&#x2309;</code></h4>
+<p>for any function-like formula <code>&#x3C6;</code> and for any ML formula <code>&#x3B2;</code>.</p>
+<p><strong>Proof:</strong></p>
+<pre class="language-text"><code>&#x2308;&#x3C6; &#x2227; &#xAC;&#x3B2;&#x2309;
+    = &#x2203; x. x&#x2208; (&#x3C6; &#x2227; &#xAC;&#x3B2;)
+    = &#x2203; x. x&#x2208; &#x3C6; &#x2227; x&#x2208; &#xAC;&#x3B2;
+    = &#x2203; x. x&#x2208; &#x3C6; &#x2227; &#xAC;x&#x2208; &#x3B2; 
+    = &#x2203; x. x = &#x3C6; &#x2227; &#xAC;x&#x2208; &#x3B2;  //&#x3C6; is function-like
+    = &#x2203; x. x = &#x3C6; &#x2227; &#xAC;&#x3C6;&#x2208; &#x3B2;  //substitution
+    = (&#x2203; x. x = &#x3C6;) &#x2227; &#xAC;&#x3C6;&#x2208; &#x3B2;
+    = &#x2308;&#x3C6;&#x2309; &#x2227; &#xAC;&#x3C6;&#x2208; &#x3B2;  // properties of &#x2308;_&#x2309;
+    = &#x2308;&#x3C6;&#x2309; &#x2227; &#xAC;&#x2308;&#x3C6; &#x2227; &#x3B2;&#x2309;  // definition of &#x2208; 
+</code></pre>
+<h3 id="implementation-concerns-1">Implementation concerns</h3>
+<p>We have shown above that</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) = &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;)
+</code></pre>
+<p>Now, if</p>
+<ol>
+<li><code>&#x3C6;(X) = &#x3C6;t(X) &#x2227; &#x3C6;p(X)</code> where <code>&#x3C6;t(X)</code> is a function-like <strong>term</strong>
+and <code>&#x3C6;p(X)</code> is a predicate</li>
+<li><code>&#x3B1;(Z) = &#x3B1;t(Z) &#x2227; &#x3B1;p(Z)</code> where <code>&#x3B1;t(Z)</code> is a function-like <strong>term</strong>,
+and <code>&#x3B1;p(Z)</code> is a predicate</li>
+</ol>
+<p>Then we can further expand the above as:</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z)) = &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;)
+    =  &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x2308;&#x3C6;t(X) &#x2227; &#x3C6;p(X) &#x2227; &#x3B1;t(Z) &#x2227; &#x3B1;p(Z)&#x2309;)
+    =  &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. (&#x2308;&#x3C6;t(X) &#x2227; &#x3B1;t(Z)&#x2309; &#x2227; &#x3C6;p(X) &#x2227; &#x3B1;p(Z)))
+</code></pre>
+<p>Now we need to do a case analysis on whether <code>&#x3C6;t(X)</code> and <code>&#x3B1;t(Z)</code> are unifiable.
+If they are not, then <code>&#x2308;&#x3C6;t(X) &#x2227; &#x3B1;t(Z)&#x2309;</code> is <code>&#x22A5;</code>, hence</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. (&#x2308;&#x3C6;t(X) &#x2227; &#x3B1;t(Z)&#x2309; &#x2227; &#x3C6;p(X) &#x2227; &#x3B1;p(Z))) = &#x3C6;(X)
+</code></pre>
+<p>If <code>&#x3C6;t(X)</code> and <code>&#x3B1;t(Z)</code> unify with substitution <code>&#x3B8;</code> binding all variables from <code>Z</code>
+and with the unification predicate <code>&#x3B8;p(X)</code>, then we can apply the substitution
+and remove the quantification, obtaining</p>
+<pre class="language-text"><code>&#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. &#x3B1;(Z))
+    =  &#x3C6;(X) &#x2227; (&#xAC; &#x2203; Z. (&#x2308;&#x3C6;t(X) &#x2227; &#x3B1;t(Z)&#x2309; &#x2227; &#x3C6;p(X) &#x2227; &#x3B1;p(Z)))
+    =  &#x3C6;(X) &#x2227; &#xAC; (&#x3B8;p(X) &#x2227; &#x3C6;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z)) &#x2227; (&#x2203; Z. &#x3B8;))
+    =  &#x3C6;(X) &#x2227; &#xAC; (&#x3B8;p(X) &#x2227; &#x3C6;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z)))
+    =  &#x3C6;(X) &#x2227; (&#xAC; (&#x3B8;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z))) &#x2228; &#xAC; &#x3C6;p(X))
+    =  (&#x3C6;(X) &#x2227; &#xAC; (&#x3B8;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z))) &#x2228; (&#x3C6;(X) &#x2227; &#xAC; &#x3C6;p(X))
+    =  (&#x3C6;(X) &#x2227; &#xAC; (&#x3B8;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z)))) &#x2228; (&#x3C6;t(X) &#x2227; &#x3C6;p(X) &#x2227; &#xAC; &#x3C6;p(X))
+    =  &#x3C6;(X) &#x2227; &#xAC; (&#x3B8;p(X) &#x2227; &#x3B8;(&#x3B1;p(Z)))
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#configuration-splitting-simplification" class="bd-toc-link">Configuration Splitting Simplification</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#summary" class="bd-toc-link">Summary</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-concerns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Implementation concerns
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#background" class="bd-toc-link">Background</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#functional-and-function-like-patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Functional and function-like patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#obtaining-and-not-exists-patterns-from-unrolling-eventually."
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Obtaining And-Not-Exists patterns from unrolling eventually.
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#obtaining-and-not-exists-patterns-from-applying-one-step"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Obtaining And-Not-Exists patterns from applying one step
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#problem" class="bd-toc-link">Problem</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#justification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Justification
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#missing-details" class="bd-toc-link">Missing details</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%E2%8C%88%CF%86-%E2%88%A7-%C2%AC%CE%B2%E2%8C%89-%3D-%E2%8C%88%CF%86%E2%8C%89-%E2%88%A7-%C2%AC%E2%8C%88%CF%86-%E2%88%A7-%CE%B2%E2%8C%89"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>&#x2308;&#x3C6; &#x2227; &#xAC;&#x3B2;&#x2309; = &#x2308;&#x3C6;&#x2309; &#x2227; &#xAC;&#x2308;&#x3C6; &#x2227; &#x3B2;&#x2309;</code>
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-concerns-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Implementation concerns
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="owise-encoding">Owise encoding</h1>
+<h2 id="background">Background</h2>
+<p>K allows defining functions with a default case.
+A generic function definition would have multiple cases defined like this
+(not using actual K syntax):</p>
+<pre class="language-text"><code>f(ti1(xi1, ..., xi_ji), ..., ti_k(xi1, ..., xi_ji))
+    = Ti(xi1, ..., xi_ji)
+    if Pi(xi1, ..., xi_ji)
+</code></pre>
+<p>and it would have one default (<code>owise</code>) case that looks like this:</p>
+<pre class="language-text"><code>f(t1(x1, ..., xj), ..., tk(x1, ..., xj))
+    = T(x1, ..., xj)
+    if P(x1, ..., xj) [owise]
+</code></pre>
+<p>Note that all the above variables have implicit universal quantifiers.</p>
+<h2 id="current-encoding">Current encoding</h2>
+<p>This is roughly encoded as</p>
+<pre class="language-text"><code>f(t1(x1, ..., xj), ..., tk(x1, ..., xj))
+    = T(x1, ..., xj)
+    if And(
+        Not(
+            Or{i=1, n} (
+                Ceil(
+                    exists xi1 . exist xi2 . ... exists xi_ji (
+                        And(
+                            Pi(xi1, ..., xi_ji)
+                            f(ti1(xi1, ..., xi_ji), ..., ti_k(xi1, ..., xi_ji))
+                        )
+                    )
+                )
+            )
+        )
+        P(x1, ..., xj)
+    )
+</code></pre>
+<p>Note that the <code>Ceil</code> term in the <code>Or</code> is almost always <code>top</code> (if it isn&apos;t then
+it&apos;s likely that there is an error in the function definition), so the <code>Not</code>
+term evaluates to <code>bottom</code>, so the entire condition evaluates to <code>bottom</code>.</p>
+<h2 id="decision">Decision</h2>
+<p>Encode the axiom as:</p>
+<pre class="language-text"><code>f(t1(x1, ..., xj), ..., tk(x1, ..., xj))
+    = T(x1, ..., xj)
+    if And(
+        Not(
+            Or{i = 1, n}(
+                exists xi1 . exist xi2 . ... exists xi_ji (
+                    And(
+                        Pi(xi1, ..., xi_ji)
+                        And{p = 1, k}(
+                            Ceil(
+                                And(ti_p(xi1, ..., xi_ji), tp(x1, ..., xj))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        P(x1, ..., xj)
+    )
+</code></pre>
+<p>Note that, as in the current encoding, only the <code>x1, ..., xj</code> variables are
+(implicitly) quantified universally here, while all the other variables have
+existential quantifiers.</p>
+<p>There are two changes from the current encoding:</p>
+<ol>
+<li>There is no <code>Ceil</code> on top of the <code>exists</code> term, which becomes a direct
+child of <code>Or</code></li>
+<li>The first term of the <code>And</code> inside <code>exists</code> changed from<pre class="language-text"><code>f(ti_1(xi1, ..., xi_ji), ..., ti_k(xi1, ..., xi_ji))
+</code></pre>
+to<pre class="language-text"><code>And{p = 1, k}(
+    Ceil(
+        And(ti_p(xi1, ..., xi_ji), tp(x1, ..., xj))
+    )
+)
+</code></pre>
+</li>
+</ol>
+<h2 id="equals-vs-and-explanation">Equals vs And explanation</h2>
+<p>One may be tempted to use <code>Equals(ti_p(xi1, ..., xi_ji), tp(x1, ..., xj))</code>
+instead of <code>And(ti_p(xi1, ..., xi_ji), tp(x1, ..., xj))</code>. However, that does
+not work.</p>
+<p>Let us say that we have a function <code>f</code> of one argument and a non-functional
+constructor <code>C</code> also of one argument. Let us say that our function is defined
+as</p>
+<pre class="language-text"><code>f(C(x)) = 3
+f(x) = 7 owise
+</code></pre>
+<p>Encoding the owise rule as</p>
+<pre class="language-text"><code>f(x) = 7 if not (exist y . x = C(y))
+</code></pre>
+<p>would fail since <code>x=C(y)</code> would always evaluate to false, so the entire
+condition would always evaluate to true.</p>
+<p>Therefore, we have to encode the rule as</p>
+<pre class="language-text"><code>f(x) = 7 if not (exist y . ceil(x and C(y)))
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#owise-encoding" class="bd-toc-link">Owise encoding</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#current-encoding"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Current encoding
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#equals-vs-and-explanation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Equals vs And explanation
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
