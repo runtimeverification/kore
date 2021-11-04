@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="algorithm-for-function-evaluation">Algorithm for function evaluation</h1>
+<h2 id="problem">Problem</h2>
+<p>When doing normal execution, it is natural to evaluate functions immediately
+after applying a rule, when simplifying the result. However, this does not
+always work when doing symbolic execution because recursive functions may
+be expanded indefinitely.</p>
+<p>As an example, if the length of a list is defined as</p>
+<pre class="language-text"><code>len(Nil) = 0
+len(Cons(_, X)) = 1 + len(X)
+</code></pre>
+<p>then, if <code>Y</code> is a symbolic variable and we try to evaluate <code>len(Y)</code>, we can
+expand it to the infinite sequence</p>
+<pre class="language-text"><code>0 and Y = Nil
+1 and Y = Cons(Y1, Nil)
+2 and Y = Cons(Y1, Cons(Y2, Nil))
+...
+</code></pre>
+<h2 id="partial-solution">Partial solution</h2>
+<p>We will separate functions into safe functions, unsafe but acceptable functions,
+and complicated functions.</p>
+<p>First, a symbol is constructor-like if it is a constructor, a sort injection,
+or a &quot;constructor modulo axioms&quot; like Map.concat and Map.elem
+(not defined precisely here).</p>
+<h3 id="safe-functions">Safe functions</h3>
+<p>A function is safe if</p>
+<ol>
+<li>The function is builtin and does not have axioms for non-builtin evaluation
+(e.g. <code>+Int</code>, but not <code>bitRangeInt</code> for the EVM semantics since it also has a
+non-builtin definition).</li>
+<li>The function evaluates (including the predicate) to either
+<ul>
+<li>patterns without free variables (i.e. constant functions)</li>
+<li>patterns whose symbols are constructor-like
+(including <code>Map.concat and kseq</code>)</li>
+<li>patterns whose symbols are either constructor-like or functions which
+are safe according to this definition.</li>
+</ul>
+</li>
+</ol>
+<p>Examples:</p>
+<ul>
+<li><code>+Int</code>, <code>.Map</code></li>
+<li><code>id(x) := x</code></li>
+<li><code>succ(x) := x +Int 1</code></li>
+<li><code>bitRangeInt</code> for the EVM semantics since it evaluates to safe functions.</li>
+<li><code>initStateCell</code> where <code>initStateCell(.KList)=&gt;&apos;&lt;state&gt;&apos;(&apos;.Map&apos;(.KList))</code>
+since it evaluates to patterns with constructor-like symbols.</li>
+<li><code>initTCell</code> where
+<code>initTCell(Init)=&gt;&apos;&lt;T&gt;&apos;(initKCell(Init),initStateCell(.KList))</code>
+(assuming that <code>initKCell</code> is also safe) since it evaluates to
+since it evaluates to patterns with constructor-like symbols and safe
+symbols.</li>
+</ul>
+<h3 id="acceptable-functions">Acceptable functions</h3>
+<p>A function is acceptable if</p>
+<ol>
+<li>The function is builtin and does not have axioms for non-builtin evaluation</li>
+<li>The function evaluates (including the predicate) to either
+<ul>
+<li>patterns without free variables</li>
+<li>patterns whose symbols are constructor-like</li>
+<li>patterns whose terms have constructor-like symbols at the top</li>
+<li>patterns whose symbols are either constructor-like or functions which
+are safe according to this definition.</li>
+</ul>
+</li>
+</ol>
+<p>Examples:</p>
+<ol>
+<li>all safe functions are acceptable</li>
+<li><code>plus</code> for Peano arithmetic where <code>plus(s(x), y) = s(plus(x, y))</code> and
+<code>plus(0, y) = y</code>.
+<ul>
+<li>Unsafe because it is not builtin, and it evaluates to a pattern
+which contains <code>plus</code>, so it does not fit the second part of the
+safe function definition.</li>
+<li>Acceptable because the result has a constructor at the top.</li>
+</ul>
+</li>
+<li><code>parseHexBytes</code> from the erc20 verification semantics, where
+<ul>
+<li><code>parseHexBytes(&quot;&quot;) = .WordStack</code></li>
+<li><code>parseHexBytes(S) = :Int_WordStack(parseHexWord(substr(S, 0, 2)), parseHexBytes(substr(2, len(s)))) if len(S) &gt;= 2</code></li>
+<li>Unsafe for the same reason as <code>plus</code>.</li>
+<li>Acceptable because, on both branches, the result has a constructor at the
+top</li>
+</ul>
+</li>
+</ol>
+<h3 id="complicated-functions">Complicated functions</h3>
+<p>A function is complicated if it is not acceptable.</p>
+<p>Examples:</p>
+<ol>
+<li>The <code>len</code> function defined above.
+<ul>
+<li>Not acceptable because <code>1 +Int len(x)</code> has <code>+Int</code> at the top, which
+is not a constructor, and it does not contain only
+constructors and acceptable functions (i.e. it contains <code>len</code>).</li>
+</ul>
+</li>
+</ol>
+<h3 id="safe-evaluation-results">Safe evaluation results</h3>
+<p><code>f(...)</code> evaluates to a safe result if any of the following is true</p>
+<ol>
+<li>The evaluation process does not add, to the
+substitution/predicate, the following:
+<ul>
+<li>substitutions <code>X=p</code> where <code>X</code> is a symbolic variable
+and <code>p</code> contains axiom variables, but it&apos;s
+not itself a variable
+(<code>x=constant</code> and <code>x=y</code> are fine, <code>x=f(y)</code> is not fine). Note that
+<code>x=y</code> should not occur in practice, since we would actually use it as
+<code>y=x</code>, i.e. <code>normal-variable=symbolic-variable</code>.</li>
+</ul>
+</li>
+<li>The result&apos;s symbols symbols are either constructor-like or safe functions
+(both in the term and the predicate).</li>
+</ol>
+<p>Examples:</p>
+<p>The following are safe:</p>
+<ol>
+<li>evaluating something to <code>2 and []</code>
+since the predicate/substitution is empty.</li>
+<li>evaluating something to <code>x +Int y and []</code>
+since the predicate/substitution is empty.</li>
+<li>evaluating something to <code>f(x) and [y=3]</code>
+since <code>3</code> does not contain variables.</li>
+<li>evaluating something to <code>f(x) and [y=z]</code>
+since <code>z</code> is a variable.</li>
+<li>evaluating <code>plus(s(s(0)), y)</code> to <code>s(plus(s(0), y))</code> with the rule above
+since we&apos;re not adding anything to the substitution/predicate.</li>
+</ol>
+<p>The following are not safe:</p>
+<ol>
+<li>evaluating <code>plus(x, y)</code> with the axiom
+<code>plus(s(x&apos;), y&apos;) = s(plus(x&apos;, y&apos;))</code>
+since we would use <code>x=s(x&apos;)</code> in the substitution and the result uses
+an unsafe function, i.e. <code>plus</code></li>
+<li>evaluating <code>parseHexBytes(x)</code> with the second axiom above since
+the result contains <code>parseHexBytes</code>, which is not safe</li>
+</ol>
+<h3 id="acceptable-evaluation-results">Acceptable evaluation results</h3>
+<ol>
+<li>Any safe result is also acceptable.</li>
+<li>Any result whose term symbols are either constructors-like or
+acceptable functions, is acceptable.</li>
+<li>Any result whose term has a constructor-like symbol at the top is acceptable.</li>
+</ol>
+<p>Examples:</p>
+<p>The following are acceptable:</p>
+<ol>
+<li>evaluating <code>plus(x, y)</code> to <code>s(plus(z, y)) and [x=s(z)]</code>
+since the term <code>s(plus(z, y))</code> has a constructor at the top.</li>
+<li>evaluating <code>parseHexBytes(x)</code> with the second axiom above
+since the term has a constructor at the top.</li>
+<li>evaluating <code>len(X)</code> if <code>len</code> would be defined over Peano integers,
+i.e. <code>len(Cons(_, X)) = s(len(X))</code>,
+since the term has a constructor at the top.</li>
+</ol>
+<p>The following is not acceptable:</p>
+<ol>
+<li>evaluating <code>len(X)</code> to <code>1 +Int len(Y) and [X=Cons(_, Y)]</code> since <code>+Int</code>
+is not a constructor and <code>len</code> is not acceptable.</li>
+</ol>
+<h3 id="function-evaluation">Function evaluation</h3>
+<ol>
+<li>Any function application that evaluates to safe results is evaluated at
+simplification time.</li>
+<li>Some function applications that evaluate to acceptable results are
+evaluated at unification/matching time.
+To be specific, whenever we try to unify <code>sigma(s1..sn)</code> with <code>tau(t1..tn)</code>
+and <code>sigma(s1..sn)</code> is a safe result, or can be evaluated to one
+and <code>tau(t1..tn)</code> is an acceptable result or can be evaluated to one
+(or the other way around), we evaluate both of them until they
+can&apos;t be further evaluated, or both are constructor-like, or have
+constructor-like symbols at the top.</li>
+</ol>
+<p>Evaluating any other function applications (e.g. containing unsafe results)
+is not explored here. We may try to print an error, or we may try to do the
+expansion mentioned above, hoping that it will work.</p>
+<p>As an example, we are still not able to evaluate <code>len(Y)</code> where <code>len</code>
+is the function defined above. Note that the function becomes acceptable
+if we use Peano arithemtic, with <code>Succ</code> and <code>Zero</code> as constructors. Also,
+we could add the constraint <code>forall Z . len(Z) &gt;= 0</code>, which would make it
+evaluable in contexts where the SMT can stop the infinite expansion,
+e.g. <code>10=len(Y)</code>.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#algorithm-for-function-evaluation" class="bd-toc-link">Algorithm for function evaluation</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#partial-solution" class="bd-toc-link">Partial solution</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#safe-functions"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Safe functions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#acceptable-functions"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Acceptable functions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#complicated-functions"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Complicated functions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#safe-evaluation-results"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Safe evaluation results
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#acceptable-evaluation-results"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Acceptable evaluation results
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#function-evaluation"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Function evaluation
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

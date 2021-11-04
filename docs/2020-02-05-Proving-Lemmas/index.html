@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="proving-lemmas">Proving lemmas</h1>
+<h2 id="background">Background</h2>
+<p>In order to prove rewrite claims, we usually need lemmas describing
+the function symbols we use. As an example, we may have a lemma saying that the
+length of a string is not negative, i.e.</p>
+<pre class="language-text"><code>rule length(S) &gt; 0 =&gt; true
+</code></pre>
+<p>The lemmas that I have seen are, usually, given without proofs.</p>
+<p>There is an effort by daejunpark and malturki to prove some properties
+for Casper, simulating Coq-style proofs:
+https://github.com/runtimeverification/beacon-chain-verification/tree/static-model-coq-specs-dependencies/casper/k</p>
+<h2 id="summary">Summary</h2>
+<p>This document attempts to provide some hints about how to prove the lemmas we
+use for various semantics, in a way similar to what daejunpark and malturki
+did, but in a simpler and less powerful way. Hopefully, proofs done this way
+do not require many additional features from the frontend and backend,
+and can be later transformed into full proofs (which may require additional
+features).</p>
+<p>These proofs would need the following:</p>
+<ul>
+<li>Ideally, an induction engine. Practically, at least in the beginning:
+<ul>
+<li>we would find a set of symbols that generate a sort
+(e.g. <code>0</code> and <code>\x -&gt; x+1</code> for natural numbers, initially without any proof)</li>
+<li>we would provide an induction hypothesis</li>
+<li>we would provide some claims based on that hypothesis
+(<code>k</code> macros would be nice)</li>
+<li>the Haskell backend would check the claims.</li>
+<li>we could try to become more rigorous in the future.</li>
+</ul>
+</li>
+<li>Some tools to direct proofs
+<ul>
+<li>Marking rules as concrete / not concrete for a single proof</li>
+<li>Providing hints about which splits are allowed
+<ul>
+<li>most of these can be done manually, in the specification, but there are
+other ways.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="example-1">Example 1</h2>
+<p>We have the following definition, taken from the evm repository:</p>
+<pre class="language-text"><code>syntax Bytes ::= &quot;nilBytes&quot;
+               | Int &quot;:&quot; Bytes
+
+syntax Int ::= lengthBytes(Bytes)
+               [function, functional, smtlib(lengthBytes)]
+syntax Int ::= lengthBytes(Bytes, Int)
+               [function, klabel(lengthBytesAux), smtlib(lengthBytesAux)]
+rule lengthBytes(BS) =&gt; lengthBytes(BS, 0)
+rule lengthBytes(nilBytes, SIZE) =&gt; SIZE
+rule lengthBytes(B : BS, SIZE) =&gt; lengthBytes(BS, SIZE +Int 1)
+</code></pre>
+<p>And we would like to prove the following lemmas:</p>
+<pre class="language-text"><code>rule lengthBytes(BS, i) ==Int i +Int lengthBytes(BS)
+rule lengthBytes(BS) &gt;=Int 0 =&gt; true
+rule lengthBytes(B:BS) ==Int 1 +Int lengthBytes(BS)
+</code></pre>
+<p>We would prove them by induction on BS. The set of constructors/generators, is,
+of course, <code>nilBytes</code> and <code>:</code>.</p>
+<p>Let&#x2019;s start with the first claim. We can write it as</p>
+<pre class="language-text"><code>forall BS . forall i . lengthBytes(BS, i) ==Int i +Int lengthBytes(BS)
+</code></pre>
+<p>We will prove it by structural induction on <code>BS</code>. To do that, let us define
+a macro:</p>
+<pre class="language-text"><code>P(i, BS) :=  lengthBytes(BS, i) ==Int i +Int lengthBytes(BS)
+</code></pre>
+<p>Next, we will attempt to prove <code>forall i . P(i, nilBytes)</code> and
+<code>P(i, B:BS) if (forall j . P(j, BS))</code>.
+To do that, we will use the following rewrite rule: <code>start(X) =&gt; end(X)</code>
+and the following hand-written claims:</p>
+<pre class="language-text"><code>start(P(i, nilBytes)) =&gt; end(true)
+start(P(i, B:BS)) =&gt; end(true)
+    if P(i + 1, BS) and P(1, BS)
+</code></pre>
+<p>The backend will prove them like this:</p>
+<pre class="language-text"><code>start(P(i, nilBytes))
+  = start(lengthBytes(nilBytes, i) ==Int i +Int lengthBytes(nilBytes))
+  = start(i ==Int i +Int lengthBytes(nilBytes, 0))
+  = start(i ==Int i +Int 0)
+  = start(true)
+  =&gt; end(true)
+</code></pre>
+<p>and</p>
+<pre class="language-text"><code>start(P(i, B:BS)) and P(i + 1, BS) and P(1, BS)
+  = start(lengthBytes(B:BS, i) ==Int i +Int lengthBytes(B:BS))
+        and  lengthBytes(BS, i + 1) ==Int i + 1 +Int lengthBytes(BS))
+        and  lengthBytes(BS, 1) ==Int 1 +Int lengthBytes(BS))
+  = start(lengthBytes(BS, i + 1) ==Int i + lengthBytes(B:BS, 0) )
+        and  lengthBytes(BS, i + 1) ==Int i + 1 +Int lengthBytes(BS))
+        and  lengthBytes(BS, 1) ==Int 1 +Int lengthBytes(BS))
+  = start(lengthBytes(BS, i + 1) ==Int i + lengthBytes(BS, 1) )
+        and  lengthBytes(BS, i + 1) ==Int i + 1 +Int lengthBytes(BS))
+        and  lengthBytes(BS, 1) ==Int 1 +Int lengthBytes(BS))
+  =&gt; end(lengthBytes(BS, i + 1) ==Int i + lengthBytes(BS, 1) )
+        and  lengthBytes(BS, i + 1) ==Int i + 1 +Int lengthBytes(BS))
+        and  lengthBytes(BS, 1) ==Int 1 +Int lengthBytes(BS))
+</code></pre>
+<p>And the SMT solver will be able to check that this is the expected result.</p>
+<p>If we have this, we can try proving the second lemma. We will start by adding
+the first lemma as a SMT lemma, since it was proven, then we will continue as
+before, by defining a macro: <code>P(BS) := lengthBytes(BS) &gt;=Int 0</code>,
+and we will attempt to prove <code>hypothesis(nilBytes)</code> and
+<code>P(B:BS) if P(BS)</code>. We will use the same rewrite rule:
+<code>start(X) =&gt; end(X)</code> and the following claims:</p>
+<pre class="language-text"><code>start(P(nilbytes)) =&gt; end(true)
+start(P(B:BS)) =&gt; end(true) if P(BS)
+</code></pre>
+<p>The backend will prove the first one like this:</p>
+<pre class="language-text"><code>start(P(nilbytes))
+   = start(lengthBytes(nilBytes) &gt;=Int 0))
+   = start(lengthBytes(nilBytes, 0) &gt;=Int 0)
+   = start(0 &gt;=Int 0)
+   = start(true)
+   =&gt; end(true)
+</code></pre>
+<p>And the second one like this:</p>
+<pre class="language-text"><code>start(P(B:BS)) and P(BS)
+  = start(lengthBytes(B:BS) &gt;=Int 0) and lengthBytes(BS) &gt;=Int 0
+  = start(lengthBytes(B:BS, 0) &gt;=Int 0) and lengthBytes(BS, 0) &gt;=Int 0
+  = start(lengthBytes(BS, 1) &gt;=Int 0) and lengthBytes(BS, 0) &gt;=Int 0
+  =&gt; end(lengthBytes(BS, 1) &gt;=Int 0) and lengthBytes(BS, 0) &gt;=Int 0
+</code></pre>
+<p>And the SMT solver should, hopefully, be able to apply the second lemma,
+<code>lengthBytes(BS, i) ==Int i +Int lengthBytes(BS)</code>, to prove this one.</p>
+<p>The third one should be trivial.</p>
+<h2 id="example-2">Example 2</h2>
+<p>We assume the third lemma above as a simplification lemma. We will also assume
+that the <code>lengthBytes</code> rules are marked as concrete. We will need a way to make
+sure that <code>substrBytes(BS, 0, lengthBytes(BS)) == BS</code> does not become a
+substitution.</p>
+<p>Definition:</p>
+<pre class="language-text"><code>syntax Bytes ::= &quot;nilBytes&quot;
+               | Int &quot;:&quot; Bytes
+
+syntax Bytes ::= substrBytes(Bytes, Int, Int) [function]
+rule substrBytes(BS, 0, 0) =&gt; nilBytes
+rule substrBytes(B : BS, N, M) =&gt;
+    substrBytes(BS, N -Int 1, M -Int 1) requires N &gt;Int 0
+rule substrBytes(B : BS, 0, M) =&gt;
+    B : substrBytes(BS, 0, M -Int 1) requires M &gt;Int 0
+</code></pre>
+<p>We want to prove</p>
+<pre class="language-text"><code>substrBytes(BS, 0, N) = BS if N == lengthBytes(BS)
+</code></pre>
+<p>The induction hypothesis is</p>
+<pre class="language-text"><code>P(BS) := substrBytes(BS, 0, lengthBytes(BS)) == BS
+</code></pre>
+<p>We want to prove <code>P(nilBytes)</code> and
+<code>P(B:BS) if P(BS)</code>. We will have the same
+<code>start(X) =&gt; end(X)</code> production as above. These are the hand-written <code>k</code> rules
+that we will prove:</p>
+<pre class="language-text"><code>rule start(P(nilBytes)) =&gt; end(true)
+rule start(P(B:BS)) =&gt; end(true) if P(BS)
+</code></pre>
+<p>The Haskell backend will prove them like this:</p>
+<pre class="language-text"><code>start(P(nilBytes))
+  = start(substrBytes(nilBytes, 0, lengthBytes(nilBytes)) == nilBytes)
+  = start(substrBytes(nilBytes, 0, 0) == nilBytes)
+  = start(nilBytes == nilBytes)
+  = start(true)
+  =&gt; end(true)
+</code></pre>
+<p>and</p>
+<pre class="language-text"><code>start(P(B:BS)) and P(BS)
+  = start(substrBytes(B:BS, 0, lengthBytes(B:BS)) == B:BS)
+        and substrBytes(BS, 0, lengthBytes(BS)) == BS
+  = start(substrBytes(B:BS, 0, 1 + lengthBytes(BS)) == B:BS)
+        and substrBytes(BS, 0, lengthBytes(BS)) == BS
+  = start(B : substrBytes(BS, 0, 1 + lengthBytes(BS) - 1) == B:BS)
+        and substrBytes(BS, 0, lengthBytes(BS)) == BS
+  // Hopefully equals simplification can help us, otherwise we need another
+  // lemma.
+  = start(substrBytes(BS, 0, 1 + lengthBytes(BS) - 1) == BS)
+        and substrBytes(BS, 0, lengthBytes(BS)) == BS
+  =&gt; end(substrBytes(BS, 0, 1 + lengthBytes(BS) - 1) == BS)
+        and substrBytes(BS, 0, lengthBytes(BS)) == BS
+</code></pre>
+<p>And the SMT can hopefully solve this.</p>
+<h2 id="example-3">Example 3</h2>
+<p>This is an actual lemma from the evm repository.</p>
+<p>We will assume the following lemma:</p>
+<pre class="language-text"><code>Bytes2Int(B:BS, BE, Unsigned) =
+   B *Int (256 ^ length(BS)) + Bytes2Int(BS, BE, Unsigned)
+</code></pre>
+<p>And the following definition:</p>
+<pre class="language-text"><code>syntax Int ::= #asWord ( ByteArray ) [function, smtlib(asWord)]
+rule #asWord(WS) =&gt; chop(Bytes2Int(WS, BE, Unsigned))
+
+syntax Int ::= chop ( Int ) [function, functional, smtlib(chop)]
+rule chop ( I:Int ) =&gt; I modInt pow256 [concrete, smt-lemma]
+
+syntax Int ::= Int &quot;modInt&quot; Int
+    [function, klabel(modInt), symbol, left, smt-hook(mod), hook(INT.emod)]
+syntax Int ::= Bytes2Int(Bytes, Endianness, Signedness)
+    [function, functional, hook(BYTES.bytes2int)]
+
+syntax Bytes ::= &quot;nilBytes&quot;
+               | Int &quot;:&quot; Bytes
+
+syntax Bytes ::= #drop ( Int , Bytes )
+    [klabel(dropBytes), function, functional]
+rule #drop(N, BS:Bytes) =&gt; BS
+    requires notBool N &gt;Int 0
+rule #drop(N, BS:Bytes) =&gt; .Bytes
+    requires notBool lengthBytes(BS) &gt;Int 0 andBool N &gt;Int 0
+rule #drop(N, BS:Bytes) =&gt; .Bytes
+    requires lengthBytes(BS) &gt;Int 0 andBool N &gt;Int lengthBytes(BS)
+rule #drop(N, BS:Bytes) =&gt; substrBytes(BS, N, lengthBytes(BS))
+    requires lengthBytes(BS) &gt;Int 0 andBool notBool N &gt;Int lengthBytes(BS)
+
+syntax Int ::= Bytes &quot;[&quot; Int &quot;]&quot; [function]
+rule (B : BS) [ 0 ] =&gt; B
+rule (_ : BS) [ I ] =&gt; BS [ I -Int 1] requires I &gt;Int 0
+
+syntax Int ::= &quot;pow256&quot; /* 2 ^Int 256 */
+rule pow256 =&gt; 115792089237316195423570985008687907853269984665640564039457584007913129639936 [macro]
+</code></pre>
+<p>We will try to prove the following lemma:</p>
+<pre class="language-text"><code>rule #asWord( BUF ) =&gt; #asWord( #drop(1, BUF) ) requires BUF [ 0 ] ==Int 0
+</code></pre>
+<p>We will use the following transitions:</p>
+<pre class="language-text"><code>start(BUF, X) =&gt; end(X) if BUF == nilBytes
+start(BUF, X) =&gt; end(X) if exists B exists BS . BUF == B:BS
+</code></pre>
+<p>The backend evaluates it like this:</p>
+<pre class="language-text"><code>start(BUF, #asWord(BUF)) and BUF[ 0 ] ==Int 0
+  = start(BUF, chop(Bytes2Int(BUF, BE, Unsigned))) and BUF[ 0 ] ==Int 0
+  = start(BUF, Bytes2Int(BUF, BE, Unsigned) modInt pow256) and BUF[ 0 ] ==Int 0
+  =&gt; end(Bytes2Int(BUF, BE, Unsigned) modInt pow256) and BUF[ 0 ] ==Int 0
+       and BUF = nilBytes
+   | end(Bytes2Int(BUF, BE, Unsigned) modInt pow256) and BUF[ 0 ] ==Int 0
+       and exists B . exists BS . BUF = B : BS
+
+end(chop(Bytes2Int(WS, BE, Unsigned))) and BUF[ 0 ] ==Int 0 and BUF = nilBytes
+  = end(Bytes2Int(nilBytes, BE, Unsigned) modInt pow256)
+        and nilBytes[ 0 ] ==Int 0 and BUF = nilBytes
+  = end(0 modInt pow256) and bottom and BUF = nilBytes
+  = bottom
+
+end(Bytes2Int(BUF, BE, Unsigned) modInt pow256) and BUF[ 0 ] ==Int 0
+        and exists B . exists BS . BUF = B : BS
+  = end(Bytes2Int(BUF, BE, Unsigned) modInt pow256)
+        and BUF[ 0 ] ==Int 0 and BUF = B : BS
+  = end(Bytes2Int(B : BS, BE, Unsigned) modInt pow256)
+        and (B:BS)[ 0 ] ==Int 0 and BUF = B : BS
+  = end(Bytes2Int(B : BS, BE, Unsigned) modInt pow256)
+        and B ==Int 0 and BUF = B : BS
+  = end((B *Int (256 ^ length(BS)) + Bytes2Int(BS, BE, Unsigned)) modInt pow256)
+        and B ==Int 0 and BUF = B : BS
+</code></pre>
+<p>and the SMT solver should be able to finish this.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proving-lemmas" class="bd-toc-link">Proving lemmas</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#summary"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Summary
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-1"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Example 1
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-2"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Example 2
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-3"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Example 3
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
