@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="substitution-predicate-top-evaluation">Substitution-Predicate Top Evaluation</h1>
+<h2 id="problem-description">Problem description</h2>
+<p>At times, when evaluating a pattern <code>&#x3C6;</code> inside a context <code>C[&#x3C6;]</code>, we may get
+<code>&#x3C8; &#x2227; P</code>, where <code>P</code> is a predicate (with or without a substitution). We can
+then evaluate <code>C[&#x3C6;]</code> to either</p>
+<ol>
+<li><code>C[&#x3C8; &#x2227; P]</code>, or</li>
+<li><code>(P &#x2227; C[&#x3C8;]) &#x2228; (&#xAC;P &#x2227; C[&#x22A5;])</code>
+(see the proof-ish stuff below for why this is the case).</li>
+</ol>
+<p>Also, at times, we may want to split a pattern into two based on a predicate,
+say, when applying the rules for a function&apos;s definition. We then want to write
+<code>C=(P &#x2227; C) &#x2228; (&#xAC;P &#x2227; C)</code> and we want to be able to use this split effectively,
+both when rewriting and when simplifying the formulas.</p>
+<p>In particular, when we have a formula <code>P &#x2227; C[&#x3C6;])</code> we may want to be able
+to use <code>P</code> when evaluating <code>&#x3C6;</code> (say, we may want to know if we can apply a
+function).</p>
+<h2 id="motivation">Motivation</h2>
+<p>Splitting the formula at the top based on predicates found inside a context
+means that evaluating <code>not</code>, <code>iff</code>, and other difficult patterns becomes easier.</p>
+<p>Using formulas from the top inside contexts allows us to do more efficient
+branch prunning, and allows us to know when it is safe to evaluate a symbolic
+function (always evaluating can lead to infinite loops, but evaluating when
+the function condition is true may work).</p>
+<p>In general, having predicates only at the top prevents us from having
+contradictory cases in different places of the formula (e.g. <code>x=0</code> vs <code>x=1</code>),
+with no practical way of detecting the contradiction.</p>
+<p>Splitting the formula at the top with <code>C=(P &#x2227; C) &#x2228; (&#xAC;P &#x2227; C)</code> may be another way
+of assisting with function evaluation.</p>
+<h2 id="splitting-at-the-top-when-inside-a-context.">Splitting at the top when inside a context.</h2>
+<p>Currently, the evaluation of a formula <code>&#x3C6;</code> inside a context <code>C[&#x3C6;]</code> is
+represented as</p>
+<pre class="language-text"><code>(term &#x2227; predicate &#x2227; substitution) &#x2228; (term &#x2227; predicate &#x2227; substitution) &#x2228; ...
+</code></pre>
+<p>Whenever one of the and-ed items in <code>term &#x2227; predicate &#x2227; substitution</code>
+(including the term) becomes bottom, we evaluate the entire and to bottom
+and remove it from the or formula.</p>
+<p>However, we may also give it a different meaning: we could work with
+<code>(term, predicate &#x2227; substitution)</code> pairs, where the
+<code>predicate &#x2227; substitution</code> element refers to a split which may be done
+at the current evaluation level (<code>&#x3C6;</code>) or any level above it in the context <code>C</code>.
+This means that having a bottom <code>term</code> does not force the entire pair to bottom,
+but a bottom predicate does, since its branch will be removed when doing the
+actual split.</p>
+<p>Note that at the splitting level, the <code>(term, predicate &#x2227; substitution)</code> pair
+has the original meaning of <code>(term &#x2227; predicate &#x2227; substitution)</code>.</p>
+<h2 id="function-evaluation">Function evaluation</h2>
+<p>Say we have a function defined as</p>
+<pre class="language-text"><code>f(x)=v1 if P1
+f(x)=v2 if P2
+...
+f(x)=vn if Pn
+</code></pre>
+<p>Then, when evaluating f inside a context <code>C[f(y)]</code> we do this:</p>
+<pre class="language-text"><code>C[f(y)]
+    = (P1 &#x2227; C[f(y)]) &#x2228; (&#xAC;P1 &#x2227; C[f(y)])
+    = (P1 &#x2227; C[f(y)])
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; C[f(y)])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; C[f(y)])
+    ...
+    = (P1 &#x2227; C[f(y)])
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; C[f(y)])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; P3 &#x2227; C[f(y)])
+        ...
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; Pn &#x2227; C[f(y)])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; C[f(y)])
+</code></pre>
+<p>which, assuming confluence or disjoint predicates, and using
+<code>P &#x2227; C[&#x3C6;] = P &#x2227; C[&#x3C6; &#x2227; P])</code> (see the proof-ish section) and <code>f(y)=&#x22A5;</code> if no
+function definition branch is matched (i.e. <code>&#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn</code>,
+probabily needs a separate axiom), becomes</p>
+<pre class="language-text"><code>C[f(y)]
+    = (P1 &#x2227; C[f(y) &#x2227; P1])
+        &#x2228; (P2 &#x2227; C[f(y) &#x2227; P2])
+        &#x2228; (P3 &#x2227; C[f(y) &#x2227; P3])
+        ...
+        &#x2228; (Pn &#x2227; C[f(y) &#x2227; Pn])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; C[&#x22A5;])
+    = (P1 &#x2227; C[v1])
+        &#x2228; (P2 &#x2227; C[v2])
+        &#x2228; (P3 &#x2227; C[v3])
+        ...
+        &#x2228; (Pn &#x2227; C[vn])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; C[&#x22A5;])
+</code></pre>
+<p>But, if we want to do bottom-up splitting, we can also evaluate it like this:</p>
+<pre class="language-text"><code>f(y)
+    = (f(y) &#x2227; P1) &#x2228; (f(y) &#x2227; &#xAC;P1)
+    = (f(y) &#x2227; P1)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; P2)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; &#xAC;P2)
+    ...
+    = (f(y) &#x2227; P1)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; P2)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; &#xAC;P2 &#x2227; P3)
+        ...
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; Pn)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn)
+</code></pre>
+<p>By using confluence or disjoint predicates, this becomes</p>
+<pre class="language-text"><code>f(y)
+    = (f(y) &#x2227; P1)
+        &#x2228; (f(y) &#x2227; P2)
+        &#x2228; (f(y) &#x2227; P3)
+        ...
+        &#x2228; (f(y) &#x2227; Pn)
+        &#x2228; (f(y) &#x2227; &#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn)
+    = (v1 &#x2227; P1)
+        &#x2228; (v2 &#x2227; P2)
+        &#x2228; (v3 &#x2227; P3)
+        ...
+        &#x2228; (vn &#x2227; Pn)
+        &#x2228; (&#x22A5; &#x2227; &#xAC;P1 &#x2227; &#xAC;P2 ... &#x2227; &#xAC;Pn-1 &#x2227; &#xAC;Pn)
+    = (v1 &#x2227; P1)
+        &#x2228; (v2 &#x2227; P2)
+        &#x2228; (v3 &#x2227; P3)
+        ...
+        &#x2228; (vn &#x2227; Pn)
+</code></pre>
+<p>When evaluating this inside the context, we have (assuming confluence, see
+the proof-ish section for details)</p>
+<pre class="language-text"><code>C[f(y)]
+    = C[(v1 &#x2227; P1) &#x2228; (v2 &#x2227; P2) &#x2228; (v3 &#x2227; P3) ... &#x2228; (vn &#x2227; Pn)]
+    = (P1 &#x2227; C[v1])
+        &#x2228; (P2 &#x2227; C[v2])
+        &#x2228; (P3 &#x2227; C[v3])
+        ...
+        &#x2228; (Pn &#x2227; C[vn])])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#x2227; &#xAC;Pn &#x2227; C[&#x22A5;])
+</code></pre>
+<p>This means that we are justified in representing the function evaluation
+using the pair representation:</p>
+<pre class="language-text"><code>f(x) = (v1, P1 &#x2227; []) &#x2228; (v2, P2 &#x2227; []) &#x2228; ... &#x2228; (vn, Pn &#x2227; [])
+        &#x2228; (&#x22A5;, &#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#x2227; &#xAC;Pn &#x2227; [])
+</code></pre>
+<h2 id="proof-ish-stuff">Proof-ish stuff</h2>
+<p>First, let us note that, if <code>P</code> is a predicate and <code>C</code> is a context, then</p>
+<pre class="language-text"><code>C[P] = (P &#x2227; C[T]) &#x2228; (&#xAC;P &#x2227; C[&#x22A5;])
+</code></pre>
+<p>Indeed, if <code>P</code> is <code>&#x22A4;</code>, then the equation becomes</p>
+<pre class="language-text"><code>C[&#x22A4;] = (&#x22A4; &#x2227; C[&#x22A4;]) &#x2228; (&#xAC;&#x22A4; &#x2227; C[&#x22A5;])
+</code></pre>
+<p>which is obviously true.</p>
+<p>If <code>P</code> is <code>&#x22A5;</code> then the equation becomes</p>
+<pre class="language-text"><code>C[&#x22A5;] = (&#x22A5; &#x2227; C[T]) &#x2228; (&#xAC;&#x22A5; &#x2227; C[&#x22A5;])
+</code></pre>
+<p>which, again, is obviously true.</p>
+<p>But then, we have</p>
+<pre class="language-text"><code>P &#x2227; C[&#x3C6; &#x2227; P])
+    = P &#x2227; ((P &#x2227; C[&#x3C6; &#x2227; T]) &#x2228; (&#xAC;P &#x2227; C[&#x3C6; &#x2227; &#x22A5;]))
+    = P &#x2227; ((P &#x2227; C[&#x3C6;]) &#x2228; (&#xAC;P &#x2227; C[&#x22A5;]))
+    = (P &#x2227; P &#x2227; C[&#x3C6;]) &#x2228; (P &#x2227; &#xAC;P &#x2227; C[&#x22A5;])
+    = (P &#x2227; C[&#x3C6;]) &#x2228; &#x22A5;
+    = P &#x2227; C[&#x3C6;]
+</code></pre>
+<p>which gives us the formula we need for moving predicates (and substitutions,
+since they are a special case of predicate) inside any contexts.</p>
+<p>To generalize, we have</p>
+<pre class="language-text"><code>C[(&#x3C6;1 &#x2227; P1) &#x2228; (&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]
+    = (P1 &#x2227; (C[&#x3C6;1 &#x2228; (&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+        &#x2228; (&#xAC;P1 &#x2227; (C[(&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+    = (P1 &#x2227; (C[&#x3C6;1 &#x2228; (&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; (C[&#x3C6;2 &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+        ...
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; Pn &#x2227; (C[&#x3C6;n]))
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; (C[&#x22A5;]))
+    = (P1 &#x2227; (C[&#x3C6;1 &#x2228; (&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; (C[&#x3C6;2 &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]))
+        ...
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; Pn (C[&#x3C6;n]))
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; (C[&#x22A5;]))
+</code></pre>
+<p>Note that if we have confluence (<code>Pi &#x2227; Pj -&gt; &#x3C6;i=&#x3C6;j</code>) or the predicates
+are disjoint (<code>Pi &#x2227; Pj=&#x22A5;</code> f&#x2228; <code>i&lt;&gt;j</code>, which is just a particular kind of
+confluence), then the above becomes</p>
+<pre class="language-text"><code>C[(&#x3C6;1 &#x2227; P1) &#x2228; (&#x3C6;2 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; Pn)]
+    = (P1 &#x2227; (C[&#x3C6;1 &#x2228; (&#x3C6;2 &#x2227; P1 &#x2227; P2) &#x2228; ... &#x2228; (&#x3C6;n &#x2227; P1 &#x2227; Pn)]))
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; (C[&#x3C6;2 &#x2228; ... &#x2228; (&#x3C6;n &#x2227; P2 &#x2227; Pn)]))
+        ...
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; Pn &#x2227; (C[&#x3C6;n]))
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; (C[&#x22A5;]))
+    = (P1 &#x2227; C[&#x3C6;1])
+        &#x2228; (&#xAC;P1 &#x2227; P2 &#x2227; C[&#x3C6;2])
+        ...
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; Pn &#x2227; C[&#x3C6;n])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; (C[&#x22A5;]))
+    = (P1 &#x2227; C[&#x3C6;1])
+        &#x2228; (P2 &#x2227; C[&#x3C6;2])
+        ...
+        &#x2228; (Pn &#x2227; C[&#x3C6;n])
+        &#x2228; (&#xAC;P1 &#x2227; &#xAC;P2 &#x2227; ... &#xAC;Pn-1 &#x2227; &#xAC;Pn &#x2227; (C[&#x22A5;]))
+</code></pre>
+<h2 id="decision">Decision</h2>
+<p>We will move to the new representation, <code>(term, predicate &#x2227; substitution)</code>
+for our evaluation cases and split in a bottom-up fashion.</p>
+<p>What happens when encountering quantifiers is left open for now.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#substitution-predicate-top-evaluation" class="bd-toc-link">Substitution-Predicate Top Evaluation</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem-description"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem description
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#motivation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Motivation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#splitting-at-the-top-when-inside-a-context."
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Splitting at the top when inside a context.
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#function-evaluation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Function evaluation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#proof-ish-stuff"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Proof-ish stuff
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
