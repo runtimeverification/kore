@@ -1,7 +1,0 @@
-test-exception-21.kore:5:10:
-  |
-5 |   sort C ["d"]
-  |          ^
-unexpected '['
-expecting '{'
-

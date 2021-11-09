@@ -1,7 +1,0 @@
-test-exception-3.kore:6:12:
-  |
-6 |     "X:S []
-  |            ^
-unexpected newline
-expecting '"' or printable ASCII character
-
