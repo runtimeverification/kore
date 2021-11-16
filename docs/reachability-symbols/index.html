@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="reachability-symbols">Reachability symbols</h1>
+<p>Below is a list of LTL/CTL/Reachability Logic symbols and their translation to mML.</p>
+<p>For further reference, consult the LICS ML paper and the corresponding technical report.</p>
+<h3 id="one-path-next-%E2%80%A2">One-path next <code>&#x2022;</code></h3>
+<hr>
+<p>One path next is a reserved symbol in any mML signature used for representing &#x1D542; definitions,
+used to express possibility of transition and thus to encode &#x1D542; transition rules.</p>
+<p>for example, a &#x1D542; rule</p>
+<pre class="language-text"><code>rule a =&gt; b
+</code></pre>
+<p>is represented in mML as</p>
+<pre class="language-text"><code>axiom a &#x2192; &#x2022;b
+</code></pre>
+<p>Semantically, <code>&#x2022;b</code> comprises the set of all elements which can transition to <code>b</code> in one step.</p>
+<p>Hence, <code>a &#x2192; &#x2022;b</code> is read as <code>a</code> <strong>can</strong> transition to <code>b</code> in one step.</p>
+<h2 id="(strong)-eventually-(ltl)-%E2%97%87-or-%3C%3E-or-exists-finally-(ctl%E2%88%97)-ef">(Strong) Eventually (LTL) <code>&#x25C7;</code> or <code>&lt;&gt;</code> or Exists Finally (CTL&#x2217;) <code>EF</code></h2>
+<p><code>&#x25C7; &#x3C6;</code> says that there exists a finite path leading to <code>&#x3C6;</code>.</p>
+<p><code>&#x3C6; &#x2192; &#x25C7; &#x3C8;</code> says that any state satisfying <code>&#x3C6;</code> can transition in a finite number of steps to
+a state satisfying <code>&#x3C8;</code>.</p>
+<p>In mML <code>&#x25C7;</code> is defined as a smallest fixpoint (guaranteeing finite paths) by the alias formula</p>
+<pre class="language-text"><code>&#x25C7; &#x3C6; := &#x3BC;X.&#x3C6; &#x2228; &#x2022;X
+</code></pre>
+<h2 id="(weak)-eventually-(one-path-reachability)-%E2%97%87w-or-wef">(Weak) Eventually (One-path reachability) <code>&#x25C7;w</code> or <code>wEF</code></h2>
+<p><code>&#x25C7;w &#x3C6;</code> says that there exists an infinite path or a finite path leading to <code>&#x3C6;</code></p>
+<p><code>&#x3C6; &#x2192; &#x25C7;w &#x3C8;</code> says that any state satisfying <code>&#x3C6;</code> can either transition indefinitely,
+or transition in a finite number of steps to a state satisfying <code>&#x3C8;</code>.</p>
+<p>In mML <code>&#x25C7;w </code> is defined as a greatest fixpoint by the alias formula</p>
+<pre class="language-text"><code>&#x25C7;w  &#x3C6; := &#x3BD;X.&#x3C6; &#x2228; &#x2022;X
+</code></pre>
+<h2 id="all-path-next-%E2%97%8B">All-path next <code>&#x25CB;</code></h2>
+<p>All-path next is the dual of one-path next.  It is defined as an alias formula by:</p>
+<pre class="language-text"><code>&#x25CB; &#x3C6; := &#xAC;&#x2022;&#xAC;&#x3C6;
+</code></pre>
+<p>Semantically, <code>&#x25CB; A</code> comprises those elements which, if they can transition,
+then they <strong>must</strong> transition to <code>A</code>.</p>
+<p>Hence, <code>&#x3C6; &#x2192; &#x25CB; &#x3C8;</code> is read as &quot;all possible continuations of <code>&#x3C6;</code> in one step must satisfy <code>&#x3C8;</code>&quot;.</p>
+<p>Note that the above holds even if <code>&#x3C6;</code> is &quot;stuck&quot;, i.e., cannot transition anymore.
+Therefore, an useful formula, stating that <code>&#x3C6;</code> <strong>must</strong> transition to <code>&#x3C8;</code> in one step
+(hence, it is aditionally not stuck) is:</p>
+<pre class="language-text"><code>&#x3C6; &#x2192; &#x25CB; &#x3C8; &#x2227; &#x2022;&#x22A4;
+</code></pre>
+<h2 id="(strong)-always-(ltl)-%E2%96%A1-or-%5B%5D-or-always-globally-(ctl%E2%88%97)-ag">(Strong) Always (LTL) <code>&#x25A1;</code> or <code>[]</code> or Always Globally (CTL&#x2217;) <code>AG</code></h2>
+<p><code>&#x25A1; &#x3C6;</code> says that <code>&#x3C6;</code> always holds (on all paths, at all times).</p>
+<p>In mML <code>&#x25A1;</code> is defined as a greatest fixpoint by the alias formula</p>
+<pre class="language-text"><code>&#x25A1; &#x3C6; := &#x3BD;X.&#x3C6; &#x2227; &#x25CB; X
+</code></pre>
+<h2 id="(weak)-always-finally-(all-path-reachability)-%5Bw%5D-or-waf">(Weak) Always Finally (All-Path reachability) <code>[w]</code> or <code>wAF</code></h2>
+<p><code>wAF &#x3C6;</code> says that paths either contain a state in which <code>&#x3C6;</code> holds, or they are
+infinite.</p>
+<p>Hence <code>&#x3C6; &#x2192; wAF &#x3C8;</code> states that for any state satisfying <code>&#x3C6;</code>, there are no
+finite paths on which <code>&#x3C8;</code> does not eventually hold.</p>
+<p>In mML <code>wAF</code> is defined as a greatest fixpoint by the alias formula</p>
+<pre class="language-text"><code>wAF  &#x3C6; := &#x3BD;X.&#x3C6; &#x2228; (&#x2022;T &#x2227; &#x25CB; X)
+</code></pre>
+<h2 id="well-foundness-(termination)-wf">Well foundness (termination) <code>WF</code></h2>
+<p><code>WF</code> expresses that there are no infinite paths.</p>
+<p>Hence <code>&#x3C6; &#x2192; WF</code> says that there are no infinite paths starting from <code>&#x3C6;</code>.</p>
+<p><code>WF</code> is defined in mML by the least fixpoint alias</p>
+<pre class="language-text"><code>WF := &#x3BC;X.&#x25CB; X
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#reachability-symbols" class="bd-toc-link">Reachability symbols</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#(strong)-eventually-(ltl)-%E2%97%87-or-%3C%3E-or-exists-finally-(ctl%E2%88%97)-ef"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                (Strong) Eventually (LTL) <code>&#x25C7;</code> or <code>&lt;&gt;</code> or Exists Finally (CTL&#x2217;) <code>EF</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#(weak)-eventually-(one-path-reachability)-%E2%97%87w-or-wef"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                (Weak) Eventually (One-path reachability) <code>&#x25C7;w</code> or <code>wEF</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#all-path-next-%E2%97%8B"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                All-path next <code>&#x25CB;</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#(strong)-always-(ltl)-%E2%96%A1-or-%5B%5D-or-always-globally-(ctl%E2%88%97)-ag"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                (Strong) Always (LTL) <code>&#x25A1;</code> or <code>[]</code> or Always Globally (CTL&#x2217;) <code>AG</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#(weak)-always-finally-(all-path-reachability)-%5Bw%5D-or-waf"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                (Weak) Always Finally (All-Path reachability) <code>[w]</code> or <code>wAF</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#well-foundness-(termination)-wf"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Well foundness (termination) <code>WF</code>
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="decision-template">Decision Template</h1>
+<h2 id="background">Background</h2>
+<p>In order to evaluate expressions, usually one has to evaluate the
+expression terms first, then the expression itself is evaluated. As
+an example, <code>(1+2)+(3+4)</code> may be evaluated, in order, to the following
+equivalent patterns, where <code>[]</code> is a placeholder for an expression that was extracted from a larger one for evaluation, while <code>~&gt;</code> separates expressions
+to be evaluated:</p>
+<pre class="language-text"><code>(1+2)+(3+4)
+1+2 ~&gt; []+(3+4)  -- heating
+3 ~&gt; []+(3+4)    -- rewriting
+3+(3+4)          -- cooling
+3+4 ~&gt; 3+[]      -- heating
+7 ~&gt; 3+[]        -- rewriting
+3+7              -- cooling
+10               -- rewriting
+</code></pre>
+<p>In many cases it is desirable to allow expressions to be evaluated in a fairly
+free order. Consider the following C example:</p>
+<pre class="language-text"><code>(f() + g()) + h()
+</code></pre>
+<p>where <code>f</code>, <code>g</code> and <code>h</code> have side effects. According to the standard, these
+functions can be called in any order, e.g. it is valid to call <code>g</code>, then <code>h</code>,
+then <code>f</code>.</p>
+<p>In all-path reachability proofs one attempts to show that, when starting from
+a given pattern, no matter how it is evaluated, one reaches a certain
+target pattern.</p>
+<p>In coinductive proofs, whenever there is a cycle in which a pattern can be
+rewritten, indirectly or not, to itself, anything can be proven.</p>
+<h2 id="problem%2Fquestions">Problem/Questions</h2>
+<p>How to encode the heating and cooling rules in kore, in such a way that there
+are no rewrite cycles, we can compute all patterns reachable from a given one,
+and we can prove that only those are reachable, while allowing any evaluation
+order for the heated/cooled terms when that&apos;s desirable.</p>
+<h2 id="decision%3A-use-equations.">Decision: Use equations.</h2>
+<p>Use rewriting rules like the following, where <code>~&gt;</code> is a function symbol:</p>
+<pre class="language-text"><code>inj{Exp, K}(a+b) = inj{Exp, K}(a) ~&gt; []+b
+inj{Exp, K}(a+b) = inj{Exp, K}(b) ~&gt; a+[]
+</code></pre>
+<p>The &quot;Using rewriting rules with &quot;changed&quot; bit&quot; solution would have also
+solved most of the problems.</p>
+<h2 id="reasoning-and-other-options-considered">Reasoning and other options considered</h2>
+<p>Options that were considered:</p>
+<h3 id="using-plain-rewriting-rules">Using plain rewriting rules</h3>
+<p>Using rules like the following generates rewrite cycles:</p>
+<pre class="language-text"><code>a+b =&gt; a ~&gt; []+b
+a+b =&gt; b ~&gt; a+[]
+a ~&gt; []+b =&gt; a+b
+b ~&gt; a+[] =&gt; a+b
+</code></pre>
+<h3 id="using-rewriting-rules-with-side-conditions">Using rewriting rules with side conditions</h3>
+<pre class="language-text"><code>a+b =&gt; a ~&gt; []+b   if a is not a value
+a+b =&gt; b ~&gt; a+[]   if b is not a value
+a ~&gt; []+b =&gt; a+b   if a is a value
+b ~&gt; a+[] =&gt; a+b   if b is a value
+</code></pre>
+<p>Side conditions solve the rewrite cycle issue, but do not allow all possible
+expression evaluations, e.g. it does not allow evaluating <code>g</code>, then <code>h</code>, then
+<code>f</code> in the Background section example.</p>
+<h3 id="using-equations%2C-e.g.">Using equations, e.g.</h3>
+<pre class="language-text"><code>a+b = a ~&gt; []+b
+a+b = b ~&gt; a+[]
+</code></pre>
+<p>These solve the evaluation order issue in an elegant way, and it is
+usually computationally feasible to compute all possible expression expansions.</p>
+<p>There are a few problems though. First, note that if we have
+<code>a+b = a ~&gt; []+b</code> and <code>+</code> is a constructor, then <code>~&gt;</code> can&apos;t be a constructor.</p>
+<p>This makes unification more difficult: whenever we try to unify <code>~&gt;</code> we must
+expand the terms we have using all possible equations, then we need to match
+the top form as if it would be a constructor, and continue unifying the
+children. As an example, if we unify <code>(a+b)+c~&gt;something</code> with <code>x+y ~&gt; z</code>
+we may expand the former to the following set</p>
+<pre class="language-text"><code>(a+b)+c~&gt;something
+a+b~&gt;[]+c~&gt;something
+a~&gt;[]+b~&gt;[]+c~&gt;something
+b~&gt;a+[]~&gt;[]+c~&gt;something
+c~&gt;(a+b)+[]~&gt;something
+</code></pre>
+<p>And then we would have the following unifications:</p>
+<pre class="language-text"><code>[x=a+b, y=c, z=something]
+[x=a, y=b, z=[]+c~&gt;something]
+&#x22A5;
+&#x22A5;
+&#x22A5;
+</code></pre>
+<p>A second problem would be that equations can be applied anywhere, so we could
+also have <code>(a~&gt;[]+b)+c~&gt;something</code> as an expansion. This is not helpful in any
+way, but we could try to heat only things at the top, i.e.
+<code>&lt;k&gt; a+b &lt;/k&gt; = &lt;k&gt; a ~&gt; []+b &lt;/k&gt;</code> or, using sort injections,
+<code>inj{Exp, K}(a+b) = inj{Exp, K}(a) ~&gt; []+b</code>. Depending on how we define
+the symbols involving <code>[]</code>, we may or may not need <code>inj</code> around <code>[]+b</code>.</p>
+<p>With the former option, if <code>&lt;k&gt;</code> is a constructor, then the
+equation above is equivalent to the original one, <code>a+b = a ~&gt; []+b</code>, and we
+are back to the weird expansions problem. So it seems that <code>&lt;k&gt;</code> should
+not be a constructor, while <code>~&gt;</code> can be one.</p>
+<p>Actually, we have a more general problem, i.e. how can we be sure that,
+given a set of equations, we have inferred all that we can, and, preferably,
+we would like to know that we can&apos;t get contradictions from those equations.</p>
+<p>We can simplify the problem by expanding the symbols by-need. We could
+always expand patterns fully before rewriting, then we can unify functions
+as if they would be constructors, but the result would be too messy, and
+we may expand parts of a pattern that are not needed for the current rule.</p>
+<p>It is probably better to expand only when needed, i.e. in the
+unification algorithm. Whenever we have to unify a non-constructor symbol, e.g.
+<code>~&gt;</code>, with something else, we expand the non-constructor at the top
+and all its children that have non-constructors at the top, and their
+non-constructor children, and so on.</p>
+<p>Note that the above requires that at least one of the equality terms has
+a non-constructor at the top.</p>
+<p>Probably we want to cache the expansion results and reuse them for future
+unifications, and we want to be able to merge various rewriting branches.</p>
+<p>This also helps to check that we don&apos;t infer unwanted stuff, see the
+<code>Unwanted inferences</code> subsection.</p>
+<p>My guess is that we want to expand when needed and cache the results.</p>
+<p>A third problem is that it seems rather difficult to prove that one needs
+to consider only rewrites starting from those expansions if one wants to
+find if we reach the target pattern no matter how we evaluate and rewrite
+the start pattern.</p>
+<p>However, it might be possible to prove this at the meta level, so we
+will assume that this problem is somewhat solvable.</p>
+<h4 id="unwanted-inferences">Unwanted inferences</h4>
+<p>If we know all equations that can be applied when expanding a given term,
+we might have an easier time finding out if they have any issues.</p>
+<p>As an impractical example, if our equations have non-constructors
+only at the top, and they only have terms made out of symbols,
+variables and domain values (we might be able to include more things here),
+then we can replace all free variables in all terms with a special symbol
+<code>v{#sort}()</code>, and we can we can make an undirected multigraph where
+all of these are nodes, and equations are edges. We also
+add edges between nodes if we can make them equal. Then we only need to check
+that the connected components make sens separately.</p>
+<p>If our equations look like this:</p>
+<pre class="language-text"><code>e1: a+b = a ~&gt; []+b
+e2: a+b = b ~&gt; a+[]
+</code></pre>
+<p>then the nodes of the graph would be</p>
+<pre class="language-text"><code>v1: v{#sort}()+v{#sort}()
+v2: v{#sort}() ~&gt; []+v{#sort}()
+v3: v{#sort}() ~&gt; v{#sort}()+[]
+</code></pre>
+<p>and we would have these edges:</p>
+<pre class="language-text"><code>v1---e1---v2
+v1---e2---v3
+</code></pre>
+<p>This is not intended to be a design doc about how we would check for
+unwanted inferences, but one can see that, e.g., if we would have
+two nodes with constructors at the top in the same connected component,
+then we might need to worry that we get contradictions, and we can check all
+the paths between the said nodes to see if they are, indeed, reachable. It&apos;s
+also easy to see that conditions do not change this model much if they are
+well-behaved (e.g. we shouldn&apos;t replace equation subterms that contain
+non-constructors with variables and <code>v=subterm</code> predicates).
+It looks like we can also do a bit more work and also handle subterms
+with non-constructors.</p>
+<h3 id="using-rewriting-rules-with-%22changed%22-bit.">Using rewriting rules with &quot;changed&quot; bit.</h3>
+<pre class="language-text"><code>(a+b,x) =&gt; (a,0) ~&gt; ([]+b,x)     if a is not a value
+(a+b,x) =&gt; (b,0) ~&gt; (a+[],x)     if a is not a value
+(a, 1) ~&gt; ([]+b, x) =&gt; (a+b, 1)
+(b, 1) ~&gt; (a+[], x) =&gt; (a+b, 1)
+(a+b, x) =&gt; (a +Int b, 1)        if a and b are values
+</code></pre>
+<p>These rely on non-values being things that can always be evaluated.</p>
+<p>Other than that, note that we allow decomposing an expression in any way
+possible, as long as we are not extracting values, while we allow
+recomposing it only if something changed. Any time we do a non heating/cooling
+rewrite, we mark the term as &quot;changed&quot;.</p>
+<p>From a start expression, we can always extract the expression that we want to
+evaluate first at the top of the evaluation stack. After evaluating it, its
+&quot;changed&quot; bit becomes <code>1</code>, which allows us to repack the expression back,
+repeating the extraction as needed.</p>
+<p>Only extracting non-values ensures that we don&apos;t get stuck with an expression
+that we can&apos;t evaluate at the top of the stack. Allowing expression repacking
+only when something changed prevents rewrite cycles.</p>
+<p>The main problem is that we&apos;re not using the original semantics, we&apos;re using
+something a bit different, and we need to prove their equivalence.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#decision-template" class="bd-toc-link">Decision Template</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem%2Fquestions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem/Questions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision%3A-use-equations."
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision: Use equations.
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#reasoning-and-other-options-considered" class="bd-toc-link">Reasoning and other options considered</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#using-plain-rewriting-rules"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Using plain rewriting rules
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#using-rewriting-rules-with-side-conditions"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Using rewriting rules with side conditions
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#using-equations%2C-e.g." class="bd-toc-link">Using equations, e.g.</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unwanted-inferences"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Unwanted inferences
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#using-rewriting-rules-with-%22changed%22-bit."
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Using rewriting rules with &quot;changed&quot; bit.
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
