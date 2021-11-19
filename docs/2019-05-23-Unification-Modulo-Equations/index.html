@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="unification-with-equations">Unification with equations</h1>
+<h2 id="summary">Summary</h2>
+<p>Proposal: Write k/kore axioms/theorems allowing us both to solve unification
+in a principled way without changing the backend for each of these cases,
+and to easily generate proofs if/when that will be desirable.</p>
+<h2 id="background">Background</h2>
+<p>The most general unifier of <code>&#x3C6;</code> and <code>&#x3C8;</code> is <code>&#x2308;&#x3C6;&#x2227;&#x3C8;&#x2309;</code></p>
+<p>There are some unification cases that are easy to solve, e.g. if <code>C</code> is a
+constructor (actually, it only needs to be injective), then</p>
+<pre class="language-text"><code>&#x2308;C(&#x3C6;&#x2081;, &#x2026;, &#x3C6;_n) &#x2227; C(&#x3C8;&#x2081;, &#x2026;, &#x3C8;_n)&#x2309;=&#x2308;&#x3C6;&#x2081;&#x2227;&#x3C8;&#x2081;&#x2309;&#x2227;&#x2026;&#x2227;&#x2308;&#x3C6;_n&#x2227;&#x3C8;_n&#x2309;
+</code></pre>
+<p>However, if <code>f</code> and <code>g</code> are random symbols, without any properties, then
+<code>&#x2308;f(&#x3C6;&#x2081;, &#x2026;, &#x3C6;_n) &#x2227; g(&#x3C8;&#x2081;, &#x2026;, &#x3C8;_m)&#x2309;</code> cannot be reduced to a nicer form.</p>
+<p>If <code>f</code> is, say, an associative binary operation with neutral element (i.e. the
+concatenation for a list), then we have a reasonable intuition about how to
+unify it, but I don&#x2019;t know of any written text about that.</p>
+<h2 id="problem">Problem</h2>
+<p>We are trying to extend unification to sorts that do not have constructors, but
+which have something resembling constructors. An example is a list, which has:
+<code>unit</code> - the empty list.
+<code>elem</code> - takes an element of a different sort and produces a single element list.
+<code>concat</code> - concatenates two lists.
+Heating and cooling could be another example.</p>
+<h2 id="proposed-solution">Proposed Solution</h2>
+<p>The first attempt to solve this would be to define some sort of
+no-junk/no-confusion axiom
+for that sort (e.g. any list can be built with <code>unit</code>, <code>elem</code> and <code>concat</code>),
+and then expand the two terms in all possible ways using the available
+equations, then match the two terms at the top as long as we stay within
+the same sort, then use unification for the remainders.</p>
+<p>However, this has a few problems. First, there is no way of proving that
+this is the most general unifier, i.e. there is no way of showing that we
+truly expanded the term in all possible ways. Second, this would be really
+inefficient. Also, the no-confusion axioms might be hard to write.</p>
+<h3 id="actual-proposal">Actual proposal</h3>
+<p>The second attempt, however, would be to define some unification axioms (I
+think that they are, indeed, axioms, but they could be theorems if we find
+a way to infer them), specifying how to solve certain unification cases
+in a way that can be used almost directly by the Haskell backend (some
+changes needed).</p>
+<p>These axioms would allow us to reduce the hard to handle
+unification cases to unambiguous ones (e.g. reduce AC unification to
+constructor-based unification).</p>
+<p>See the use-cases below for examples and explanations.</p>
+<p>We could write these in a way that we don&apos;t duplicate unification cases.
+Then we could apply these as simplification axioms, defining our unification
+strategy in k. When we need performance, we could implement the ones that are
+used more frequently in Haskell.</p>
+<p>Or, if that ever becomes desirable (e.g. if we want it to make proof
+certificates easier to generate), we could give up on performance and define
+all simplification cases as axioms/theorems.</p>
+<p>Also, we should probably use set variables, to avoid the large number of
+checks needed when working with normal variables (though, of course, we
+need to make sure that the axioms still hold).</p>
+<h2 id="use-case%3A-lists">Use-case: lists</h2>
+<p>For lists, we could have the following axioms</p>
+<pre class="language-text"><code>&#x2308;elem(x)&#x2227;unit&#x2309; = &#x22A5;
+&#x2308;elem(x)&#x2227;elem(y)&#x2309; = &#x2308;x&#x2227;y&#x2309;
+&#x2308;concat(l&#x2081;,l&#x2082;) &#x2227; unit&#x2309; = &#x2308;l&#x2081;&#x2227;unit&#x2309; &#x2227; &#x2308;l&#x2082;&#x2227;unit&#x2309;
+&#x2308;concat(elem(x),l&#x2081;) &#x2227; concat(elem(z), l&#x2082;)&#x2309; = &#x2308;x&#x2227;z&#x2309; &#x2227; &#x2308;l&#x2081;&#x2227;l&#x2082;&#x2309;
+</code></pre>
+<p>This is missing some axioms (e.g. the ones unifying at the end of the list,
+or splitting the list), but it looks like these, together with the usual list
+axioms and the <code>and</code> commutativity axioms could be enough to solve list
+unification.</p>
+<p>Note that applying these axioms allows us to reduce complex expressions to
+simpler ones, without worrying about how many terms are equivalent to the
+one we have: we just have to bring the term in one of the forms required for
+one of these axioms, then we apply the axiom and that&#x2019;s it.</p>
+<p>As an example, say we need to unify <code>concat(concat(elem(&#x3C6;&#x2081;), elem(&#x3C6;&#x2082;)), &#x3C6;&#x2083;)</code>
+with <code>concat(concat(unit, elem(&#x3C8;&#x2081;)), concat(elem(&#x3C8;&#x2082;), &#x3C8;&#x2083;))</code>. We first use
+the list axioms to rewrite the first term as
+<code>concat(elem(&#x3C6;&#x2081;), concat(elem(&#x3C6;&#x2082;), &#x3C6;&#x2083;))</code>, the second one as
+<code>concat(elem(&#x3C8;&#x2081;), concat(elem(&#x3C8;&#x2082;), &#x3C8;&#x2083;))</code>, then we apply the
+<code>&#x2308;concat(elem(x),l&#x2081;) &#x2227; concat(elem(z),l&#x2082;)&#x2309; = &#x2308;x&#x2227;z&#x2309; &#x2227; &#x2308;l&#x2081;&#x2227;l&#x2082;&#x2309;</code> axiom repeatedly
+to compute</p>
+<pre class="language-text"><code>&#x2308; concat(elem(&#x3C6;&#x2081;), concat(elem(&#x3C6;&#x2082;), &#x3C6;&#x2083;))
+&#x2227; concat(elem(&#x3C8;&#x2081;), concat(elem(&#x3C8;&#x2082;), &#x3C8;&#x2083;)) &#x2309;
+    = &#x2308;&#x3C6;&#x2081;&#x2227;&#x3C8;&#x2081;&#x2309; &#x2227; &#x2308;concat(elem(&#x3C6;&#x2082;), &#x3C6;&#x2083;) &#x2227; concat(elem(&#x3C8;&#x2082;), &#x3C8;&#x2083;)&#x2309;
+    = &#x2308;&#x3C6;&#x2081;&#x2227;&#x3C8;&#x2081;&#x2309; &#x2227; &#x2308;&#x3C6;&#x2082;&#x2227;&#x3C8;&#x2082;&#x2309; &#x2227; &#x2308;&#x3C6;&#x2083;&#x2227;&#x3C8;&#x2083;&#x2309;
+</code></pre>
+<h2 id="use-case%3A-multi-sets">Use-case: multi-sets</h2>
+<p>These are associative, commutative, with neutral element.</p>
+<p>Let us try to define the axioms for multi-set lookup through unification, i.e.
+for unifying <code>concat(elem(x), s)</code> with a multi-set. Assuming that our terms are
+normalized (elems moved to the left, concats represented as
+<code>concat(a, concat(b, concat(...)))</code>), then the following axioms should be
+enough:</p>
+<pre class="language-text"><code>&#x2308;concat(s&#x2081;,s&#x2082;) &#x2227; unit&#x2309; = &#x2308;s&#x2081;&#x2227;unit&#x2309; &#x2227; &#x2308;s&#x2082;&#x2227;unit&#x2309;
+&#x2308;concat(elem(x), s) &#x2227; elem(a)&#x2309; = &#x2308;x&#x2227;a&#x2309; &#x2227; &#x2308;s&#x2227;unit&#x2309;
+&#x2308;concat(elem(x), s&#x2081;) &#x2227; concat(elem(a), s&#x2082;)&#x2309;
+    = &#x2308;x&#x2227;a&#x2309; &#x2227; &#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+      &#x2228; &#x2203; s&#x2083; . &#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309; &#x2227; &#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+</code></pre>
+<p>As an example, the left-to-right implication for the equality above can be
+shown like this (predicate equality is equivalence):</p>
+<pre class="language-text"><code>x\and&#x2308;x&#x2227;a&#x2309; = a\and&#x2308;x&#x2227;a&#x2309;
+s&#x2081;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309; = s&#x2082;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+
+concat(elem(x), s&#x2081;)\and&#x2308;x&#x2227;a&#x2309;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+    = concat(elem(x\and&#x2308;x&#x2227;a&#x2309;), s&#x2081;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;)\and&#x2308;x&#x2227;a&#x2309;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+    = concat(elem(a\and&#x2308;x&#x2227;a&#x2309;), s&#x2082;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;)\and&#x2308;x&#x2227;a&#x2309;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+    = concat(elem(a), s&#x2082;)\and&#x2308;x&#x2227;a&#x2309;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;
+</code></pre>
+<p>therefore <code>&#x2308;x&#x2227;a&#x2309;\and&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309;</code> is a unifier of <code>concat(elem(x), s&#x2081;)</code> and
+<code>concat(elem(a), s&#x2082;)</code>.
+Similarly, we have</p>
+<pre class="language-text"><code>concat(elem(x),s&#x2083;)\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;=s&#x2082;\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;
+therefore
+concat(elem(a), concat(elem(x),s&#x2083;))\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;
+    =concat(elem(a),s&#x2082;)\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;
+
+also,
+s&#x2081;&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;=concat(elem(a),s&#x2083;)&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+therefore
+concat(elem(x), s&#x2081;)&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+    = concat(elem(x), concat(elem(a),s&#x2083;))&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+
+but this means that we have
+concat(elem(x), s&#x2081;)\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+    = concat(elem(x), concat(elem(a),s&#x2083;))
+      \and &#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309; &#x2227; &#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+    = concat(elem(a),s&#x2083;)\and&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;
+</code></pre>
+<p>therefore <code>&#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309;&#x2227;&#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;</code> is a unifier of
+<code>concat(elem(x), s&#x2081;)</code> and <code>concat(elem(a), s&#x2082;)</code>, which means that the RHS of the
+equality is included in the LHS, since that is the most general unifier of the
+two.</p>
+<h2 id="use-case%3A-sets">Use-case: sets</h2>
+<p>These are associative, commutative, idempotent, with neutral element.</p>
+<p>Let us try to define the axioms for unifying <code>concat(elem(x), s)</code> with a set.
+As above, we are assuming that our terms are normalized (elems moved to the
+left, concats represented as <code>concat(a, concat(b, concat(...)))</code>, identical
+elements removed). The following axioms should be enough:</p>
+<pre class="language-text"><code>&#x2308;concat(s&#x2081;,s&#x2082;) &#x2227; unit&#x2309; = &#x2308;s&#x2081;&#x2227;unit&#x2309; &#x2227; &#x2308;s&#x2082;&#x2227;unit&#x2309;
+&#x2308;concat(elem(x), s) &#x2227; elem(a)&#x2309; = &#x2308;x&#x2227;a&#x2309; &#x2227; (&#x2308;s&#x2227;unit&#x2309; &#x2228; &#x2308;s&#x2227;a&#x2309;)
+&#x2308;concat(elem(x), s&#x2081;) &#x2227; concat(elem(a), s&#x2082;)&#x2309;
+    = &#x2308;x&#x2227;a&#x2309; &#x2227; (&#x2308;s&#x2081;&#x2227;s&#x2082;&#x2309; &#x2228; &#x2308;s&#x2081;&#x2227; concat(elem(a), s&#x2082;)&#x2309;)
+      &#x2228;
+      (&#xAC;&#x2308;x&#x2227;a&#x2309; &#x2227; &#x2203; s&#x2083; . &#x2308;concat(elem(x),s&#x2083;)&#x2227;s&#x2082;&#x2309; &#x2227; &#x2308;s&#x2081;&#x2227;concat(elem(a),s&#x2083;)&#x2309;)
+</code></pre>
+<h2 id="use-case%3A-heating-and-cooling">Use case: heating and cooling</h2>
+<p>Let&#x2019;s say that we want to do heating and cooling using equations instead of
+rewriting rules. We might have</p>
+<pre class="language-text"><code>(a + b) = a ~&gt; ([] + b)
+(a + b) = b ~&gt; (a + [])
+</code></pre>
+<p>as equations.
+Now, if we want to apply</p>
+<pre class="language-text"><code>x + y ~&gt; z &#x21D2; x +Int y ~&gt; z    if isValue(x) &#x2227; isValue(y)
+</code></pre>
+<p>to something like</p>
+<pre class="language-text"><code>((1 + 2) + (3 + 4))
+</code></pre>
+<p>we need to unify <code>x + y ~&gt; z</code> with <code>((1 + 2) + (3 + 4))</code>. While we could expand
+the expression in all possible ways and apply matching for the top <code>~&gt;</code>, we
+could do this in a more principled way if we had the following axiom:</p>
+<pre class="language-text"><code>&#x2308;x~&gt;y &#x2227; (a+b)&#x2309; =
+    (&#x2308;x &#x2227; (a+b)&#x2309; &#x2227; &#x2308;y &#x2227; unit&#x2309;)
+    &#x2228; &#x2203; d . (&#x2308;x~&gt;d &#x2227; a&#x2309; &#x2227; &#x2308;y &#x2227; (d~&gt;[]+b)&#x2309;)
+    &#x2228; &#x2203; d . (&#x2308;x~&gt;d &#x2227; b&#x2309; &#x2227; &#x2308;y &#x2227; (d~&gt;a+[])&#x2309;)
+  if isKItem(x)
+</code></pre>
+<p>This would give us a clear way of doing unification, in which we&apos;d be sure that
+we&apos;re not missing any terms when expanding, and which would make it easy to
+prove that we&apos;re doing the right thing.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unification-with-equations" class="bd-toc-link">Unification with equations</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#summary"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Summary
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proposed-solution" class="bd-toc-link">Proposed Solution</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#actual-proposal"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Actual proposal
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#use-case%3A-lists"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Use-case: lists
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#use-case%3A-multi-sets"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Use-case: multi-sets
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#use-case%3A-sets"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Use-case: sets
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#use-case%3A-heating-and-cooling"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Use case: heating and cooling
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

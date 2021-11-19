@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="ensures-checks">Ensures checks</h1>
+<h2 id="background">Background</h2>
+<p>A rewrite axiom, lemma or claim has the form
+<code>left &#x2227; requires &#x21D2; right &#x2227; ensures</code>, where <code>left</code> and <code>right</code> are (usually)
+terms, and <code>requires</code> and <code>ensures</code> are predicates. The right hand side of <code>&#x21D2;</code>
+could add new variables, which are quantified existentially.</p>
+<p>Examples that use ensure clauses could include:</p>
+<p>Axiom:</p>
+<pre class="language-text"><code>random(a,b) &#x2227; (a &#x2264; b) &#x21D2; &#x2203; m . m &#x2227; (m &#x2265; a &#x2227; m &#x2264; b)
+</code></pre>
+<p>Claim:</p>
+<pre class="language-text"><code>If (a &lt; b) then b else a &#x21D2; &#x2203; r . r &#x2227; ((a &#x2264; b &#x2227; r=b) &#x2228; (b &#x2264; a &#x2227; r=a))
+</code></pre>
+<p>Note that we do need ensure clauses for claims.</p>
+<h2 id="questions">Questions</h2>
+<p>Should we allow ensure clauses in axioms?</p>
+<p>It is not at all obvious that we actually need them. Also, given that it is very easy to
+make mistakes when writing them, should we try to detect errors?</p>
+<p>As an example, the following axiom infers that <code>a &#x2264; b</code> out of thin air:</p>
+<pre class="language-text"><code>random(a,b) &#x21D2; &#x2203; m . m &#x2227; (m &#x2265; a &#x2227; m &#x2264; b)
+</code></pre>
+<h2 id="decision%3A-postpone-allowing-them">Decision: Postpone allowing them</h2>
+<p>We should show an error when encountering rewrite axioms with ensures. When
+needed, we should implement the decision below. We should only allow
+ensures axioms that use existential quantifiers if we don&apos;t have concrete
+examples without quantifiers.</p>
+<h2 id="decision%3A-check-ensure-validity">Decision: Check ensure validity</h2>
+<p>We should have a flag <code>--rewrite-axiom-check</code> with three possible values:
+<code>None</code>, <code>BestEffort</code> and <code>Strict</code>. We should check the
+<code>&#x2308;left&#x2309; &#x2227; requires &#x2227; &#xAC; (&#x2203; Z . ensures)</code> expression from the section below
+like this:</p>
+<ol>
+<li><code>None</code>: no checks.</li>
+<li><code>BestEffort</code>: check whether it is <code>&#x22A5;</code>, or the SMT gives up on checking it,
+fail otherwise.</li>
+<li><code>Strict</code>: check whether it is <code>&#x22A5;</code>, fail otherwise.</li>
+</ol>
+<h2 id="reasoning">Reasoning</h2>
+<p>Let us take a <code>left &#x2227; requires &#x21D2; right &#x2227; ensures</code> formula (no quantification
+for now). This is equivalent to:</p>
+<pre class="language-text"><code>left &#x2227; requires &#x21D2; right &#x2227; ensures
+left &#x2227; requires &#x2192; &#x2022; right &#x2227; ensures  -- expand &#x21D2;
+left &#x2227; requires &#x2192; ensures &#x2227; &#x2022; right  -- predicates can move out of &#x2022;
+(left &#x2227; requires &#x2192; ensures)          -- a &#x2192; b &#x2227; c iff (a &#x2192; b) &#x2227; (a &#x2192; c)
+    &#x2227; (left &#x2227; requires &#x2192; &#x2022; right)
+</code></pre>
+<p>Now, note that this is an axiom, so the entire expression is a theorem. This means that both <code>left &#x2227; requires &#x2192; &#x2022; right</code> and
+<code>left &#x2227; requires &#x2192; ensures</code> are theorems.</p>
+<p>But <code>ensures</code> is a predicate.</p>
+<ol>
+<li>If <code>ensures</code> is <code>&#x22A5;</code>, then <code>left &#x2227; requires</code> must be <code>&#x22A5;</code>, which means that either
+<code>left</code> is <code>&#x22A5;</code> or <code>requires</code> is <code>&#x22A5;</code>, which means that either <code>&#x2308;left&#x2309;</code> is <code>&#x22A5;</code>  or <code>requires</code> is <code>&#x22A5;</code></li>
+<li>If <code>ensures</code> is <code>&#x22A4;</code>, then the right hand side of the implication does not
+matter.</li>
+</ol>
+<p>So we should be able to replace that part of the axiom with:</p>
+<pre class="language-text"><code>&#x2308;left&#x2309; &#x2227; requires &#x2192; ensures
+</code></pre>
+<p>Which is equivalent to</p>
+<pre class="language-text"><code>&#xAC; (&#x2308;left&#x2309; &#x2227; requires &#x2227; &#xAC;ensures)
+</code></pre>
+<p>Which we can try to validate, or we can try to see whether
+<code>&#x2308;left&#x2309; &#x2227; requires &#x2227; &#xAC;ensures</code> is always <code>&#x22A5;</code>, i.e. whether it is unsatisfiable.</p>
+<p>Now, let us take an axiom with a quantified right hand side,
+<code>left &#x2227; requires &#x21D2; &#x2203; Z . right &#x2227; ensures</code>. Then this is equivalent to:</p>
+<pre class="language-text"><code>left &#x2227; requires &#x21D2; &#x2203; Z . right &#x2227; ensures
+left &#x2227; requires &#x2192; &#x2022; &#x2203; Z . right &#x2227; ensures  -- expand &#x21D2;
+left &#x2227; requires &#x2192; &#x2203; Z . &#x2022; right &#x2227; ensures  -- &#x2203; commutes with &#x2022;
+&#x2203; Z . left &#x2227; requires &#x2192; &#x2022; right &#x2227; ensures  -- &#x2203; commutes with &#x2228; and &#x2192;
+&#x2203; Z . ( (left &#x2227; requires &#x2192; &#x2022; right)        -- a &#x2192; b &#x2227; c iff (a &#x2192; b) &#x2227; (a &#x2192; c)
+      &#x2227; (left &#x2227; requires &#x2192; ensures)
+      )
+</code></pre>
+<p>But, since <code>&#x2203; Z &#x3C6; &#x2227; &#x3C8; &#x2192; (&#x2203; Z &#x3C6;) &#x2227; (&#x2203; Z &#x3C8;)</code>, and the above is a theorem, then the
+following two must be theorems:</p>
+<pre class="language-text"><code>&#x2203; Z . left &#x2227; requires &#x2192; &#x2022; right
+&#x2203; Z . left &#x2227; requires &#x2192; ensures
+</code></pre>
+<p>but note that Z does not occur in <code>left &#x2227; requires</code>, so the latter becomes</p>
+<pre class="language-text"><code>left &#x2227; requires &#x2192; &#x2203; Z . ensures
+</code></pre>
+<p>But <code>&#x2203; Z . ensures</code> is a predicate, so we can take <code>ensures&apos; = &#x2203; Z . ensures</code>
+and, as above, transform</p>
+<pre class="language-text"><code>left &#x2227; requires &#x2192; ensures&apos;
+</code></pre>
+<p>into</p>
+<pre class="language-text"><code>&#xAC; (&#x2308;left&#x2309; &#x2227; requires &#x2227; &#xAC;ensures&apos;)
+</code></pre>
+<p>so we can just check whether <code>&#x2308;left&#x2309; &#x2227; requires &#x2227; &#xAC; (&#x2203; Z . ensures)</code> is
+unsatisfiable.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#ensures-checks" class="bd-toc-link">Ensures checks</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#questions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Questions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision%3A-postpone-allowing-them"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision: Postpone allowing them
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision%3A-check-ensure-validity"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision: Check ensure validity
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#reasoning"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Reasoning
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
