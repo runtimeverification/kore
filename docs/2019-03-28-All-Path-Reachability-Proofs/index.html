@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="proving-all-path-reachability-claims">Proving All-Path Reachability Claims</h1>
+<p>This document details All-Path Reachability without solving the
+most-general-unifier (MGU) problem.
+MGU will be detailed in a separate document.</p>
+<p><em>Prepared by Traian &#x218;erb&#x103;nu&#x21B;&#x103;, Virgil &#x218;erb&#x103;nu&#x21B;&#x103;, Xiaohong Chen.</em></p>
+<h2 id="background">Background</h2>
+<p>Recommended reading: <a href="../2018-11-08-One-Path-Reachability-Proofs/">proving One-Path Reachability
+claims</a>.</p>
+<p>Similarly to the One-Path Reachability document, we assume all pattern variables
+used in this document to be <em>extended function-like patterns</em>, that is patterns
+which can be written as <code>t &#x2227; p</code> where the interpretation of <code>t</code> contains at most
+one element and <code>p</code> is a predicate.</p>
+<p><em>Extended constructor patterns</em> will be those extended function-like patterns
+for which <code>t</code> is a functional term, composed out of constructor-like symbols
+and variables.</p>
+<p><strong>Note:</strong>
+Whenever <code>&#x3C6;</code> is a function-like pattern,</p>
+<pre class="language-text"><code>&#x3C6; &#x2227; &#x2203;z.&#x3C8; = &#x3C6; &#x2227; &#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;
+</code></pre>
+<p>and</p>
+<pre class="language-text"><code>&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x3C8; = &#x3C6; &#x2227; &#xAC;&#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;
+</code></pre>
+<p>In this document we prefer the formulations on the right because they are of the
+form pattern and predicate.</p>
+<p>Moreover, suppose all free variables in the above formulae are from <code>x</code>,
+we will assume that the unification condition <code>&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;</code> can always be
+computed to be of the form <code>z = t &#x2227;  p</code>, where</p>
+<ul>
+<li><code>t</code>s are functional patterns with no free variables from <code>z</code>
+<ul>
+<li>i.e., [t / z] is a substitution.</li>
+</ul>
+</li>
+<li><code>p</code> is a predicate over <code>x &#x222A; z</code></li>
+</ul>
+<p>Under this assumption, <code>&#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;</code> can be rewritten without the existential
+quantification, as <code>p[t/z]</code>, i.e., <code>p</code> in which all ocurrences of the variables
+from <code>z</code> are substituted with the corresponding term in <code>t</code>.</p>
+<h2 id="definitions">Definitions</h2>
+<h3 id="weak-always-finally">Weak always finally</h3>
+<p>Given a formula <code>&#x3C6;</code>, let <code>[w]&#x3C6;</code> denote the formula &#x201C;weak always finally&#x201D; <code>&#x3C6;</code>,
+defined by:</p>
+<pre class="language-text"><code>[w]&#x3C6; := &#x3BD;X.&#x3C6; &#x2228; (&#x25CB;X &#x2227; &#x2022;&#x22A4;)
+</code></pre>
+<p>one consequence of the above is that <code>[w]&#x3C6; = &#x3C6; &#x2228; (&#x25CB;[w]&#x3C6; &#x2227; &#x2022;&#x22A4;)</code>.</p>
+<p>Given this definition of weak always, an all-path reachability claim</p>
+<pre class="language-text"><code>&#x2200;x.&#x3C6;(x) &#x2192; [w]&#x2203;z.&#x3C8;(x,z)
+</code></pre>
+<p>basically states that if <code>&#x3C6;(x)</code> holds for a configuration <code>&#x3B3;</code>, for some <code>x</code>,
+then <code>P(&#x3B3;)</code> holds, where <code>P(G)</code> is recursively defined on configurations as:</p>
+<ul>
+<li>there exists <code>z</code> such that <code>&#x3C8;(x,z)</code> holds for <code>G</code></li>
+<li>or
+<ul>
+<li><code>G</code> is not stuck (<code>G &#x2192; &#x2022; T</code>) and</li>
+<li><code>P(G&apos;)</code> for all configurations <code>G&apos;</code> in which <code>G</code> can transition</li>
+</ul>
+</li>
+</ul>
+<h2 id="problem-description">Problem Description</h2>
+<p>Given a set of all-path reachability claims, of the form <code>&#x2200;x.&#x3C6;(x) &#x2192; [w]&#x2203;z.&#x3C8;(x,z)</code>,
+we are trying to prove all of them together.</p>
+<h2 id="algorithms">Algorithms</h2>
+<p>(detailed in the next section)</p>
+<h3 id="algorithm-proveallpath">Algorithm <code>proveAllPath</code></h3>
+<p><strong>Input:</strong> claims <code>&#x2200;x&#x2081;.&#x3C6;&#x2081; &#x2192; [w]&#x2203;z&#x2081;.&#x3C8;&#x2081;</code>, <code>&#x2200;x&#x2082;.&#x3C6;&#x2082; &#x2192; [w]&#x2203;z&#x2082;.&#x3C8;&#x2082;</code>, &#x2026;, <code>&#x2200;x&#x2099;.&#x3C6;&#x2099; &#x2192; [w]&#x2203;z&#x2099;.&#x3C8;&#x2099;</code></p>
+<p><strong>Output:</strong> Proved or Unproved</p>
+<ul>
+<li>For each claim <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code>
+<ul>
+<li>Let <code>Goals := { &#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8; }</code></li>
+<li>While <code>Goals</code> is not empty:
+<ul>
+<li>Extract and remove <code>goal</code> of the form <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code> from <code>Goals</code></li>
+<li>Let <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x. (&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>If <code>goal&#x1D63;&#x2091;&#x2098;</code> is trivialy valid (i.e., if <code>&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309; &#x2261; &#x22A5;</code>)
+<ul>
+<li>continue to the next goal</li>
+</ul>
+</li>
+<li>If not the first while iteration for this claim:
+<ul>
+<li><code>(Goals&apos;, goal&apos;&#x1D63;&#x2091;&#x2098;) := deriveSeq(goal&#x1D63;&#x2091;&#x2098;, claims)</code>
+(alternatively, one can use <code>(Goals&apos;, goal&apos;&#x1D63;&#x2091;&#x2098;) := derivePar(goal&#x1D63;&#x2091;&#x2098;, claims)</code>)</li>
+</ul>
+</li>
+<li>Else, let <code>(Goals&apos;, goal&apos;&#x1D63;&#x2091;&#x2098;) := (&#x2205;, goal&#x1D63;&#x2091;&#x2098;)</code></li>
+<li>Let <code>(Goals&apos;&apos;, goal&apos;&apos;&#x1D63;&#x2091;&#x2098;) := derivePar(goal&apos;&#x1D63;&#x2091;&#x2098;, axioms)</code></li>
+<li>If <code>goal&apos;&apos;&#x1D63;&#x2091;&#x2098;</code> is not trivially valid (its lhs is not equivalent to <code>&#x22A5;</code>)
+<ul>
+<li>Return <code>Unprovable</code></li>
+</ul>
+</li>
+<li>Let <code>Goals := Goals &#x222A; Goals&apos; &#x222A; Goals&apos;&apos;</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Return <code>Provable</code></li>
+</ul>
+<p><strong>Note:</strong> Since the derivation process can continue indefinitely, one could add
+a bound on the total number of (levels of) expansions attempted before
+returning <code>Unprovable</code>.</p>
+<p><strong>Note</strong>: If the unfication condition <code>&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309; = (z=t)&#x2227; p</code>
+with <code>t</code> functional, <code>p</code> predicate, and <code>t</code> free of <code>z</code>.
+Then <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x. (&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x2308;&#x3C6; &#x2227; &#x3C8;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code>
+is equivalent to <code>&#x2200;x.&#x3C6; &#x2227; &#xAC;p&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2192; [w]&#x2203;z.&#x3C8;</code>.</p>
+<h3 id="algorithm-derivepar">Algorithm <code>derivePar</code></h3>
+<p><strong>Input:</strong>: goal <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code> and set of tuples <code>{ (x&#x1D62;,&#x3C6;&#x1D62;,z&#x1D62;,&#x3C8;&#x1D62;) : 1 &#x2264; i &#x2264; n }</code> representing either</p>
+<ul>
+<li>claims <code>{ &#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62; : 1 &#x2264; i &#x2264; n }</code>, or</li>
+<li>axioms <code>{ &#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; &#x2022;&#x2203;z&#x1D62;.&#x3C8;&#x1D62; : 1 &#x2264; i &#x2264; n }</code></li>
+</ul>
+<p><strong>Output:</strong> <code>(Goals, goal&#x1D63;&#x2091;&#x2098;)</code></p>
+<ul>
+<li>Let <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x.(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026;  &#x2227; &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>Let <code>Goals := { &#x2200;x&#x222A;z&#x2081;.(&#x2203;x&#x2081;.&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;, &#x2026; , &#x2200;x&#x222A;z&#x2099;.(&#x2203;x&#x2099;.&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8; }</code></li>
+</ul>
+<p><strong>Note</strong>: <code>&#x2200;x&#x222A;z&#x1D62;.(&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code> is obtained from
+<code>&#x2200;x.(&#x2203;x&#x1D62;.(&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></p>
+<p><strong>Note</strong>: If the unfication condition <code>&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; = (x&#x1D62;=t&#x1D62;)&#x2227; p&#x1D62;</code>
+with <code>t&#x1D62;</code> functional, <code>p&#x1D62;</code> predicate, and <code>t&#x1D62;</code> free of <code>xi</code>.
+Then the goal <code>&#x2200;x&#x222A;z&#x1D62;.(&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code>
+is equivalent to <code>&#x2200;x&#x222A;z&#x1D62;.&#x3C8;&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2227; p&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2192; [w]&#x2203;z.&#x3C8;</code>.</p>
+<h3 id="algorithm-deriveseq">Algorithm <code>deriveSeq</code></h3>
+<p><strong>Input:</strong>: goal and set of claims</p>
+<ul>
+<li>goal: <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>claims <code>&#x2200;x&#x2081;.&#x3C6;&#x2081; &#x2192; [w]&#x2203;z&#x2081;.&#x3C8;&#x2081;</code>, <code>&#x2200;x&#x2082;.&#x3C6;&#x2082; &#x2192; [w]&#x2203;z&#x2082;.&#x3C8;&#x2082;</code>, &#x2026;, <code>&#x2200;x&#x2099;.&#x3C6;&#x2099; &#x2192; [w]&#x2203;z&#x2099;.&#x3C8;&#x2099;</code></li>
+</ul>
+<p><strong>Output:</strong> <code>(Goals, goal&#x1D63;&#x2091;&#x2098;)</code></p>
+<ul>
+<li>Let <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x.(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026;  &#x2227; &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>Let <code>Goals := { &#x2200;x&#x222A;z&#x2081;.(&#x2203;x&#x2081;.&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6;&#x2081;&#x2B3;&#x1D49;&#x1D50;&#x2227;&#x3C6;&#x2081;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;, &#x2026; , &#x2200;x&#x222A;z&#x2099;.(&#x2203;x&#x2099;.&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6;&#x2099;&#x2B3;&#x1D49;&#x1D50;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8; }</code></li>
+</ul>
+<p>where <code>&#x3C6;&#x2081;&#x2B3;&#x1D49;&#x1D50; := &#x3C6;</code> and</p>
+<pre class="language-text"><code>&#x3C6;&#x1D62;&#x208A;&#x2081;&#x2B3;&#x1D49;&#x1D50; := &#x3C6;&#x1D62;&#x2B3;&#x1D49;&#x1D50; &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; = &#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026;  &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;
+</code></pre>
+<p><strong>Note</strong>: If the unification condition <code>&#x2308;&#x3C6;&#x1D62;&#x2B3;&#x1D49;&#x1D50; &#x2227; &#x3C6;&#x1D62;&#x2309; = (x&#x1D62;=t&#x1D62;)&#x2227; p&#x1D62;</code>
+with <code>t&#x1D62;</code> functional, <code>p&#x1D62;</code> predicate, and <code>t&#x1D62;</code> free of <code>xi</code>.
+Then the goal <code>&#x2200;x&#x222A;z&#x1D62;.(&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x1D62;&#x2B3;&#x1D49;&#x1D50;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code>
+is equivalent to <code>&#x2200;x&#x222A;z&#x1D62;.&#x3C8;&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2227; p&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2192; [w]&#x2203;z.&#x3C8;</code>.</p>
+<p>Similarly <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x.(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026;  &#x2227; &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code>
+is equivalent to &#x2200;x.(&#x3C6; &#x2227; &#x22C0;&#x2C7C; &#xAC;p&#x2C7C;[t&#x2C7C;/x&#x2C7C;]) &#x2192; [w]&#x2203;z.&#x3C8;<code>where</code>j<code 1 i : ≤ n, φ unifies with φᵢ>ranges over the set</code>`.</p>
+<p><strong>Note</strong>: If <code>&#x3C6;</code> does not unify with <code>&#x3C6;&#x1D62;</code>, then <code>&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; = &#x22A5;</code>, hence
+the goal <code>&#x2200;x&#x222A;z&#x1D62;.(&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x1D62;&#x2B3;&#x1D49;&#x1D50;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code> is equivalent to
+<code>&#x2200;x.&#x22A5; &#x2192; [w]&#x2203;z.&#x3C8;</code> which can be discharged immediately. Also, in the
+remainder <code>&#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; = &#x22A4;</code> so the conjunct can be removed.</p>
+<h2 id="explanation">Explanation</h2>
+<p>Say we want to prove <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code>.</p>
+<p>Unrolling <code>[w]&#x3C8;</code> we obtain <code>&#x2200;x.&#x3C6; &#x2192; (&#x2203;z.&#x3C8;) &#x2228; (&#x25CB;[w]&#x2203;z.&#x3C8; &#x2227; &#x2022;&#x22A4;)</code>.</p>
+<p>Moving <code>&#x2203;z.&#x3C8;</code> to the left of the implication, we get the equivalent</p>
+<pre class="language-text"><code>&#x2200;x. (&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x3C8;) &#x2192;  &#x25CB;[w](&#x2203;z.&#x3C8;) &#x2227; &#x2022;&#x22A4;
+</code></pre>
+<p>Let <code>&#x3C6;&#x1D63;&#x2091;&#x2098;</code> be <code>&#x3C6; &#x2227; &#xAC;&#x2203;z.&#x3C8;</code>. This step eliminates the cases in which <code>&#x2203;z.&#x3C8;</code> holds now.</p>
+<p>If <code>&#x3C6;&#x1D63;&#x2091;&#x2098;</code> is equivalent to <code>&#x22A5;</code>, then the implication holds and we are done.</p>
+<h3 id="applying-circularities">Applying circularities</h3>
+<p>To apply circularities we have to have made progress using regular rules.
+However, whenever circularities may be applied, we want to apply them
+immediately and to only apply regular rules on the parts on which
+circularities cannot apply.</p>
+<p>Therefore, if we are not at the first step in proving the claim,
+we want to attempt applying all claims, similarly to how
+we do that for the one-path reachability claims in the corresponding algorithm.</p>
+<p>Doing so, we will obtain one result (maybe <code>&#x22A5;</code>) for each of the applied claims
+and the remainder part, i.e., the part on which none of the claims
+could be applied:</p>
+<pre class="language-text"><code>&#x3C6;&apos;&#x1D63;&#x2091;&#x2098; := &#x3C6;&#x1D63;&#x2091;&#x2098; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309; 
+</code></pre>
+<p>We have a chioce whether to apply circularities sequentially or in parallel.</p>
+<h4 id="applying-claims-sequentially">Applying claims sequentially</h4>
+<pre class="language-text"><code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;                                              is equivalent to
+&#x2200;x.&#x3C6; &#x2227; (&#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2228; &#xAC;&#x2203;x&#x1D62;.&#x3C6;&#x1D62;) &#x2192; [w]&#x2203;z.&#x3C8;                         which is equivalent to
+&#x2200;x.(&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62;) &#x2228; (&#x3C6; &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x3C6;&#x1D62;) &#x2192; [w]&#x2203;z.&#x3C8;                   which is equivalent to
+&#x2200;x.((&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62;) &#x2192; [w]&#x2203;z.&#x3C8;) &#x2227; &#x2200;x. ((&#x3C6; &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x3C6;&#x1D62;) &#x2192; [w]&#x2203;z.&#x3C8;) (1)
+</code></pre>
+<p>Note that the remainder <code>&#x2200;x.&#x3C6; &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z.&#x3C8;</code> can be rewritten as
+<code>&#x2200;x.&#x3C6; &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x2203;z.&#x3C8;</code>, as detailed above.</p>
+<p><strong>Note:</strong> If there are multiple claims which could apply on the same concrete
+instance of a configuration, then applying them sequentially would reduce
+the search space by potentially creating less goals.</p>
+<p>If so, then <code>&#x3C6;</code> for claim <code>i+1</code> would be
+<code>&#x3C6;&#x1D62;&#x208A;&#x2081;&#x2B3;&#x1D49;&#x1D50; := &#x3C6; &#x2227; &#xAC;&#x2203;z.&#x2308;&#x3C6;&#x2227;&#x3C8;&#x2309; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2081;&#x2309; &#x2227; &#x2026;  &#x2227; &#xAC;&#x2203;x&#x1D62;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;</code></p>
+<h4 id="applying-claims-in-parallel">Applying claims in parallel</h4>
+<p>Note that in the above resoning we have used the idea that the remainder
+is computed at every claim application; it is equally possible
+to do it only once for all claims:</p>
+<pre class="language-text"><code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;
+&#x2200;x.&#x3C6; &#x2227; (&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2228; &#x2026; &#x2228; &#x2203;x&#x2081;.&#x3C6;&#x2099; &#x2228; (&#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099;) &#x2192; [w]&#x2203;z.&#x3C8;  
+&#x2200;x.(&#x3C6; &#x2227; &#x2203;x&#x2081;.&#x3C6;&#x2081;) &#x2228; &#x2026; &#x2228; (&#x3C6;&apos; &#x2227; &#x2203;x&#x2099;.&#x3C6;&#x2099;) &#x2228; (&#x3C6;&apos; &#x2227; (&#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099;)) &#x2192; [w]&#x2203;z.&#x3C8;
+(&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2192; [w]&#x2203;z.&#x3C8;)  &#x2227; &#x2026; (&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x2099;.&#x3C6;&#x2099; &#x2192; [w]&#x2203;z.&#x3C8;) &#x2227; (&#x2200;x.(&#x3C6; &#x2227; (&#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099;)) &#x2192; [w]&#x2203;z.&#x3C8;)
+</code></pre>
+<p>Note that the remainder can be rewritten as:</p>
+<pre class="language-text"><code>&#x3C6; &#x2227; (&#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099;) &#x2192; [w]&#x3C8;
+(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081;) &#x2227; &#x2026; &#x2227; (&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099;) &#x2192; [w]&#x3C8;
+(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309;) &#x2227; &#x2026; &#x2227; (&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x3C8;
+&#x3C6; &#x2227; (&#xAC;&#x2203;x&#x2081;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; &#x2026; &#x2227;  &#xAC;&#x2203;x&#x2099;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x3C8;
+</code></pre>
+<p>The advantage of this approach is that it&apos;s simpler, not altering the starting goal
+from one derivation to the next.</p>
+<h4 id="using-a-claim-to-advance-the-corresponding-goal">Using a claim to advance the corresponding goal</h4>
+<p>We want to prove that from</p>
+<pre class="language-text"><code>&#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62;
+&#x2200;x&#x222A;z&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x3C8;
+</code></pre>
+<p>we can deduce that <code>&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z.&#x3C8;</code>.</p>
+<p>This would allow us to replace goal <code>&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z.&#x3C8;</code>
+with goal &apos;&#x2200;x&#x222A;z&#x1D62;.&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x3C8;&apos;.</p>
+<p><em>Proof:</em></p>
+<p>The main step of our proof is to prove
+<code>&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309;)</code>
+from <code>&#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62;</code>.</p>
+<p>Assume <code>&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; = (x&#x1D62;=t&#x1D62;)&#x2227; p&#x1D62;</code> with <code>t&#x1D62;</code> functional, <code>p&#x1D62;</code> predicate, and
+<code>t&#x1D62;</code> free of <code>xi</code>.</p>
+<p>Then,</p>
+<pre class="language-text"><code>&#x3C6;&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2192; [w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62;[t&#x1D62;/x&#x1D62;]                              // by axiom &#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62; instan&#x21B;iated to x&#x1D62; = t&#x1D62;
+&#x3C6;&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2227; p[t&#x1D62;/x&#x1D62;] &#x2192; ([w]&#x2203;z&#x1D62;.&#x3C8;&#x1D62;[t&#x1D62;/x&#x1D62;]) &#x2227; p[t&#x1D62;/x&#x1D62;]      // framing
+&#x3C6;&#x1D62;[t&#x1D62;/x&#x1D62;] &#x2227; p[t&#x1D62;/x&#x1D62;] &#x2192; [w]((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;[t&#x1D62;/x&#x1D62;]) &#x2227; p[t&#x1D62;/x&#x1D62;])    // predicate properties
+&#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2227; x&#x1D62;=t&#x1D62; &#x2227; p &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; x&#x1D62;=t&#x1D62; &#x2227; p)        // substitution properties
+&#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)              // definition of &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;
+&#x3C6; &#x2227; &#x2203;x&#x1D62;.(&#x3C6;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)        // Strengthening
+&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;&#x2309;) &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)   // &#x3C6; is functional
+&#x3C6; &#x2227; &#x2203;x&#x1D62;.(&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;) &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)    // predicate properties
+&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)               // idempotency
+&#x3C6; &#x2227; &#x2203;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w]&#x2203;x&#x1D62;.((&#x2203;z&#x1D62;.&#x3C8;&#x1D62;) &#x2227; &#x2308;&#x3C6;&#x2227;&#x3C6;&#x1D62;&#x2309;)                   // &#x3C6; is functional
+</code></pre>
+<h3 id="applying-axioms">Applying axioms</h3>
+<p>We&apos;re back now to <code>&#x2200;x.&#x3C6; &#x2192;  (&#x25CB;[w]&#x2203;z.&#x3C8;) &#x2227; &#x2022;&#x22A4;</code>, which is equivalent to
+<code>(&#x2200;x.&#x3C6; &#x2192;  &#x25CB;[w]&#x2203;z.&#x3C8;) &#x2227; (&#x2200;x.&#x3C6; &#x2192;  &#x2022;&#x22A4;)</code></p>
+<p>Therefore we need to check two things:</p>
+<ol>
+<li>That <code>&#x3C6;</code> is not stuck</li>
+<li>That <code>&#x2200;x.&#x3C6; &#x2192;  &#x25CB;[w]&#x2203;z.&#x3C8;</code></li>
+</ol>
+<p>Assume <code>&#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192;  &#x2022;&#x2203;z&#x1D62;.&#x3C8;&#x1D62;, 1 &#x2264; i &#x2264; n</code>  are all the one-step axioms
+in the definition.</p>
+<p>Using the same reasoning as in when applying all claims in parallel,
+<code>&#x2200;x.&#x3C6; &#x2192; &#x3B1;</code> is equivalent with</p>
+<pre class="language-text"><code>(&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2192; &#x3B1;) &#x2227; &#x2026; &#x2227; (&#x2200;x.&#x3C6; &#x2227; &#x2203;x&#x2099;.&#x3C6;&#x2099; &#x2192; &#x3B1;) &#x2227; (&#x2200;x.&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;.&#x3C6;&#x2081; &#x2227; &#x2026; &#x2227; &#xAC;&#x2203;x&#x2099;.&#x3C6;&#x2099; &#x2192; &#x3B1;)
+</code></pre>
+<p>Now, for the first thing to check, take <code>&#x3B1; := &#x2022;&#x22A4;</code>.
+Since all but the last conjunct are guaranteed to hold
+(because of the rewrite axioms), <code>&#x3C6;</code> is stuck if the remainder after attempting
+to apply all axioms (i.e., the lhs of the last conjunct) is not equivalent to <code>&#x22A5;</code>.</p>
+<p>We want to prove that from</p>
+<pre class="language-text"><code>(&#x2200;x&#x222A;z&#x2081;.&#x2203;x&#x2081;.&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2192; [w]&#x2203;z.&#x3C8;) &#x2227; &#x2026; &#x2227; (&#x2200;x&#x222A;z&#x2099;.&#x2203;x&#x2099;.&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2192; [w]&#x2203;z.&#x3C8;)
+P -&gt; o ((&#x2203;x&#x2081;.&#x2308;P &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; &#x2203;z&#x2081;.&#x3C8;&#x2081;) &#x2228; &#x2026; &#x2228; (&#x2203;x&#x2099;.&#x2308;P &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; &#x2203;z&#x2099;.&#x3C8;&#x2099;))      (STEP)
+&#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192;  &#x2022;&#x2203;z&#x1D62;.&#x3C8;&#x1D62;, 1 &#x2264; i &#x2264; n
+</code></pre>
+<p>we can derive</p>
+<pre class="language-text"><code>&#x2200;x.&#x3C6; &#x2192;  &#x25CB;[w]&#x2203;z.&#x3C8;
+</code></pre>
+<p>This would allow us to replace the goal <code>&#x2200;x.&#x3C6; &#x2192;  &#x25CB;[w]&#x2203;z.&#x3C8;</code> with the set of goals</p>
+<pre class="language-text"><code>{ &#x2200;x&#x222A;z&#x1D62;.&#x2203;x&#x1D62;.&#x3C8;&#x1D62; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2192; [w]&#x2203;z.&#x3C8; : 1 &#x2264; i &#x2264; n }
+</code></pre>
+<p><em>Proof:</em></p>
+<p>Apply <code>(STEP)</code> on <code>&#x3C6;</code>, and we obtain that</p>
+<pre class="language-text"><code>&#x3C6; &#x2192; o &#x22C1;&#x1D62; &#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2227; &#x2203;z&#x1D62;.&#x3C8;&#x1D62;
+</code></pre>
+<p>And our proof goal becomes:</p>
+<pre class="language-text"><code>o &#x2228;_i &#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2227; &#x2203;z&#x1D62;.&#x3C8;&#x1D62; &#x2192; &#x25CB;[w]&#x2203;z.&#x3C8;
+&#x2228;_i &#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2227; &#x2203;z&#x1D62;.&#x3C8;&#x1D62; &#x2192; [w]&#x2203;z.&#x3C8;  // framing on &#x25CB;
+&#x2203;x&#x1D62;.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x1D62;&#x2309; &#x2227; &#x2203;z&#x1D62;.&#x3C8;&#x1D62; &#x2192; [w]&#x2203;z.&#x3C8;  for all i
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proving-all-path-reachability-claims" class="bd-toc-link">Proving All-Path Reachability Claims</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#definitions" class="bd-toc-link">Definitions</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#weak-always-finally"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Weak always finally
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem-description"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem Description
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#algorithms" class="bd-toc-link">Algorithms</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#algorithm-proveallpath"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Algorithm <code>proveAllPath</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#algorithm-derivepar"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Algorithm <code>derivePar</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#algorithm-deriveseq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Algorithm <code>deriveSeq</code>
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#explanation" class="bd-toc-link">Explanation</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#applying-circularities" class="bd-toc-link">Applying circularities</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#applying-claims-sequentially"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Applying claims sequentially
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#applying-claims-in-parallel"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Applying claims in parallel
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#using-a-claim-to-advance-the-corresponding-goal"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Using a claim to advance the corresponding goal
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#applying-axioms"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Applying axioms
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
