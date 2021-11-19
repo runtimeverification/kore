@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="proof-object-syntax">Proof Object Syntax</h1>
+<p>The following is a syntax to output a proof object.</p>
+<pre class="language-text"><code>  &lt;ProofObject&gt;  ::= &lt;AssumedClaim&gt;* &lt;DerivedClaim&gt;*
+
+  &lt;AssumedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt;
+
+  &lt;DerivedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt; by &lt;ProofRule&gt;
+
+  &lt;ProofRule&gt;    ::=
+  | propositional1(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propositional2(&lt;Pattern&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propositional3(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | mp(&lt;Id&gt;, &lt;Id&gt;)
+  | ug(&lt;Variable&gt;, &lt;Id&gt;)
+  | varsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;)
+  | forall(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | frame(&lt;Id&gt;, &lt;Symbol&gt;, &lt;Position&gt;)
+  | propagate-bot(&lt;Symbol&gt;, &lt;Position&gt;)
+  | propagate-or(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propagate-exists(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Variable&gt;, &lt;Pattern&gt;)
+  | existence(&lt;Variable&gt;)
+  | singvar(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;, &lt;PathPosition&gt;)
+  | &lt;DerivedProofRule&gt;
+  
+  &lt;Id&gt; ::= /* Quite flexible syntax. */
+  
+  &lt;Position&gt; ::= &lt;PositiveInteger&gt; /* 1, 2, 3, ... */
+  
+  &lt;PathPosition&gt; ::= /* A nonempty sequence of &lt;Position&gt; */
+
+
+  &lt;DerivedProofRule&gt; ::=
+  |  eqsubst-rule(&lt;Id&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;)          /* Equality Substituion Rule */
+  |  funsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;, &lt;Pattern&gt;) /* Functional Substituion */
+  |  funsubst-rule(&lt;Id&gt;, &lt;Id&gt;)                              /* Functional Substituion Rule */
+  |  eq-comm(&lt;Id&gt;)                                          /* Equality Commutativity */
+  |  eq-trans(&lt;Id&gt;, &lt;Id&gt;)                                   /* Equality Transitivity*/
+
+</code></pre>
+<h2 id="arguments-in-%3Cproofrule%3E-and-their-meaning">Arguments in <code>&lt;ProofRule&gt;</code> and Their Meaning</h2>
+<p>We informally explain what the arguments in <code>&lt;ProofRule&gt;</code> mean.
+In matching logic proof system, we have 12 proof rules.
+Three of them are inference rules with one or more premises.
+The rest nine are axiom schemas.
+The three inference rules need <code>&lt;Id&gt;</code> arguments to refer to the premises
+that they are applied on.
+All 12 proof rules contain some meta-variables,
+and the <code>&lt;Pattern&gt;</code>, <code>&lt;Symbol&gt;</code>, ... arguments tell us how to instantiate
+these meta-variables in proof rules.</p>
+<p>In the following, we list the correspondence between meta-variables in
+proof rules and the arguments in <code>&lt;ProofRule&gt;</code>.</p>
+<pre class="language-text"><code>  |- P -&gt; (Q -&gt; P)
+  propositional1(P, Q)
+
+  |- (P -&gt; Q -&gt; R) -&gt; (P -&gt; Q) -&gt; (P -&gt; R)
+  propositional2(P, Q, R)
+
+  |- (not P -&gt; not Q) -&gt; (Q -&gt; P)
+  propositional3(P, Q)
+
+  |- P and |- P -&gt; Q implies |- Q
+  mp(id1, id2) where id1 : P and id2 : P -&gt; Q
+
+  |- P implies |- forall x . P
+  ug(x, id) where id : P
+
+  |- (forall x . P) -&gt; P[y/x]
+  varsubst(x, P, y)
+
+  |- (forall x . P -&gt; Q) -&gt; P -&gt; forall x . Q
+  forall(x, P, Q)
+ 
+  |- P -&gt; Q implies |- sigma(..., P, ...) -&gt; sigma(..., Q, ...)
+  frame(id1, sigma, k)
+  where P and Q appear as the kth arguments.
+
+  |- sigma(..., bot, ...) -&gt; bot
+  propagate-bot(sigma, k)
+  where bot is the kth argument.
+
+  |- sigma(..., P \/ Q, ...) -&gt; sigma(..., P, ...) \/ sigma(..., Q, ...)
+  propagate-or(sigma, k, P, Q)
+  where P \/ Q, P, Q are the kth arguments resp.
+
+  |- sigma(..., exists x . P, ...) -&gt; exists x . sigma(..., P, ...)
+  propagate-exists(sigma, k, x, P)
+  where (exists x . P) and P are the kth arguments resp.
+
+  |- exists x . x
+  existence(x)
+
+  |- not (C1[x /\ P] /\ C2[x /\ not P])
+  singvar(x, P, pos1, pos2)
+  where `x /\ P` occurs at position `pos1` in `C1`,
+  and `x /\ not P` occurs at position `pos2` in `C2`.
+
+  /* Derived Proof Rules */
+
+  |- P = Q implies |- C[P] = C[Q]
+  eqsubst-rule(id, C, pos)
+  where `C` is any context,
+  and `P` and `Q` occur at position `pos` in `C`.
+
+  |- (exists t . P1 = t) /\ (forall x . P2) -&gt; P2[P1/t]
+  funsubst(t, P1, x, P2)
+
+  |- exists t . P1 = t and |- forall x . P2 implies |- P2[P1/t]
+  funsubst-rule(id1, id2)
+
+  |- P = Q implies |- Q = P
+  eq-comm(id1)
+
+  |- P = Q and |- Q = R implies |- P = R
+  eq-trans(id1, id2)
+
+</code></pre>
+<h2 id="how-to-check-if-a-%3Cproofobject%3E-is-correct%3F">How to check if a <code>&lt;ProofObject&gt;</code> is correct?</h2>
+<p>We need a proof checker.</p>
+<p>There are some global conditions that the proof checker should check, as well
+as some local conditions that the proof checker should check for every proof
+step.
+There are also assumptions about the proof objects in order to make proof
+checking very easy.</p>
+<h3 id="assumptions-that-make-proof-checking-very-easy.">Assumptions that make proof checking very easy.</h3>
+<p>We are generous to have various assumptions that make the
+proof checker extremely simple.</p>
+<ul>
+<li>All bound variables are different throughout the proof object;
+(Is it even practical?)</li>
+<li>(Please add more items to this list)</li>
+</ul>
+<h3 id="global-conditions-that-the-checker-should-check">Global conditions that the checker should check</h3>
+<ul>
+<li>Unique Ids for claims;</li>
+<li>(Please add more items to this list)</li>
+</ul>
+<h3 id="local-conditions-that-the-checker-should-check-for-every-proof-step">Local conditions that the checker should check for every proof step</h3>
+<h4 id="id-%3A-pattern-by-propositional1(p%2C-q)"><code>id : Pattern by propositional1(P, Q)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> is syntactically equal to <code>P -&gt; (Q -&gt; P)</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-propositional2(p%2C-q%2C-r)"><code>id : Pattern by propositional2(P, Q, R)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> is syntactically equal to
+<code>(P -&gt; Q -&gt; R) -&gt; (P -&gt; Q) -&gt; (P -&gt; R)</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-propositional3(p%2C-q)"><code>id : Pattern by propositional3(P, Q)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> is syntactically equal to
+<code>(not P -&gt; not Q) -&gt; (Q -&gt; P)</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-mp(id1%2C-id2)"><code>id : Pattern by mp(id1, id2)</code></h4>
+<ul>
+<li>Grab from the previous claims <code>id1 : P1</code> and <code>id2 : P2</code></li>
+<li>Check that <code>P2</code> is syntactically equal to
+<code>P1 -&gt; Pattern</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-ug(x%2C-id1)"><code>id : Pattern by ug(x, id1)</code></h4>
+<ul>
+<li>Grab from the previous claims <code>id1 : P</code></li>
+<li>Check that <code>Pattern</code> is syntactically equal to
+<code>forall x . P</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-varsubst(x%2C-p%2C-y)"><code>id : Pattern by varsubst(x, P, y)</code></h4>
+<ul>
+<li>Check that <code>y</code> doesn&apos;t have bound occurrence in <code>P</code></li>
+<li>Check that <code>Pattern</code> is syntactically equal to
+<code>(forall x . P) -&gt; P[y/x]</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-forall(x%2C-p%2C-q)"><code>id : Pattern by forall(x, P, Q)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> is syntactically equal to
+<code>(forall x . P -&gt; Q) -&gt; P -&gt; forall x . Q</code></li>
+<li>Check that <code>x</code> does not occur free in <code>P</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-frame(id1%2C-sigma%2C-k)"><code>id : Pattern by frame(id1, sigma, k)</code></h4>
+<ul>
+<li>Grab from the previous claims <code>id1 : Pattern1</code></li>
+<li>Check that <code>Pattern1</code> has the form <code>Left1 -&gt; Right1</code></li>
+<li>Check that <code>Pattern</code>  has the form <code>Left -&gt; Right</code></li>
+<li>Check that <code>Left</code> and <code>Right</code> both have the form <code>sigma(...)</code></li>
+<li>For each <code>i = 1 ... N</code> where <code>N</code> is the number of arguments in <code>Left</code></li>
+<li>--- Grab the ith argument of <code>Left</code> and <code>Left</code>, denoted as <code>Pi</code> and <code>Qi</code></li>
+<li>--- if <code>i</code> is not <code>k</code></li>
+<li>------ Check that <code>Pi</code> is syntactically equal to <code>Qi</code></li>
+<li>--- else</li>
+<li>------ Check that <code>Pi</code> is syntactically equal to <code>Left1</code></li>
+<li>------ Check that <code>Qi</code> is syntactically equal to <code>Right1</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-propagate-bot(sigma%2C-k)"><code>id : Pattern by propagate-bot(sigma, k)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code>  has the form <code>Left -&gt; Right</code></li>
+<li>Check that <code>Left</code> has the form <code>sigma(...)</code></li>
+<li>Grab the kth argument of <code>Left</code>, denoted as <code>P</code></li>
+<li>Check that <code>P</code> is syntactically equal to <code>bot</code></li>
+<li>Check that <code>Right</code> is syntactically equal to <code>bot</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-propagate-or(sigma%2C-k%2C-p%2C-q)"><code>id : Pattern by propagate-or(sigma, k, P, Q)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code>  has the form <code>Left -&gt; (RightA \/ RightB)</code></li>
+<li>Check that <code>Left</code>, <code>RightA</code>, <code>RightB</code> all have the form <code>sigma(...)</code></li>
+<li>For each <code>i = 1 ... N</code> where <code>N</code> is the number of arguments in <code>Left</code></li>
+<li>--- Grab the ith argument of <code>Left</code>, <code>RightA</code>, <code>RightB</code>
+--- and denote them as <code>Li</code>, <code>RAi</code>, and <code>RBi</code></li>
+<li>--- if <code>i</code> is not <code>k</code></li>
+<li>------ Check that <code>Li</code>, <code>RAi</code>, and <code>RBi</code> are syntactically equal</li>
+<li>--- else</li>
+<li>------ Check that <code>Li</code> is syntactically equal to <code>P \/ Q</code></li>
+<li>------ Check that <code>RAi</code> is syntactically equal to <code>P</code></li>
+<li>------ Check that <code>RBi</code> is syntactically equal to <code>Q</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-propagate-exists(sigma%2C-k%2C-x%2C-p)"><code>id : Pattern by propagate-exists(sigma, k, x, P)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code>  has the form <code>Left -&gt; Right</code></li>
+<li>Check that <code>x</code> doesn&apos;t occur free in <code>Left</code></li>
+<li>Check that <code>Left</code> has the form <code>sigma(...)</code></li>
+<li>Check that <code>Right</code> has the form <code>exists x . Q</code></li>
+<li>Check that <code>Q</code> has the form <code>sigma(...)</code></li>
+<li>For each <code>i = 1 ... N</code> where <code>N</code> is the number of arguments in <code>Left</code></li>
+<li>--- Grab the ith argument of <code>Left</code>, <code>P</code>
+--- and denote them as <code>Li</code> and <code>Pi</code></li>
+<li>--- if <code>i</code> is not <code>k</code></li>
+<li>------ Check that <code>Li</code> and <code>Pi</code> are syntactically equal</li>
+<li>--- else</li>
+<li>------ Check that <code>Li</code> is syntactically equal to <code>exists x . P</code></li>
+<li>------ Check that <code>Pi</code> is syntactically equal to <code>P</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-existence(x)"><code>id : Pattern by existence(x)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> is syntactically equal to <code>exists x . x</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-singvar(x%2C-p%2C-pos1%2C-pos2)"><code>id : Pattern by singvar(x, P, pos1, pos2)</code></h4>
+<ul>
+<li>Check that <code>Pattern</code> has the form <code>not (C1 /\ C2)</code></li>
+<li>Grab the subpattern at position <code>pos1</code> of <code>C1</code>, denoted as <code>P1</code></li>
+<li>Grab the subpattern at position <code>pos2</code> of <code>C2</code>, denoted as <code>P2</code></li>
+<li>Check <code>P1</code> has the form <code>x /\ P</code></li>
+<li>Check <code>P2</code> has the form <code>x /\ not P</code></li>
+<li>Check the path to <code>pos1</code> in <code>C1</code> contains only symbols</li>
+<li>Check the path to <code>pos2</code> in <code>C2</code> contains only symbols</li>
+</ul>
+<h4 id="id-%3A-pattern-by-eqsubst-rule(id1%2C-c%2C-pos)"><code>id : Pattern by eqsubst-rule(id1, C, pos)</code></h4>
+<ul>
+<li>Grab from the previous claims <code>id1 : Pattern1</code></li>
+<li>Check that <code>Pattern1</code> has the form <code>P = Q</code></li>
+<li>Check that <code>Pattern</code> has the form <code>Left = Right</code></li>
+<li>Substitute at <code>pos</code> in <code>C</code> the pattern <code>P</code> and obtain <code>CP</code> /* purely term substitution, no implicit alpha-renaming, no occur-free checking */</li>
+<li>Substitute at <code>pos</code> in <code>C</code> the pattern <code>Q</code> and obtain <code>CQ</code> /* purely term substitution, no implicit alpha-renaming, no occur-free checking */</li>
+<li>Check that <code>Left</code> and <code>CP</code> are syntactically equal</li>
+<li>Check that <code>Right</code> and <code>CQ</code> are syntactically equal</li>
+</ul>
+<h4 id="id-%3A-pattern-by-funsubst(t%2C-p1%2C-x%2C-p2)"><code>id : Pattern by funsubst(t, P1, x, P2)</code></h4>
+<ul>
+<li>Check that all free variables in <code>P1</code> has no bound occurrence in <code>P2</code></li>
+<li>Check that <code>Pattern</code> has the form <code>EP /\ FP -&gt; CP</code></li>
+<li>Check that <code>EP</code> equals <code>exists t . P1 = t</code></li>
+<li>Check that <code>FP</code> equals <code>forall x . P2</code></li>
+<li>Check that <code>CP</code> equals <code>P2[P1/t]</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-funsubst-rule(id1%2C-id2)"><code>id : Pattern by funsubst-rule(id1, id2)</code></h4>
+<ul>
+<li>Grab <code>id1 : Pattern1</code> and <code>id2 : Pattern2</code></li>
+<li>Check that <code>Pattern1</code> has the form <code>exists t . P1 = t</code></li>
+<li>Check that <code>Pattern2</code> has the form <code>forall x . P2</code></li>
+<li>Check that all free variables in <code>P1</code> has no bound occurrence in <code>P2</code></li>
+<li>Check that <code>Pattern</code> has the form <code>P2[P1/t]</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-eq-comm(id1)"><code>id : Pattern by eq-comm(id1)</code></h4>
+<ul>
+<li>Grab <code>id1 : Pattern1</code></li>
+<li>Check that <code>Pattern1</code> has the form <code>P = Q</code></li>
+<li>Check that <code>Pattern</code> has the form <code>Q = P</code></li>
+</ul>
+<h4 id="id-%3A-pattern-by-eq-trans(id1%2Cid2)"><code>id : Pattern by eq-trans(id1,id2)</code></h4>
+<ul>
+<li>Grab from the previous claims <code>id1 : P1</code></li>
+<li>Grab from the previous claims <code>id2 : P2</code></li>
+<li>Check that <code>P1</code> has the form <code>P11 = P12</code></li>
+<li>Check that <code>P2</code> has the form <code>P21 = P22</code></li>
+<li>Check that <code>Pattern</code> has the form <code>Q1 = Q2</code></li>
+<li>Check that <code>P11</code> is syntactically equal to <code>Q1</code></li>
+<li>Check that <code>P12</code> is syntactically equal to <code>P21</code></li>
+<li>Check that <code>P22</code> is syntactically equal to <code>Q2</code></li>
+</ul>
+<h1 id="mixed-level-proof-object-syntax">Mixed-level Proof Object Syntax</h1>
+<p>Language definitions are expected to use mostly
+object-level or mixed-level patterns, which is why
+we have defined the Kore syntax to allow such patterns,
+rather than simply requiring everything to be encoded
+as meta-level patterns.
+For the same reason, we wish to define a syntax of proofs
+that allows writing mixed-level patterns, and that allows
+object-level reasoning steps to be written in the
+form <code>by &lt;ProofRule&gt;</code> rather than by explicitly
+constructing meta-level proofs of patterns involving <code>#provable</code>
+using the hypotheses described in section 7.7 of
+The Semantics of K.</p>
+<p>To support this we allow as patterns any Kore pattern,
+which follows the syntax of <code>&lt;pattern&gt;</code> in 9.1.4.</p>
+<pre class="language-text"><code>  &lt;ProofObject&gt;  ::= &lt;AssumedClaim&gt;* &lt;DerivedClaim&gt;*
+
+  &lt;AssumedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt;
+
+  &lt;DerivedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt; by &lt;ProofRule&gt;
+
+  &lt;Id&gt; ::= /* Quite flexible syntax. */
+</code></pre>
+<p>Proofs will be defined so that a valid mixed-level proof can
+be transformed into a valid simple proof that assumes or
+proves (resp.) the lifting of each assumed or derived claim
+of the mixed-level proof.</p>
+<p>The patterns in claims will be use a special &quot;claim lifting&quot; that
+transforms a pattern <code>phi</code> whose topmost element is an meta-level
+construct into the pure meta pattern <code>[[phi]]</code>, and lifts
+a pattern which has an object-level construct as the topmost element
+and has no metavariables into the pure meta pattern <code>#provable([[phi]])</code>.</p>
+<p>The claim lifting of a pattern that has metavariables needs to be defined
+in detail, but it will generally add implications before <code>#provable([[phi]])</code>
+asserting that the metavariables are instantiated with well-formed
+sorts or object patterns.</p>
+<p>Following the conventions of lifting we the meta-level proof rules
+will have a &apos;#&apos; prefix added to the name of the object-level proof rules.
+All the same proof rules that we have above for the meta-level should
+have object-level versions as well, but expanding the object-level
+proof to a pure matching logic proof will involve instantiating and
+using hypotheses about <code>#provable</code> rather than using matching logic
+proof rules directly.
+Compared to the previous section, the meta-level proof rules are
+generalized slightly by allowing mixed patterns in the arguments,
+which are uniformly interpreted as their lifting
+(<code>#provable</code> is not automatically added).
+So that object-level proof rules have the same arity as
+meta-level proof rules, any hypotheses about <code>#wellFormed</code>
+or <code>#occursFree</code> are automatically discharged.</p>
+<ul>
+<li>TODO: Need to explain how variables or quantifiers resulting
+from lifting of metavariables are handled by object-level proof rules.
+I think the object-level proof rules should be defined to handle
+at least simple cases automatically.</li>
+</ul>
+<p>To give the user access to this same automation,
+additional meta-level proof rules are provided.
+The new proof rule <code>#check-well-formed(P)</code> proves
+that <code>#wellFormed</code> holds of the lifting of P whenever
+P is well-formed.
+Similarly, <code>#check-free(x,P)</code> and <code>#check-not-free(x,P)</code>
+respectively deduce patterns  <code>#occursFree{s}(x,P)</code>
+or <code>\not{s}(#occursFree{s}(x,P))</code> when they are true.</p>
+<pre class="language-text"><code>  &lt;MixedProofObject&gt;  ::= &lt;AssumedClaim&gt;* &lt;DerivedClaim&gt;*
+
+  &lt;AssumedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt;
+
+  &lt;DerivedClaim&gt; ::= &lt;Id&gt; : &lt;Pattern&gt; by &lt;MixedProofRule&gt;
+
+  &lt;Id&gt; ::= /* Quite flexible syntax. */
+  &lt;Position&gt; ::= &lt;PositiveInteger&gt; /* 1, 2, 3, ... */
+  &lt;PathPosition&gt; ::= /* A nonempty sequence of &lt;Position&gt; */
+
+  &lt;MixedProofRule&gt;    ::=
+  | &lt;ObjectProofRule&gt;
+  | &lt;MetaProofRule&gt;
+
+  &lt;ObjectProofRule&gt;    ::=
+  | propositional1(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propositional2(&lt;Pattern&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propositional3(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | mp(&lt;Id&gt;, &lt;Id&gt;)
+  | ug(&lt;Variable&gt;, &lt;Id&gt;)
+  | varsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;)
+  | forall(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | frame(&lt;Id&gt;, &lt;Symbol&gt;, &lt;Position&gt;)
+  | propagate-bot(&lt;Symbol&gt;, &lt;Position&gt;)
+  | propagate-or(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | propagate-exists(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Variable&gt;, &lt;Pattern&gt;)
+  | existence(&lt;Variable&gt;)
+  | singvar(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;, &lt;PathPosition&gt;)
+  | &lt;DerivedObjectProofRule&gt;
+
+  &lt;DerivedObjectProofRule&gt; ::=
+  |  eqsubst-rule(&lt;Id&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;)          /* Equality Substituion Rule */
+  |  funsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;, &lt;Pattern&gt;) /* Functional Substituion */
+  |  funsubst-rule(&lt;Id&gt;, &lt;Id&gt;)                              /* Functional Substituion Rule */
+  |  eq-comm(&lt;Id&gt;)                                          /* Equality Commutativity */
+  |  eq-trans(&lt;Id&gt;, &lt;Id&gt;)                                   /* Equality Transitivity*/
+
+  &lt;MetaProofRule&gt;    ::=
+  | #propositional1(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | #propositional2(&lt;Pattern&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | #propositional3(&lt;Pattern&gt;, &lt;Pattern&gt;)
+  | #mp(&lt;Id&gt;, &lt;Id&gt;)
+  | #ug(&lt;Variable&gt;, &lt;Id&gt;)
+  | #varsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;)
+  | #forall(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | #frame(&lt;Id&gt;, &lt;Symbol&gt;, &lt;Position&gt;)
+  | #propagate-bot(&lt;Symbol&gt;, &lt;Position&gt;)
+  | #propagate-or(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Pattern&gt;, &lt;Pattern&gt;)
+  | #propagate-exists(&lt;Symbol&gt;, &lt;Position&gt;, &lt;Variable&gt;, &lt;Pattern&gt;)
+  | #existence(&lt;Variable&gt;)
+  | #singvar(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;, &lt;PathPosition&gt;)
+  | &lt;DerivedMetaProofRule&gt;
+  | &lt;AutomaticMetaProofRule&gt;
+
+  &lt;DerivedMetaProofRule&gt; ::=
+  |  #eqsubst-rule(&lt;Id&gt;, &lt;Pattern&gt;, &lt;PathPosition&gt;)          /* Equality Substituion Rule */
+  |  #funsubst(&lt;Variable&gt;, &lt;Pattern&gt;, &lt;Variable&gt;, &lt;Pattern&gt;) /* Functional Substituion */
+  |  #funsubst-rule(&lt;Id&gt;, &lt;Id&gt;)                              /* Functional Substituion Rule */
+  |  #eq-comm(&lt;Id&gt;)                                          /* Equality Commutativity */
+  |  #eq-trans(&lt;Id&gt;, &lt;Id&gt;)                                   /* Equality Transitivity*/
+
+  &lt;AutomaticMetaProofRule&gt; ::=
+  |  #check-well-formed(&lt;Pattern&gt;)
+  |  #check-free(&lt;Variable&gt;,&lt;Pattern&gt;)
+  |  #check-not-free(&lt;Variable&gt;,&lt;Pattern&gt;)
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proof-object-syntax" class="bd-toc-link">Proof Object Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#arguments-in-%3Cproofrule%3E-and-their-meaning"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Arguments in <code>&lt;ProofRule&gt;</code> and Their Meaning
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#how-to-check-if-a-%3Cproofobject%3E-is-correct%3F" class="bd-toc-link">How to check if a <code>&lt;ProofObject&gt;</code> is correct?</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#assumptions-that-make-proof-checking-very-easy."
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Assumptions that make proof checking very easy.
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#global-conditions-that-the-checker-should-check"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Global conditions that the checker should check
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#local-conditions-that-the-checker-should-check-for-every-proof-step" class="bd-toc-link">Local conditions that the checker should check for every proof step</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propositional1(p%2C-q)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propositional1(P, Q)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propositional2(p%2C-q%2C-r)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propositional2(P, Q, R)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propositional3(p%2C-q)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propositional3(P, Q)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-mp(id1%2C-id2)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by mp(id1, id2)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-ug(x%2C-id1)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by ug(x, id1)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-varsubst(x%2C-p%2C-y)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by varsubst(x, P, y)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-forall(x%2C-p%2C-q)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by forall(x, P, Q)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-frame(id1%2C-sigma%2C-k)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by frame(id1, sigma, k)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propagate-bot(sigma%2C-k)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propagate-bot(sigma, k)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propagate-or(sigma%2C-k%2C-p%2C-q)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propagate-or(sigma, k, P, Q)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-propagate-exists(sigma%2C-k%2C-x%2C-p)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by propagate-exists(sigma, k, x, P)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-existence(x)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by existence(x)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-singvar(x%2C-p%2C-pos1%2C-pos2)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by singvar(x, P, pos1, pos2)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-eqsubst-rule(id1%2C-c%2C-pos)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by eqsubst-rule(id1, C, pos)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-funsubst(t%2C-p1%2C-x%2C-p2)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by funsubst(t, P1, x, P2)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-funsubst-rule(id1%2C-id2)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by funsubst-rule(id1, id2)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-eq-comm(id1)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by eq-comm(id1)</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#id-%3A-pattern-by-eq-trans(id1%2Cid2)"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>id : Pattern by eq-trans(id1,id2)</code>
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#mixed-level-proof-object-syntax"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Mixed-level Proof Object Syntax
+              </a></div>
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
