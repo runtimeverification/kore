@@ -1,7 +1,0 @@
-test-exception-7.kore:6:5:
-  |
-6 |     `2:S []
-  |     ^
-unexpected '`'
-expecting identifier or string literal
-

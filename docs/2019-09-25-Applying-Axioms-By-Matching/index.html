@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="algorithm-for-applying-one-rule-to-a-pattern-by-matching">Algorithm for applying one rule to a pattern by matching</h1>
+<p>This document presents an alternative way of applying axioms,
+both rewrite- and equality- ones, which can be used when
+the rule fully matches the configuration, thus having the advantage
+that it does not produce remainders.</p>
+<p>Since it makes no assumptions on the nature of the patterns involved,
+it can safely be used when the configuration or the matching pattern
+are <strong>not</strong> function-like.</p>
+<h2 id="rewrite-rules">Rewrite rules</h2>
+<p>Given a rewrite axiom of the form</p>
+<p>(0) <code>&#x2200; Y .&#x3B1;(Y) &#x2192; &#x2022;&#x3B2;(Y)</code></p>
+<p>and a goal <code>&#x3C6; &#x2192; &#x2022;&#x3C8;</code> such that</p>
+<p>(1) <code>&#x3C6;</code> can be decomposed as <code>&#x3C6; = &#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A;</code>, (1&apos;) <code>&#x3C6;&#x209A;</code> predicate.</p>
+<p>(2) <code>&#x3B1;(Y)</code> can be decomposed as <code>&#x3B1;(Y) = &#x3B1;&#x209C;(Y) &#x2227; &#x3B1;&#x209A;(Y)</code></p>
+<p>and there exist(s) functional pattern(s) <code>t</code> such that</p>
+<p>(3) <code>&#x3C6;&#x209A; &#x2192; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t))</code> and</p>
+<p>(4) <code>&#x3C6;&#x209A; &#x2192; &#x3B1;&#x209A;(t)</code></p>
+<p>Then, if we can show that</p>
+<p>(5) <code>&#x3B2;(t) &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C8;</code>,</p>
+<p>it is true that <code>&#x3C6; &#x2192; &#x2022;&#x3C8;</code>.</p>
+<h3 id="proof">Proof</h3>
+<p>Premise (0) says</p>
+<p><code>&#x2200; Y .&#x3B1;(Y) &#x2192; &#x2022;&#x3B2;(Y)</code>; instantiating <code>Y</code> with <code>t</code> (functional) we get</p>
+<p><code>&#x3B1;(t) &#x2192; &#x2022;&#x3B2;(t)</code> which is equivalent by (2) with</p>
+<p>(6) <code>&#x3B1;&#x209C;(t) &#x2227; &#x3B1;&#x209A;(t) &#x2192; &#x2022;&#x3B2;(t)</code>.</p>
+<p>From (3) and (4), by FOL reasoning (conclusions with same premise), we get</p>
+<p><code>&#x3C6;&#x209A; &#x2192; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t)) &#x2227; &#x3B1;&#x209A;(t)</code>; by FOL reasoning (conjunction to left), we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C6;&#x209C; &#x2227; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t)) &#x2227; &#x3B1;&#x209A;(t)</code>; by equality elimination we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3B1;&#x209C;(t) &#x2227; &#x3B1;&#x209A;(t)</code>; by (6) and transitivity of <code>&#x2192;</code>, we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x2022;&#x3B2;(t)</code>; by FOL reasoning we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x2022;&#x3B2;(t) &#x2227; &#x3C6;&#x209A;</code>; due to (1&apos;) and properties of conjunction we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x2022;(&#x3B2;(t) &#x2227; &#x3C6;&#x209A;)</code>, which is equivalent by (1) with</p>
+<p>(7) <code>&#x3C6; &#x2192; &#x2022;(&#x3B2;(t) &#x2227; &#x3C6;&#x209A;)</code>.</p>
+<p>Premise (5) says</p>
+<p><code>&#x3B2;(t) &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C8;</code>; by the Framing rule of ML with <code>&#x2022;</code>, we get</p>
+<p><code>&#x2022;(&#x3B2;(t) &#x2227; &#x3C6;&#x209A;) &#x2192; &#x2022;&#x3C8;</code>; by (7) and transitivity of <code>&#x2192;</code>, we get</p>
+<p><code>&#x3C6; &#x2192; &#x2022;&#x3C8;</code>.</p>
+<p>QED</p>
+<h3 id="coverage-concerns-(all-path-reachability)">Coverage concerns (All-path-reachability)</h3>
+<p>Note that if <code>&#x3C6;</code> and <code>&#x3B1;&#x209C;(Y)</code> are not functional and constructor-based,
+then the MGU migh not be computable.
+In this case,  the above technique does not guarantee coverage as-is,
+since <code>t</code> is not guaranteed to be the most general unifier
+(there could be more than one minimal unifier).</p>
+<p>The above reasoning could be extended to include multiple
+substitution by replacing (3), (4) and (5) with something like</p>
+<p>(3&apos;) <code>&#x3C6;&#x209A; &#x2192; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t&#x1D62;))</code>, for i=1..n</p>
+<p>(4&apos;) <code>&#x3C6;&#x209A; &#x2192; &#x3B1;&#x209A;(t&#x1D62;)</code>, for i=1..n</p>
+<p>But it&apos;s not clear how to ensure completeness and link this
+with the STEP rule. Also note that our usage of the STEP rule itself
+in the proofs for the all-path algorithms assumes that <code>&#x3C6;</code> is function-like.</p>
+<p>Therefore the proposal for applying rewrite rules by matching described here
+should not be used for all-path-reachability, at least not until we get a
+better intuition.</p>
+<p>Nevertheless, the proposal for equational axioms below does not suffer from the
+same problem.</p>
+<h2 id="equality-axioms">Equality axioms</h2>
+<p>Given an axiom of the form</p>
+<p>(0) <code>&#x2200; Y . &#x3B1;&#x209A;(Y) &#x2192; (&#x3B1;&#x209C;(Y) = &#x3B2;(Y))</code></p>
+<p>and a goal <code>&#x3C6; &#x2192; &#x3C8;</code> such that</p>
+<p>(1) <code>&#x3C6;</code> can be decomposed as <code>&#x3C6; = &#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A;</code></p>
+<p>and there exist(s) functional pattern(s) <code>t</code> such that</p>
+<p>(2) <code>&#x3C6;&#x209A; &#x2192; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t))</code> and</p>
+<p>(3) <code>&#x3C6;&#x209A; &#x2192; &#x3B1;&#x209A;(t)</code></p>
+<p>Then, if we can show that</p>
+<p>(4) <code>&#x3B2;(t) &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C8;</code>,</p>
+<p>it is true that <code>&#x3C6; &#x2192; &#x3C8;</code>.</p>
+<h3 id="proof-1">Proof</h3>
+<p>Premise (0) says</p>
+<p>(0) <code>&#x2200; Y . &#x3B1;&#x209A;(Y) &#x2192; (&#x3B1;&#x209C;(Y) = &#x3B2;(Y))</code>; instantiating <code>Y</code> with <code>t</code> (functional) we get</p>
+<p><code>&#x3B1;&#x209A;(t) &#x2192; (&#x3B1;&#x209C;(t) = &#x3B2;(t))</code>; by (3) and transitivity of <code>&#x2192;</code> we get</p>
+<p><code>&#x3C6;&#x209A; &#x2192; (&#x3B1;&#x209C;(t) = &#x3B2;(t))</code>; by FOL (conjunctions with same premise) using (2) we get</p>
+<p><code>&#x3C6;&#x209A; &#x2192; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t)) &#x2227; (&#x3B1;&#x209C;(t) = &#x3B2;(t))</code>; by FOL reasoning (conjunction to left), we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C6;&#x209C; &#x2227; (&#x3C6;&#x209C; = &#x3B1;&#x209C;(t)) &#x2227; (&#x3B1;&#x209C;(t) = &#x3B2;(t))</code>; by equality elimination we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3B1;&#x209C;(t) &#x2227; (&#x3B1;&#x209C;(t) = &#x3B2;(t))</code>; by equality elimination we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3B2;(t)</code>; by FOL reasoning we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3B2;(t) &#x2227; &#x3C6;&#x209A;</code>; by (4) and transitivity we get</p>
+<p><code>&#x3C6;&#x209C; &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C8;</code>, which is equivalent by (1) with</p>
+<p><code>&#x3C6; &#x2192; &#x3C8;</code>.</p>
+<p>QED</p>
+<h3 id="coverage-concerns-(all-path-reachability)-1">Coverage concerns (All-path-reachability)</h3>
+<p>Note that the original goal and the derived one only
+differ in that <code>&#x3C6;&#x209C;</code> and <code>&#x3B2;(t)</code>&apos;s places are exchanged.
+Because the equality is symmetric in (2) and <code>&#x3C6;&#x209A;</code> is carried over to the
+derived goal <code>&#x3C6; &#x2192; &#x3C8;</code> from <code>&#x3B2;(t) &#x2227; &#x3C6;&#x209A; &#x2192; &#x3C8;</code>.</p>
+<p>Hence the derived goal is equivalent to the original one, so
+all-path-reachability is not affected by the transformation.</p>
+<h2 id="implementation-concerns">Implementation concerns</h2>
+<p>Currently both rewrite axioms and equality axioms are applied following the ideas
+described by</p>
+<ul>
+<li><a href="../2018-11-08-Configuration-Splitting-Simplification/">Configuration Splitting Simplification</a>
+and</li>
+<li><a href="../2018-11-08-Applying-Axioms/">Applying axioms</a></li>
+</ul>
+<p>whose proof of soundness assumes that both <code>&#x3C6;&#x209C;</code> and <code>&#x3B1;&#x209C;(Y)</code> are <em>function-like</em>
+and use the predicate <code>&#x2308;&#x3C6;&#x209C; &#x2227; &#x3B1;&#x209C;(Y)&#x2309;</code> to compute the substution and the remainder.</p>
+<p>Assuming that one or both of <code>&#x3C6;&#x209C;</code> and <code>&#x3B1;&#x209C;(Y)</code> are <strong>not</strong> function-like,
+we cannot soundly apply the algorithms described in those documents.</p>
+<p>However,  if <code>&#x2308;&#x3C6;&#x209C; &#x2227; &#x3B1;&#x209C;(Y)&#x2309;</code> simplifies to a predicate of the form <code>(Y = t) &#x2227; p</code>
+and if <code>t</code> verifies the conditions stated above, namely,</p>
+<ul>
+<li><code>&#x3C6;&#x209A; &#x2192; &#x3C6;&#x209C; = &#x3B1;&#x209C;(t)</code>
+<ul>
+<li>This could be checked syntactically (disregarding <code>&#x3C6;&#x209A;</code>) or with an SMT (validity)</li>
+</ul>
+</li>
+<li><code>&#x3C6;&#x209A; &#x2192; &#x3B1;&#x209A;(t)</code>
+<ul>
+<li>This could be checked with an SMT</li>
+</ul>
+</li>
+</ul>
+<p>then we can replace the goal as per the usual algorithm
+and set the remainder to <code>&#x22A5;</code>.</p>
+<p>Note: SMTs can prove validity of a formula by checking that its negation is
+unsatisfiable.</p>
+<h3 id="multiple-unifiers">Multiple unifiers</h3>
+<p>If <code>&#x2308;&#x3C6;&#x209C; &#x2227; &#x3B1;&#x209C;(Y)&#x2309;</code> simplifies to a disjunctive predicate of the form
+<code>((Y = t&#x2081;) &#x2227; p&#x2081;) &#x2228; ... &#x2228; ((Y = t&#x2081;) &#x2227; p&#x2081;)</code> then any of the <code>t</code> could be used to
+verify the conditions above, since the algorithm works for any <code>t</code>.</p>
+<p>Attempting to use each of them for the rewrite rules case
+might increase chances of success for one-path-reachability.</p>
+<p>Attempting to use each of them for equality axioms
+might reduce the need for unification modulo axioms later on.</p>
+<p>For all-path, if there is a certainty that <code>t&#x2081;</code>, ..., <code>t&#x2099;</code> are all possible
+substitutions such that <code>&#x3C6;&#x209A; &#x2192; &#x3C6;&#x209C; = &#x3B1;(t)</code>, then verifying all derived goals
+could potentially constitute part of a completeness argument.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#algorithm-for-applying-one-rule-to-a-pattern-by-matching" class="bd-toc-link">Algorithm for applying one rule to a pattern by matching</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#rewrite-rules" class="bd-toc-link">Rewrite rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#proof"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Proof
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#coverage-concerns-(all-path-reachability)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Coverage concerns (All-path-reachability)
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#equality-axioms" class="bd-toc-link">Equality axioms</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#proof-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Proof
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#coverage-concerns-(all-path-reachability)-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Coverage concerns (All-path-reachability)
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation-concerns" class="bd-toc-link">Implementation concerns</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#multiple-unifiers"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Multiple unifiers
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
