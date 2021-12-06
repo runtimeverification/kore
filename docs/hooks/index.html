@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="hooks">Hooks</h1>
+<p>The builtin domains are listed below, categorized by sort.
+Each sort and symbol is described and an example hooked declaration is given.
+Note that some domains depend on others being defined!</p>
+<h2 id="bool">BOOL</h2>
+<p>No dependencies.</p>
+<h3 id="bool.bool">BOOL.Bool</h3>
+<p>The builtin Boolean sort:</p>
+<pre class="language-text"><code>    hooked-sort Bool{}
+        [hook{}(&quot;BOOL.Bool&quot;)]
+</code></pre>
+<p>Two domain values are recognized,</p>
+<pre class="language-text"><code>    \dv{Bool{}}(&quot;true&quot;)  // Boolean true
+    \dv{Bool{}}(&quot;false&quot;)  // Boolean false
+</code></pre>
+<h3 id="bool.or">BOOL.or</h3>
+<p>Logical OR: <code>\dv{Bool{}}(&quot;true&quot;)</code> if either operand is <code>\dv{Bool{}}(&quot;true&quot;)</code>, or
+<code>\dv{Bool{}}(&quot;false&quot;)</code> otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol or{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.or&quot;)]
+</code></pre>
+<h3 id="bool.and">BOOL.and</h3>
+<p>Logical AND: <code>\dv{Bool{}}(&quot;true&quot;)</code> if both operands are <code>\dv{Bool{}}(&quot;true&quot;)</code>,
+or <code>\dv{Bool{}}(&quot;false&quot;)</code> otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol and{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.and&quot;)]
+</code></pre>
+<h3 id="bool.xor">BOOL.xor</h3>
+<p>Logical XOR: <code>\dv{Bool{}}(&quot;true&quot;)</code> if exactly one operand is
+<code>\dv{Bool{}}(&quot;true&quot;)</code>, or <code>\dv{Bool{}}(&quot;false&quot;)</code> otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol xor{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.xor&quot;)]
+</code></pre>
+<h3 id="bool.eq">BOOL.eq</h3>
+<p><code>\dv{Bool{}}(&quot;true&quot;)</code> if the operands are equal, or <code>\dv{Bool{}}(&quot;false&quot;)</code>
+otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol eq{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.eq&quot;)]
+</code></pre>
+<h3 id="bool.ne">BOOL.ne</h3>
+<p><code>\dv{Bool{}}(&quot;true&quot;)</code> if the operands are <em>not</em> equal, or <code>\dv{Bool{}}(&quot;false&quot;)</code>
+otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol ne{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.ne&quot;)]
+</code></pre>
+<h3 id="bool.not">BOOL.not</h3>
+<p>Logical negation: <code>\dv{Bool{}}(&quot;true&quot;)</code> when its argument is
+<code>\dv{Bool{}}(&quot;false&quot;)</code> and vice versa.</p>
+<pre class="language-text"><code>    hooked-symbol not{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.not&quot;)
+</code></pre>
+<h3 id="bool.implies">BOOL.implies</h3>
+<p>Logical implication.</p>
+<pre class="language-text"><code>    hooked-symbol implies{}(Bool{}, Bool{}) : Bool{}
+        [hook{}(&quot;BOOL.implies&quot;)]
+</code></pre>
+<h2 id="int">INT</h2>
+<p>Depends on <code>BOOL</code>.</p>
+<h3 id="int.int">INT.Int</h3>
+<p>The builtin sort of arbitrary-precision integers.</p>
+<pre class="language-text"><code>    hooked-sort Int{}
+        [hook{}(&quot;INT.Int&quot;)]
+</code></pre>
+<p>Valid domain values are a string of decimal digits, optionally preceeded by a
+sign.</p>
+<pre class="language-text"><code>    \dv{Int{}}(&quot;256&quot;)  // positive 256, sign omitted
+    \dv{Int{}}(&quot;-1024&quot;)  // negative 1024
+    \dv{Int{}}(&quot;+3&quot;)  // positive 3
+</code></pre>
+<h3 id="int.gt">INT.gt</h3>
+<p>Comparison: is the first argument greater than the second?</p>
+<pre class="language-text"><code>    hooked-symbol gt{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.gt&quot;)]
+</code></pre>
+<h3 id="int.ge">INT.ge</h3>
+<p>Comparison: is the first argument greater than or equal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol ge{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.ge&quot;)]
+</code></pre>
+<h3 id="int.eq">INT.eq</h3>
+<p>Comparison: is the first argument equal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol eq{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.eq&quot;)]
+</code></pre>
+<h3 id="int.le">INT.le</h3>
+<p>Comparison: is the first argument less than or equal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol le{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.le&quot;)]
+</code></pre>
+<h3 id="int.lt">INT.lt</h3>
+<p>Comparison: is the first argument less than the second?</p>
+<pre class="language-text"><code>    hooked-symbol lt{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.lt&quot;)]
+</code></pre>
+<h3 id="int.ne">INT.ne</h3>
+<p>Comparison: is the first argument inequal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol ne{}(Int{}, Int{}) : Bool{}
+        [hook{}(&quot;INT.ne&quot;)]
+</code></pre>
+<h3 id="int.add">INT.add</h3>
+<p>The sum of the arguments.</p>
+<pre class="language-text"><code>    hooked-symbol add{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.add&quot;)]
+</code></pre>
+<h3 id="int.sub">INT.sub</h3>
+<p>The difference of the arguments (the first less the second).</p>
+<pre class="language-text"><code>    hooked-symbol sub{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.sub&quot;)]
+</code></pre>
+<h3 id="int.mul">INT.mul</h3>
+<p>The product of the arguments.</p>
+<pre class="language-text"><code>    hooked-symbol mul{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.mul&quot;)]
+</code></pre>
+<h3 id="int.abs">INT.abs</h3>
+<p>The absolute value of the argument.</p>
+<pre class="language-text"><code>    hooked-symbol abs{}(Int{}) : Int{}
+        [hook{}(&quot;INT.abs&quot;)]
+</code></pre>
+<h3 id="int.tdiv">INT.tdiv</h3>
+<p>Quotient of the first argument divided by the second (truncated toward zero).
+The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>    hooked-symbol tdiv{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.tdiv&quot;)]
+</code></pre>
+<h3 id="int.tmod">INT.tmod</h3>
+<p>Remainder of the first argument divided by the second (truncated toward zero).
+The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>    hooked-symbol tmod{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.tmod&quot;)]
+</code></pre>
+<h3 id="int.ediv">INT.ediv</h3>
+<p>Quotient of the first argument divided by the second (using the euclidean
+algorithm).
+The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>    hooked-symbol ediv{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.emod&quot;)]
+</code></pre>
+<h3 id="int.emod">INT.emod</h3>
+<p>Remainder of the first argument divided by the second (using the euclidean
+algorithm). The result is guaranteed to be positive.
+The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>    hooked-symbol emod{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.emod&quot;)]
+</code></pre>
+<h3 id="int.and">INT.and</h3>
+<p>Bitwise and of the arguments.</p>
+<pre class="language-text"><code>    hooked-symbol and{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.and&quot;)]
+</code></pre>
+<h3 id="int.or">INT.or</h3>
+<p>Bitwise or of the arguments.</p>
+<pre class="language-text"><code>    hooked-symbol or{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.or&quot;)]
+</code></pre>
+<h3 id="int.xor">INT.xor</h3>
+<p>Bitwise exclusive or of the arguments.</p>
+<pre class="language-text"><code>    hooked-symbol xor{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.xor&quot;)]
+</code></pre>
+<h3 id="int.not">INT.not</h3>
+<p>Bitwise complement of the argument.</p>
+<pre class="language-text"><code>    hooked-symbol not{}(Int{}) : Int{}
+        [hook{}(&quot;INT.not&quot;)]
+</code></pre>
+<h3 id="int.shl">INT.shl</h3>
+<p>Shift the bits of the first argument to the left with zeros shifted into
+the lower bits. The second argument specifies how many bits to shift by, and
+will be truncated to the least-significant Haskell Int. The second argument
+can be negative, in which case the first argument will be shifted right. Right
+shifts perform sign extension on signed numbers; i.e. they fill the top bits
+with 1 if the first argument is negative and with 0 otherwise.</p>
+<pre class="language-text"><code>    hooked-symbol shl{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.shl&quot;)]
+</code></pre>
+<h3 id="int.shr">INT.shr</h3>
+<p>Shift the bits of the first argument to the right. Right shifts perform sign
+extension on signed numbers; i.e. they fill the top bits with 1 if the first
+argument is negative and with 0 otherwise. The second argument specifies how
+many bits to shift by, and will be truncated to the least-significant Haskell
+Int. The second argument can be negative, in which case the first argument
+will be shifted left with zeros shifted into the lower bits.</p>
+<pre class="language-text"><code>    hooked-symbol shr{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.shr&quot;)]
+</code></pre>
+<h3 id="int.pow">INT.pow</h3>
+<p>The first argument raised to the power of the second argument. The result is
+<code>bottom{}()</code> if the second argument is negative.</p>
+<pre class="language-text"><code>    hooked-symbol pow{}(Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.pow&quot;)]
+</code></pre>
+<h3 id="int.powmod">INT.powmod</h3>
+<p>The first argument raised to the power of the second argument, but performed
+modulo the third argument. The result is <code>\bottom{}()</code> if either</p>
+<ul>
+<li>The second argument is zero, or</li>
+<li>The second argument is negative and the first and third arguments are not
+coprime</li>
+</ul>
+<pre class="language-text"><code>    hooked-symbol powmod{}(Int{}, Int{}, Int{}) : Int{}
+        [hook{}(&quot;INT.powmod&quot;)]
+</code></pre>
+<h3 id="int.log2">INT.log2</h3>
+<p>The base 2 logarithm of the argument. The result is <code>bottom{}()</code> if the second
+argument is not positive.</p>
+<pre class="language-text"><code>    hooked-symbol log2{}(Int{}) : Int{}
+        [hook{}(&quot;INT.log2&quot;)]
+</code></pre>
+<h2 id="string">STRING</h2>
+<p>Depends on <code>BOOL</code>.</p>
+<h3 id="string.string">STRING.String</h3>
+<p>The builtin String sort:</p>
+<pre class="language-text"><code>    hooked-sort String{}
+        [hook{}(&quot;STRING.String&quot;)]
+</code></pre>
+<p>Valid domain values are strings.</p>
+<pre class="language-text"><code>    \dv{String{}}(&quot;string&quot;)
+</code></pre>
+<h3 id="string.eq">STRING.eq</h3>
+<p>Comparison: are the two strings equal?</p>
+<pre class="language-text"><code>    hooked-symbol eq{}(String{}, String{}) : Bool{}
+        [hook{}(&quot;STRING.eq&quot;)]
+</code></pre>
+<h3 id="string.lt">STRING.lt</h3>
+<p>Comparison: is the first argument less than the second?</p>
+<pre class="language-text"><code>    hooked-symbol lt{}(String{}, String{}) : Bool{}
+        [hook{}(&quot;STRING.lt&quot;)]
+</code></pre>
+<h3 id="string.concat">STRING.concat</h3>
+<p>Concatenate two strings.</p>
+<pre class="language-text"><code>    hooked-symbol concat{}(String{}, String{}) : String{}
+        [hook{}(&quot;STRING.concat&quot;)]
+</code></pre>
+<h3 id="string.string2int">STRING.string2int</h3>
+<p>Convert a base10 string to its integer value.</p>
+<pre class="language-text"><code>    hooked-symbol string2int{}(String{}) : Int{}
+        [hook{}(&quot;STRING.string2int&quot;)]
+</code></pre>
+<h3 id="string.int2string">STRING.int2string</h3>
+<p>Convert an integer value to its base10 string representation.</p>
+<pre class="language-text"><code>    hooked-symbol int2string{}(Int{}) : String{}
+        [hook{}(&quot;STRING.int2string&quot;)]
+</code></pre>
+<h3 id="string.string2base">STRING.string2base</h3>
+<p>Takes a string and a base and converts the string from <code>base</code> to its integer
+value.
+Supports bases 2 to 36 inclusive.</p>
+<pre class="language-text"><code>    hooked-symbol string2base{}(String{}, Int{}) : Int{}
+        [hook{}(&quot;STRING.string2base&quot;)]
+</code></pre>
+<h3 id="string.base2string">STRING.base2string</h3>
+<p>Convert an integer value to its base string representation.</p>
+<pre class="language-text"><code>    hooked-symbol base2string{}(/* value */ Int{}, /* base */ Int{}) : String{}
+        [hook{}(&quot;STRING.base2string&quot;)]
+</code></pre>
+<h3 id="string.substr">STRING.substr</h3>
+<p>Substr takes a string and two indices (start and end) and returns the substring
+that starts at index <code>start</code> and ends at index <code>end</code>.</p>
+<pre class="language-text"><code>    hooked-symbol substr{}(String{}, Int{}, Int{}) : String{}
+        [hook{}(&quot;STRING.substr&quot;)]
+</code></pre>
+<h3 id="string.length">STRING.length</h3>
+<p>Calculates the length of a string.</p>
+<pre class="language-text"><code>    hooked-symbol length{}(String{}): Int{}
+        [hook{}(&quot;STRING.length&quot;)]
+</code></pre>
+<h3 id="string.find">STRING.find</h3>
+<p>Takes a string, a substring and an index and searches for <code>substring</code> in
+the <code>string</code>, starting at <code>index</code>, returning the resulting index, or <code>-1</code> if it
+is not found.</p>
+<pre class="language-text"><code>    hooked-symbol find{}(String{}, String{}, Int{}): Int{}
+        [hook{}(&quot;STRING.find&quot;)]
+</code></pre>
+<h3 id="string.token2string">STRING.token2string</h3>
+<p>Takes a value of any sort which is declared with the <code>hasDomainValues</code> attribute and returns that value unparsed.
+For example: <code>\dv{TokenSort{}}(&quot;TOKEN&quot;)</code> is <code>&quot;TOKEN&quot;</code>, where <code>TokenSort{}</code> is a sort declared with the <code>hasDomainValues</code>
+attribute.</p>
+<pre class="language-text"><code>    hooked-symbol token2string{}(TokenSort{}) : String{}
+        [hook{}(&quot;STRING.token2string&quot;)]
+</code></pre>
+<h3 id="string.string2token">STRING.string2token</h3>
+<p>Takes a string and parses it into a token value of a hooked sort declared with the <code>hasDomainValues</code> attribute.
+For example: <code>&quot;TOKEN&quot;</code> is <code>\dv{TokenSort{}(&quot;TOKEN&quot;)}</code>, where <code>TokenSort{}</code> is a sort declared with the <code>hasDomainValues</code>
+attribute.</p>
+<pre class="language-text"><code>    hooked-symbol string2token(String{}) : TokenSort{}
+        [hook{}(&quot;STRING.string2token&quot;)]
+</code></pre>
+<h2 id="map">MAP</h2>
+<p>Depends on <code>BOOL</code>.</p>
+<p>The sorts of keys and values are arbitrary, but must be consistent between symbol
+declarations. The sort consistency of hooked symbols is <em>not</em> checked. The key
+and value sorts are referred to as <code>Key{}</code> and <code>Value{}</code> respectively below.</p>
+<h3 id="map.map">MAP.Map</h3>
+<p>The builtin sort of key-value maps.</p>
+<pre class="language-text"><code>    hooked-sort Map{}
+        [hook{}(&quot;MAP.Map&quot;)]
+</code></pre>
+<h3 id="map.unit">MAP.unit</h3>
+<p>The empty map (containing no keys).</p>
+<pre class="language-text"><code>    hooked-symbol unit{}() : Map{}
+        [hook{}(&quot;MAP.unit&quot;)]
+</code></pre>
+<h3 id="map.element">MAP.element</h3>
+<p>A map with one association, <code>key |-&gt; value</code>.</p>
+<pre class="language-text"><code>    hooked-symbol element{}(Key{}, Value{}) : Map{}
+        [hook{}(&quot;MAP.element&quot;)]
+</code></pre>
+<h3 id="map.concat">MAP.concat</h3>
+<p>Combine two maps so that an association <code>key |-&gt; value</code> is in the result if it
+is in either operand. The result is <code>\bottom{}()</code> if the maps have any keys in
+common.</p>
+<pre class="language-text"><code>    hooked-symbol concat{}(Map{}, Map{}) : Map{}
+        [hook{}(&quot;MAP.concat&quot;)]
+</code></pre>
+<h3 id="map.update">MAP.update</h3>
+<p>Insert the association <code>key |-&gt; value</code> into the map. If the key is already
+present, replace the associated value with the new value provided.</p>
+<pre class="language-text"><code>    hooked-symbol update{}(Map{}, Key{}, Value{}) : Map{}
+        [hook{}(&quot;MAP.update&quot;)]
+</code></pre>
+<h3 id="map.remove">MAP.remove</h3>
+<p>Remove the key and the value associated with it from the map. If the key
+is not present, the resulting map is the original map.</p>
+<pre class="language-text"><code>    hooked-symbol remove{}(Map{}, Key{}) : Map{}
+        [hook{}(&quot;MAP.remove&quot;)]
+</code></pre>
+<h3 id="map.removeall">MAP.removeAll</h3>
+<p>Remove the <code>key |-&gt; value</code> associations for which <code>key</code> is an element of
+the set operand.</p>
+<pre class="language-text"><code>    hooked-symbol removeAll{}(Map{}, Set{}) : Map{}
+        [hook{}(&quot;MAP.removeAll&quot;)]
+</code></pre>
+<h3 id="map.size">MAP.size</h3>
+<p>Get the size of the map</p>
+<pre class="language-text"><code>    hooked-symbol size{}(Map{}) : Int{}
+        [hook{}(&quot;MAP.size&quot;)]
+</code></pre>
+<h3 id="map.lookup">MAP.lookup</h3>
+<p>If the given key is in the map, the result is the associated value; otherwise,
+the result is <code>\bottom{}()</code>.</p>
+<pre class="language-text"><code>    hooked-symbol lookup{}(Map{}, Key{}) : Value{}
+        [hook{}(&quot;MAP.lookup&quot;)]
+</code></pre>
+<h3 id="map.lookupordefault">MAP.lookupOrDefault</h3>
+<p>If the given key is in the map, the result is the associated value; otherwise,
+the result is the given default.</p>
+<pre class="language-text"><code>    hooked-symbol lookupOrDefault{}(Map{}, Key{}, /* default: */ Value{}) : Value{}
+        [hook{}(&quot;MAP.lookupOrDefault&quot;)]
+</code></pre>
+<h3 id="map.in_keys">MAP.in_keys</h3>
+<p>If the given key is in the map, the result is <code>\dv{Bool{}}(&quot;true&quot;)</code>; otherwise
+the result is <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>    hooked-symbol inKeys{}(Key{}, Map{}) : Bool{}
+        [hook{}(&quot;MAP.in_keys&quot;)]
+</code></pre>
+<h3 id="map.keys">MAP.keys</h3>
+<p>Takes a map and returns a set of its keys.</p>
+<pre class="language-text"><code>    hooked-symbol keys{}(Map{}) : Set{}
+        [hook{}(&quot;MAP.keys&quot;)]
+</code></pre>
+<h3 id="map.keys_list">MAP.keys_list</h3>
+<p>Takes a map and returns a list of its keys.</p>
+<pre class="language-text"><code>    hooked-symbol keys_list{}(Map{}) : List{}
+        [hook{}(&quot;MAP.keys_list&quot;)]
+</code></pre>
+<h3 id="map.values">MAP.values</h3>
+<p>Takes a map and returns a list of its values.</p>
+<pre class="language-text"><code>    hooked-symbol values{}(Map{}) : List{}
+        [hook{}(&quot;MAP.values&quot;)]
+</code></pre>
+<h3 id="map.inclusion">MAP.inclusion</h3>
+<p>If the first map is a submap of the second, the result is<code>\dv{Bool{}}(&quot;true&quot;)</code>;
+otherwise the result is <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>    hooked-symbol inclusion{}(Map{}, Map{}) : Bool{}
+        [hook{}(&quot;MAP.inclusion&quot;)]
+</code></pre>
+<h2 id="list">LIST</h2>
+<p>Depends on <code>INT</code>.</p>
+<p>The sort of list elements is arbitrary, but must be consistent between symbol
+declarations. The sort consistency of hooked symbols is <em>not</em> checked. The
+element sort is referred to as <code>Elem{}</code> below.</p>
+<h3 id="list.list">LIST.List</h3>
+<p>The builtin sort of associative lists.</p>
+<pre class="language-text"><code>    hooked-sort List{}
+        [hook{}(&quot;LIST.List&quot;)]
+</code></pre>
+<h3 id="list.unit">LIST.unit</h3>
+<p>The empty list.</p>
+<pre class="language-text"><code>    hooked-symbol unit{}() : List{}
+        [hook{}(&quot;LIST.unit&quot;)]
+</code></pre>
+<h3 id="list.element">LIST.element</h3>
+<p>The singleton list.</p>
+<pre class="language-text"><code>    hooked-symbol element{}(Elem{}) : List{}
+        [hook{}(&quot;LIST.element&quot;)]
+</code></pre>
+<h3 id="list.concat">LIST.concat</h3>
+<p>Concatenate both arguments.</p>
+<pre class="language-text"><code>    hooked-symbol concat{}(List{}, List{}) : List{}
+        [hook{}(&quot;LIST.concat&quot;)]
+</code></pre>
+<h3 id="list.get">LIST.get</h3>
+<p>Get an element from the list by index. Positive indices count from the beginning
+of the list and negative indices count from the end. The first element is
+<code>\dv{Int{}}(&quot;0&quot;)</code> and the last element is <code>\dv{Int{}}(&quot;-1&quot;)</code>. The result is
+<code>\bottom{}()</code> if the index is out-of-bounds.</p>
+<pre class="language-text"><code>    hooked-symbol get{}(List{}, Int{}) : Elem{}
+        [hook{}(&quot;LIST.concat&quot;)]
+</code></pre>
+<h3 id="list.update">LIST.update</h3>
+<p>Update an element from the list by index. The first element is <code>\dv{Int{}}(&quot;0&quot;)</code>.
+The result is <code>\bottom{}()</code> if the index is out-of-bounds.</p>
+<pre class="language-text"><code>    hooked-symbol update{}(List{}, Int{}, Elem{}) : List{}
+        [hook{}(&quot;LIST.update&quot;)]
+</code></pre>
+<h3 id="list.in">LIST.in</h3>
+<p>Is a value an element of the given list?</p>
+<pre class="language-text"><code>    hooked-symbol in{}(Elem{}, List{}) : Bool{}
+        [hook{}(&quot;LIST.in&quot;)]
+</code></pre>
+<h3 id="list.size">LIST.size</h3>
+<p>The number of elements in the given list.</p>
+<pre class="language-text"><code>    hooked-symbol size{}(List{}) : Int{}
+        [hook{}(&quot;LIST.size&quot;)]
+</code></pre>
+<h3 id="list.make">LIST.make</h3>
+<p><code>LIST.make(n, x)</code> is a list of length <code>n</code> with <code>x</code> the value of every element.
+The result is <code>bottom</code> if n is negative.</p>
+<pre class="language-text"><code>    hooked-symbol make{}(Int{}, Elem{}) : List{}
+        [hook{}(&quot;LIST.make&quot;)]
+</code></pre>
+<h2 id="list.updateall">LIST.updateAll</h2>
+<p><code>LIST.updateAll(L1, index, L2)</code> creates a new list using a list <code>L2</code> of size <code>N</code>
+where the <code>N</code> elements of <code>L1</code> starting at <code>index</code> are replaced with the
+contents of <code>L2</code>.
+The result is <code>\bottom</code> in these cases:</p>
+<ul>
+<li><code>index</code> is negative</li>
+<li><code>L2</code> is non-empty and <code>index + N</code> exeeds the length of <code>L1</code></li>
+</ul>
+<pre class="language-text"><code>    hooked-symbol updateAll{}(List{}, Int{}, List{}) : List{}
+        [hook{}(&quot;LIST.updateAll&quot;)]
+</code></pre>
+<h2 id="set">SET</h2>
+<p>Depends on <code>BOOL</code>.</p>
+<p>The sort of set elements is arbitrary, but must be consistent between symbol
+declarations. The sort consistency of hooked symbols is <em>not</em> checked. The
+element sort is referred to as <code>Elem{}</code> below.</p>
+<h3 id="set.set">SET.Set</h3>
+<p>The builtin sort of sets.</p>
+<pre class="language-text"><code>    hooked-sort Set{}
+        [hook{}(&quot;SET.Set&quot;)]
+</code></pre>
+<h3 id="set.unit">SET.unit</h3>
+<p>The empty set.</p>
+<pre class="language-text"><code>    hooked-symbol unit{}() : Set{}
+        [hook{}(&quot;SET.unit&quot;)]
+</code></pre>
+<h3 id="set.element">SET.element</h3>
+<p>The singleton set.</p>
+<pre class="language-text"><code>    hooked-symbol element{}(Elem{}) : Set{}
+        [hook{}(&quot;SET.element&quot;)]
+</code></pre>
+<h3 id="set.concat">SET.concat</h3>
+<p>The union of both arguments.</p>
+<pre class="language-text"><code>    hooked-symbol concat{}(Set{}, Set{}) : Set{}
+        [hook{}(&quot;SET.concat&quot;)]
+</code></pre>
+<h3 id="set.intersection">SET.intersection</h3>
+<p>The intersection of both arguments</p>
+<pre class="language-text"><code>    hooked-symbol intersect{}(Set{}, Set{}) : Set{}
+        [hook{}(&quot;SET.intersection&quot;)]
+</code></pre>
+<h3 id="set.in">SET.in</h3>
+<p>Is the element a member of the given set?</p>
+<pre class="language-text"><code>    hooked-symbol in{}(Elem{}, Set{}) : Bool{}
+        [hook{}(&quot;SET.in&quot;)]
+</code></pre>
+<h3 id="set.inclusion">SET.inclusion</h3>
+<p>Is the first set a subset of the second?</p>
+<pre class="language-text"><code>    hooked-symbol inclusion{}(Set{}, Set{}) :: Bool{}
+        [hook{}(&quot;SET.inclusion&quot;)]
+</code></pre>
+<h3 id="set.list2set">SET.list2set</h3>
+<p>Convert a list to set</p>
+<pre class="language-text"><code>    hooked-symbol list2set{}(List{}) : Set{}
+        [hook{}(&quot;SET.list2set&quot;)]
+</code></pre>
+<h2 id="kequal">KEQUAL</h2>
+<p>Depends on <code>BOOL</code>.</p>
+<p>The sorts on which equality is tested are referred to as <code>Item</code>.</p>
+<h3 id="kequal.eq">KEQUAL.eq</h3>
+<p>Comparison: is the first argument equal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol eq{}(Item{}, Item{}) : Bool{}
+        [hook{}(&quot;KEQUAL.eq&quot;)]
+</code></pre>
+<h3 id="kequal.neq">KEQUAL.neq</h3>
+<p>Comparison: is the first argument inequal to the second?</p>
+<pre class="language-text"><code>    hooked-symbol neq{}(Item{}, Item{}) : Bool{}
+        [hook{}(&quot;KEQUAL.neq&quot;)]
+</code></pre>
+<h3 id="kequal.ite">KEQUAL.ite</h3>
+<p>If-then-else: if condition then something, else something else.</p>
+<pre class="language-text"><code>    hooked-symbol ite{}(Bool{}, Item{}, Item{}) : Item{}
+        [hook{}(&quot;KEQUAL.ite&quot;)]
+</code></pre>
+<h2 id="krypto">KRYPTO</h2>
+<p>All hash functions in this module interpret their input string as a sequence of 8-bit bytes
+and output the digest in base-16 encoding
+(a sequence of hexademical numerals <code>[0-9a-f]</code> each corresponding to 4 bits).</p>
+<h3 id="krypto.keccak256">KRYPTO.keccak256</h3>
+<p>Compute the Keccak-256 hash of the input string.</p>
+<pre class="language-text"><code>    hooked-symbol keccak256{}(String{}) : String{}
+        [hook{}(&quot;KRYPTO.keccak256&quot;)]
+</code></pre>
+<h3 id="krypto.ripemd160">KRYPTO.ripemd160</h3>
+<p>Compute the RIPEMD-160 hash of the input string.</p>
+<pre class="language-text"><code>    hooked-symbol ripemd160{}(String{}) : String{}
+        [hook{}(&quot;KRYPTO.ripemd160&quot;)]
+</code></pre>
+<h3 id="krypto.sha256">KRYPTO.sha256</h3>
+<p>Compute the SHA256 hash of the input string.</p>
+<pre class="language-text"><code>    hooked-symbol sha256{}(String{}) : String{}
+        [hook{}(&quot;KRYPTO.sha256&quot;)]
+</code></pre>
+<h3 id="krypto.sha3256">KRYPTO.sha3256</h3>
+<p>Compute the SHA3-256 hash of the input string.</p>
+<pre class="language-text"><code>    hooked-symbol sha3256{}(String{}) : String{}
+        [hook{}(&quot;KRYPTO.sha3256&quot;)]
+</code></pre>
+<h2 id="bytes">BYTES</h2>
+<p>Represents a sequence of bytes with update/get/padding operations as well as
+conversions to/from strings.</p>
+<h3 id="bytes.bytes2string">BYTES.bytes2string</h3>
+<p>Conversion to <code>String</code>.</p>
+<pre class="language-text"><code>    hooked-symbol bytes2string{}(Bytes{}) : String{}
+        [hook{}(&quot;BYTES.bytes2string&quot;)]
+</code></pre>
+<h3 id="bytes.string2bytes">BYTES.string2bytes</h3>
+<p>Conversion to <code>Bytes</code>. Expects all characters to be in the &apos;\0&apos; .. &apos;\255&apos;
+range.</p>
+<pre class="language-text"><code>    hooked-symbol string2bytes{}(String{}) : Bytes{}
+        [hook{}(&quot;BYTES.string2bytes&quot;)]
+</code></pre>
+<h3 id="bytes.update">BYTES.update</h3>
+<p>Updates the byte array at the provided index with the provided value. Value
+should be in the &apos;\0&apos; .. &apos;\255&apos; range.</p>
+<pre class="language-text"><code>    hooked-symbol update{}(Bytes{}, Int{}, Int{}) : Bytes{}
+        [hook{}(&quot;BYTES.update&quot;)]
+</code></pre>
+<h3 id="bytes.substr">BYTES.substr</h3>
+<p>Get a substring using start and end indices.</p>
+<pre class="language-text"><code>    hooked-symbol substr{}(Bytes{}, Int{}, Int{}) : Bytes{}
+        [hook{}(&quot;BYTES.substr&quot;)]
+</code></pre>
+<h3 id="bytes.replaceat">BYTES.replaceAt</h3>
+<p>Replace the contents within a byte array at the given index, with the provided
+byte array.</p>
+<pre class="language-text"><code>    hooked-symbol replaceAt{}(Bytes{}, Int{}, Bytes{}) : Bytes{}
+        [hook{}(&quot;BYTES.replaceAt&quot;)]
+</code></pre>
+<h3 id="bytes.padright">BYTES.padRight</h3>
+<p>Pads the bytes string at the right to have at least of the specified length,
+using the provided value.</p>
+<pre class="language-text"><code>    hooked-symbol padRight{}(Bytes{}, Int{}, Int{}) : Bytes{}
+        [hook{}(&quot;BYTES.padRight&quot;)]
+</code></pre>
+<h3 id="bytes.padleft">BYTES.padLeft</h3>
+<p>Pads the bytes string at the left to have at least of the specified length,
+using the provided value.</p>
+<pre class="language-text"><code>    hooked-symbol padLeft{}(Bytes{}, Int{}, Int{}) : Bytes{}
+        [hook{}(&quot;BYTES.padLeft&quot;)]
+</code></pre>
+<h3 id="bytes.reverse">BYTES.reverse</h3>
+<pre class="language-text"><code>    hooked-symbol reverse{}(Bytes{}) : Bytes{}
+        [hook{}(&quot;BYTES.reverse&quot;)]
+</code></pre>
+<h3 id="bytes.length">BYTES.length</h3>
+<pre class="language-text"><code>    hooked-symbol length{}(Bytes{}) : Int{}
+        [hook{}(&quot;BYTES.length&quot;)]
+</code></pre>
+<h3 id="bytes.concat">BYTES.concat</h3>
+<pre class="language-text"><code>    hooked-symbol concat{}(Bytes{}, Bytes{}) : Bytes{}
+        [hook{}(&quot;BYTES.concat&quot;)]
+</code></pre>
+<h3 id="bytes.int2bytes">BYTES.int2bytes</h3>
+<p><code>BYTES.int2bytes</code> represents the <em>value</em> as <em>length</em> bytes in <code>BigEndian</code> or
+<code>LittleEndian</code> order.</p>
+<pre class="language-text"><code>    hooked-symbol int2bytes{}(/* length */ Int{}, /* value */ Int{}, Endianness{}) : Bytes{}
+        [hook{}(&quot;BYTES.int2bytes&quot;)]
+</code></pre>
+<h3 id="bytes.bytes2int">BYTES.bytes2int</h3>
+<p><code>BYTES.bytes2int</code> decodes a <code>Signed</code> or <code>Unsigned</code> <code>Int</code> encoded as a
+<code>BigEndian</code> or <code>LittleEndian</code> <code>Bytes</code>.</p>
+<pre class="language-text"><code>    hooked-symbol bytes2int{}(Bytes{}, Endianness{}, Signedness{}) : Int{}
+        [hook{}(&quot;BYTES.bytes2int&quot;)]
+</code></pre>
+<h3 id="bytes.decodebytes">BYTES.decodeBytes</h3>
+<p><code>BYTES.decodeBytes</code> supports <code>&quot;UTF-8&quot;</code>, <code>&quot;UTF-16LE&quot;</code>, <code>&quot;UTF-16BE&quot;</code>, <code>&quot;UTF-32LE&quot;</code>, and <code>&quot;UTF-32BE&quot;</code> as the first argument. If decoding and the input contains any invalid data then <code>bottom</code> is returned.</p>
+<pre class="language-text"><code>    hooked-symbol decodeBytes{}(/* decoding */ String{}, /* contents */ Bytes{}) : String{}
+        [hook{}(&quot;BYTES.decodeBytes&quot;)]
+</code></pre>
+<h3 id="bytes.encodebytes">BYTES.encodeBytes</h3>
+<p><code>BYTES.encodeBytes</code> supports <code>&quot;UTF-8&quot;</code>, <code>&quot;UTF-16LE&quot;</code>, <code>&quot;UTF-16BE&quot;</code>, <code>&quot;UTF-32LE&quot;</code>, and <code>&quot;UTF-32BE&quot;</code> as the first argument.</p>
+<pre class="language-text"><code>    hooked-symbol encodeBytes{}(/* encoding */ String{}, /* contents */ String{}) : Bytes{}
+        [hook{}(&quot;BYTES.encodeBytes&quot;)]
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#hooks" class="bd-toc-link">Hooks</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#bool" class="bd-toc-link">BOOL</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.bool"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.Bool
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.or"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.or
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.and"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.and
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.xor"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.xor
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.eq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.ne"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.ne
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.not"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.not
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool.implies"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BOOL.implies
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#int" class="bd-toc-link">INT</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.int"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.Int
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.gt"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.gt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.ge"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.ge
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.eq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.le"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.le
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.lt"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.lt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.ne"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.ne
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.add"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.add
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.sub"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.sub
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.mul"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.mul
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.abs"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.abs
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.tdiv"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.tdiv
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.tmod"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.tmod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.ediv"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.ediv
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.emod"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.emod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.and"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.and
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.or"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.or
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.xor"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.xor
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.not"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.not
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.shl"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.shl
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.shr"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.shr
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.pow"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.pow
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.powmod"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.powmod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#int.log2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                INT.log2
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#string" class="bd-toc-link">STRING</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.string"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.String
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.eq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.lt"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.lt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.concat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.concat
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.string2int"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.string2int
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.int2string"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.int2string
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.string2base"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.string2base
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.base2string"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.base2string
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.substr"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.substr
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.length"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.length
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.find"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.find
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.token2string"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.token2string
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string.string2token"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                STRING.string2token
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#map" class="bd-toc-link">MAP</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.map"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.Map
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.unit"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.unit
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.element"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.element
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.concat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.concat
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.update"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.update
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.remove"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.remove
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.removeall"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.removeAll
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.size"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.size
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.lookup"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.lookup
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.lookupordefault"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.lookupOrDefault
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.in_keys"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.in_keys
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.keys"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.keys
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.keys_list"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.keys_list
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.values"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.values
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#map.inclusion"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MAP.inclusion
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#list" class="bd-toc-link">LIST</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.list"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.List
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.unit"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.unit
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.element"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.element
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.concat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.concat
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.get"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.get
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.update"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.update
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.in"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.in
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.size"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.size
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.make"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                LIST.make
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list.updateall"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                LIST.updateAll
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#set" class="bd-toc-link">SET</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.set"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.Set
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.unit"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.unit
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.element"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.element
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.concat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.concat
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.intersection"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.intersection
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.in"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.in
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.inclusion"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.inclusion
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set.list2set"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SET.list2set
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#kequal" class="bd-toc-link">KEQUAL</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kequal.eq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KEQUAL.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kequal.neq"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KEQUAL.neq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kequal.ite"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KEQUAL.ite
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#krypto" class="bd-toc-link">KRYPTO</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#krypto.keccak256"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KRYPTO.keccak256
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#krypto.ripemd160"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KRYPTO.ripemd160
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#krypto.sha256"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KRYPTO.sha256
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#krypto.sha3256"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                KRYPTO.sha3256
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#bytes" class="bd-toc-link">BYTES</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.bytes2string"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.bytes2string
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.string2bytes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.string2bytes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.update"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.update
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.substr"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.substr
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.replaceat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.replaceAt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.padright"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.padRight
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.padleft"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.padLeft
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.reverse"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.reverse
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.length"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.length
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.concat"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.concat
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.int2bytes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.int2bytes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.bytes2int"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.bytes2int
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.decodebytes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.decodeBytes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bytes.encodebytes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                BYTES.encodeBytes
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
