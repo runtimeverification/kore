@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="using-configuration-predicates">Using configuration predicates</h1>
+<h2 id="background">Background</h2>
+<p>We are representing rewriting configurations as
+<code>term &#x2227; predicate &#x2227; substitution</code> where the substitution is a special
+kind of predicate of the form <code>var&#x2081; = &#x3C6;&#x2081; &#x2227; var&#x2082; = &#x3C6;&#x2082; &#x2227; ...</code>.</p>
+<p>We will denote by &quot;predicate&quot; both the &quot;predicate&quot; above and the
+predicate-substitution combination. The text below should work with both,
+so read it with whatever interpretation is more convenient.</p>
+<h2 id="problems">Problems</h2>
+<p>We would like to use the predicate in a configuration in at least two ways:</p>
+<ol>
+<li>Applying substitutions in a configuration</li>
+<li>Pruning evaluation branches faster, somewhere in the middle of simplifying a
+configuration, without waiting for the local predicates to reach the top of
+the configuration in order to detect contradictions.</li>
+</ol>
+<p>How do we do that?</p>
+<h2 id="examples">Examples</h2>
+<p>Let us consider applying the <code>x=f(y)</code> substitution to the following terms:</p>
+<pre class="language-text"><code>&#x3C3;(x)
+&#x2203; x . &#x3C3;(x)
+\exist y . &#x3C3;(x, y)
+&#xAC; (&#x3C3;(x))
+</code></pre>
+<p>The results should be (the &quot;How it works&quot; section explains why):</p>
+<pre class="language-text"><code>&#x3C3;(f(y))
+&#x2203; x . &#x3C3;(x)
+\exist y&apos; . &#x3C3;(f(y), y&apos;)
+&#xAC; &#x3C3;(f(x))
+</code></pre>
+<p>Let us assume that we have two axioms:
+<code>g(x) = 1 if x &#x2260; 0</code> and <code>g(x) = 0 if x = 0</code>.
+Let us try to simplify the following configurations:</p>
+<pre class="language-text"><code>1. &#x3C3;(g(x)) &#x2227; (x &#x2260; 0)
+2. (&#x2203; x . g(x)) &#x2227; (x &#x2260; 0)
+3. (\exist y . &#x3C3;(g(x), y)) &#x2227; (x &#x2260; 0)
+4. (&#xAC; g(x)) &#x2227; (x &#x2260; 0)
+</code></pre>
+<p>For 1, 3 and 4 we can immediately evaluate <code>g(x)</code> to <code>1</code>, skipping the <code>x=0</code>
+case, so the results should be (again, see the &quot;How it works&quot; section for
+details):</p>
+<pre class="language-text"><code>1. &#x3C3;(1) &#x2227; (x &#x2260; 0)
+2. (&#x2203; x . (1 and x &#x2260; 0) &#x2228; (0 and x=0)) &#x2227; (x &#x2260; 0)
+3. (&#x2203; y . &#x3C3;(1, y)) &#x2227; (x &#x2260; 0)
+4. (&#xAC; 1) &#x2227; (x &#x2260; 0)
+</code></pre>
+<h2 id="how-to-use-predicates-and-substitutions.">How to use predicates and substitutions.</h2>
+<p>Let <code>P</code> be a predicate and let <code>&#x3C6;(x)</code> be a formula in which all occurrences
+of <code>x</code> are free, and none has a quantifier for a free variable in <code>P</code> above it.</p>
+<p>Then <code>&#x3C6;(&#x3C8;)&#x2227; P = &#x3C6;(&#x3C8; &#x2227; P) &#x2227; P</code></p>
+<p>Therefore, above we can, say, rewrite <code>(&#xAC; g(x)) &#x2227; (x &#x2260; 0)</code> to
+<code>(&#xAC; (g(x) &#x2227; (x &#x2260; 0))) &#x2227; (x &#x2260; 0)</code> and we can evaluate
+<code>g(x) &#x2227; (x &#x2260; 0)</code> to <code>1</code>.</p>
+<p>Similarly, we can apply a substitution inside any kind of term, as long as
+quantifiers do not change the meaning of the free variables in the substitution.
+Note that in the <code>\exist y . &#x3C3;(x, y)</code> example above we first renamed the
+quantified variable to <code>y&apos;</code>, and only then we applied the <code>x=f(y)</code> substitution.</p>
+<p>If we make sure that we never use the same name for a quantified variable and
+a free one, and we never re-quantify variables (i.e. we don&apos;t have
+<code>&#x2203; x . (... (&#x2203; x . &#x3C6;) ...)</code>), then we are free to use the
+predicates we have at one level (e.g. the top one) at all lower levels in the
+term.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>For simplicity, let us make the above assumption about not re-quantifying
+variables.</p>
+<p>Since <code>P</code> is a predicate, it is either <code>&#x22A4;</code> or <code>&#x22A5;</code>.</p>
+<p>If <code>P</code> is <code>&#x22A4;</code>, then</p>
+<pre class="language-text"><code>&#x3C6;(&#x3C8;)&#x2227; P = &#x3C6;(&#x3C8;&#x2227;&#x22A4;)&#x2227; P = &#x3C6;(&#x3C8;&#x2227; P)&#x2227; P
+</code></pre>
+<p>If <code>P</code> is <code>&#x22A5;</code>, then we have:</p>
+<pre class="language-text"><code>&#x3C6;(&#x3C8;)&#x2227; P = &#x22A5;
+&#x3C6;(&#x3C8;&#x2227; P)&#x2227; P = bottom
+</code></pre>
+<p>therefore we have</p>
+<pre class="language-text"><code>&#x3C6;(&#x3C8;)&#x2227; P = &#x3C6;(&#x3C8;&#x2227; P)&#x2227; P
+</code></pre>
+<p>This means that, with the assumptions above, we can always &quot;and&quot; with
+<code>P</code> inside a formula.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#using-configuration-predicates" class="bd-toc-link">Using configuration predicates</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problems"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problems
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#examples"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Examples
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#how-to-use-predicates-and-substitutions."
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                How to use predicates and substitutions.
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#how-it-works"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                How it works
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="introduction-to-the-haskell-backend">Introduction to the Haskell backend</h1>
+<h2 id="data">Data</h2>
+<h3 id="external-representations">External representations</h3>
+<p>The external syntax of Kore is represented by types in the <code>Kore.Syntax</code> hierarchy.
+The parser produces values of these types from the text of syntactically-valid Kore.
+After parsing, the validator (<code>Kore.Validate</code>) checks that the parsed values are well-formed
+and converts the external representations into internal representations.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Syntax/Pattern.hs" target="_blank" rel="noopener"><code>Kore.Syntax.Pattern</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Syntax/Definition.hs" target="_blank" rel="noopener"><code>Kore.Syntax.Definition</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Validate/DefinitionVerifier.hs" target="_blank" rel="noopener"><code>Kore.Validate.DefinitionVerifier</code></a></li>
+</ul>
+<h3 id="termlike"><code>TermLike</code></h3>
+<p><code>TermLike</code> is the basic internal representation of Kore (matching logic) patterns.
+The representation includes matching logic formulas, user-defined symbols and aliases, and built-in values.
+<code>TermLike</code> is parameterized by the type of variables (actually variable <em>names</em>) which change during execution to carry extra information.
+The name <code>TermLike</code> alludes to the fact that these are <em>usually</em> matching logic <em>terms</em>
+(patterns that match at most one element).</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/TermLike.hs" target="_blank" rel="noopener"><code>Kore.Internal.TermLike</code></a></li>
+</ul>
+<h4 id="cofree-and-synthetic"><code>Cofree</code> and <code>Synthetic</code></h4>
+<p><code>TermLike</code> is represented internally as a <code>Cofree</code> comonad (tree) over a base functor named <code>TermLikeF</code>.
+<code>TermLikeF</code> is a sum type of all the pattern heads allowed in Kore, including built-ins.
+The <code>Cofree</code> tree carries annotations at every node.
+These annotations are synthetic attributes of the pattern and carry data used for various purposes.
+The <code>Synthetic</code> typeclass ensures that the annotations are always kept updated, efficiently.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Attribute/Synthetic.hs" target="_blank" rel="noopener"><code>Kore.Attribute.Synthetic</code></a></li>
+<li><a href="https://github.com/kframework/kore/tree/master/kore/src/Kore/Attribute/Pattern" target="_blank" rel="noopener"><code>Kore.Attribute.Pattern</code></a></li>
+<li><a href="https://hackage.haskell.org/package/free" target="_blank" rel="noopener"><code>Control.Comonad.Trans.Cofree</code></a></li>
+</ul>
+<h4 id="builtin"><code>Builtin</code></h4>
+<p>The backend supports these built-in sorts:</p>
+<ul>
+<li><code>Int</code>: arbitrary-precision integers</li>
+<li><code>Bool</code></li>
+<li><code>String</code>: packed strings</li>
+<li><code>Bytes</code>: (work-in-progress) packed byte arrays</li>
+<li><code>List</code>: associative lists</li>
+<li><code>Map</code></li>
+<li><code>Set</code></li>
+</ul>
+<p>The <code>Int</code>, <code>Bool</code>, <code>String</code>, and <code>Bytes</code> built-ins specialize ground terms in those domains for performance.
+The <code>List</code>, <code>Map</code>, and <code>Set</code> collections specialize <em>expressions</em> in those domains
+both for performance and to facilitate unification and matching.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/tree/master/kore/src/Kore/Builtin" target="_blank" rel="noopener"><code>Kore.Builtin</code></a></li>
+</ul>
+<h3 id="condition"><code>Condition</code></h3>
+<p>A <code>Condition</code> represents the conditions or constraints along an execution path,
+made up of a <code>Predicate</code> and a <code>Substitution</code>.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/Condition.hs" target="_blank" rel="noopener"><code>Kore.Internal.Condition</code></a></li>
+</ul>
+<h4 id="predicate"><code>Predicate</code></h4>
+<p><code>Predicate</code> is the representation predicate logic formulas,
+essentially the subset of <code>TermLike</code> that can be built from <code>Ceil</code> and connectives.
+<code>Predicate</code>s are the only type of pattern that can be translated for the external solver.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/Predicate.hs" target="_blank" rel="noopener"><code>Kore.Internal.Predicate</code></a></li>
+</ul>
+<h4 id="substitution"><code>Substitution</code></h4>
+<p>A <code>Substitution</code> is a collection of <code>(variable, TermLike variable)</code> pairs
+where <code>(x, t)</code> represents <code>\equals(x, t)</code>.
+<code>Substitution</code> can be viewed as a specialization of <code>Predicate</code> in that way,
+that is, a <code>Substitution</code> is the type of <code>Predicate</code> which can be applied as a substitution.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/Substitution.hs" target="_blank" rel="noopener"><code>Kore.Internal.Substitution</code></a></li>
+</ul>
+<h3 id="pattern"><code>Pattern</code></h3>
+<p>A <code>Pattern</code> is part of a program configuration:
+some <em>term</em> (<code>TermLike</code>) and the <em>condition</em> on that term (<code>Condition</code>).
+It is unusual to operate on a term without the accompanying condition,
+so <code>Pattern</code> is somewhat more common than <code>TermLike</code> alone.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/Pattern.hs" target="_blank" rel="noopener"><code>Kore.Internal.Pattern</code></a></li>
+</ul>
+<h3 id="conditional"><code>Conditional</code></h3>
+<p><code>Conditional</code> is a generalization of <code>Pattern</code>:
+an arbitrary type with <code>Condition</code>s.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/Conditional.hs" target="_blank" rel="noopener"><code>Kore.Internal.Conditional</code></a></li>
+</ul>
+<h3 id="orpattern"><code>OrPattern</code></h3>
+<p><code>OrPattern</code> is a disjunction of <code>Pattern</code>s (program configurations).
+This is the usual output of simplification.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Internal/OrPattern.hs" target="_blank" rel="noopener"><code>Kore.Internal.OrPattern</code></a></li>
+</ul>
+<h2 id="behavior">Behavior</h2>
+<h3 id="unification">Unification</h3>
+<p>Unification is represented in matching logic by <code>\and</code>
+and is essentially implemented as <code>\and</code> simplification,
+that is, by pushing <code>\and</code> down through symbols as far as possible.
+The backend has special support for unification modulo certain theories:</p>
+<ul>
+<li>Constructors (injective, no-confusion)</li>
+<li>Sort injections (constructors modulo triangle equality)</li>
+<li>Overloaded symbols</li>
+<li><code>List</code> (common patterns only)</li>
+<li><code>Map</code> (common patterns only)</li>
+<li><code>Set</code> (common patterns only)</li>
+</ul>
+<p>Because unification is implemented as &quot;pushing <code>\and</code> down&quot;, the solution is determined in parallel.
+Consider this example unification, with a constructor <code>C(_, _)</code> and constant terms <code>a</code> and <code>b</code> which may be undefined:</p>
+<pre class="language-text"><code>C(x, x) &#x2227; C(a, b)
+C(x &#x2227; a, x &#x2227; b)                                    -- constructor axioms: injectivity
+C(a &#x2227; (\ceil(a) &#x2227; x = a), b &#x2227; (\ceil(b) &#x2227; x = b))  -- singular variables
+C(a, b) &#x2227; (\ceil(a) &#x2227; \ceil(b)) &#x2227; (x = a &#x2227; x = b)  -- lifting conditions
+C(a, b) &#x2227; (\ceil(a) &#x2227; \ceil(b)) &#x2227; x = a &#x2227; b        -- substitution normalization
+C(a, b) &#x2227; (\ceil(a) &#x2227; \ceil(b)) &#x2227; x = (a &#x2227; a = b)  -- substitution normalization
+C(a, b) &#x2227; (\ceil(a) &#x2227; \ceil(b) &#x2227; a = b) &#x2227; x = a    -- substitution normalization
+</code></pre>
+<p>Disjunction is handled by distribution.
+The substitution normalization step is discussed below.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Simplify/AndTerms.hs" target="_blank" rel="noopener"><code>Kore.Simplify.AndTerms</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Builtin/List.hs" target="_blank" rel="noopener"><code>Kore.Builtin.List</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Builtin/Map.hs" target="_blank" rel="noopener"><code>Kore.Builtin.Map</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Builtin/Set.hs" target="_blank" rel="noopener"><code>Kore.Builtin.Set</code></a></li>
+</ul>
+<h3 id="substitution-normalization">Substitution normalization</h3>
+<p>Substitution normalization is a step after unification required by unifying in parallel.
+Normalization solves two problems:
+first, a substitution variable may be duplicated (occurs on the left-hand side of multiple substitutions),
+and second, there may be a cycle in the substitution (<code>x = f(y) &#x2227; y = g(x)</code>).</p>
+<p>A duplicated substitution is solved by unification:</p>
+<pre class="language-text"><code>x = t&#x2081; &#x2227; ... &#x2227; x = t&#x2099;
+x = (t&#x2081; &#x2227; ... &#x2227; t&#x2099;)
+x = t &#x2227; ...
+</code></pre>
+<p>Unification of the right-hand sides may produce additional conditions and substitutions,
+so the deduplication process iterates until no duplications remain.</p>
+<p>After the substitutions are deduplicated, they are topologically sorted by their dependencies on each other.
+If a cycle exists, we determine if that cycle passes through any simplifiable symbols.
+If the cycle passes only through constructors or other non-simplifiable symbols,
+and it involves any element variables,
+then the result of normalization is <code>\bottom</code>.
+If a non-simplifiable cycle involves only set variables,
+those variables themselves are equated with <code>\bottom</code>.
+If the cycle passes through simplifiable symbols,
+the cycle (denormalized part) is held as conditions apart from the rest of the substitution.
+In any case, the normalizable part of the substitution is ordered and each substitution is applied to the others
+so that no variable occuring on the right-hand side of any substitution also occurs on the left-hand side of any (other) substitution.</p>
+<p>The denormalized part of a substitution is handled differently in the context of unification and simplification.
+During unification, a denormalized substitution is considered an error
+because we have failed to produce a substitution which unifies the given patterns.
+During predicate simplification, we are more flexible;
+it is entirely reasonable to generate conditions such as <code>x = x + y</code> in this context.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Unification/SubstitutionNormalization.hs" target="_blank" rel="noopener"><code>Kore.Unification.SubstitutionNormalization</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Simplify/SubstitutionSimplifier.hs" target="_blank" rel="noopener"><code>Kore.Simplify.SubstitutionSimplifier</code></a></li>
+</ul>
+<h3 id="matching">Matching</h3>
+<p>An ad hoc subset of patterns can be matched, based on the usual needs of the frontend and semantics developers.
+Matching is implemented sequentially, so there is no separate substitution normalization step.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/Axiom/Matcher.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.Axiom.Matcher</code></a></li>
+</ul>
+<h3 id="semantic-rules">Semantic rules</h3>
+<p>Semantic rules are applied by the following procedure:</p>
+<ol>
+<li>Unify (as described above) the left-hand side of the rule with the current configuration&apos;s term.</li>
+<li>Conjoin the <code>requires</code> clause with the unification conditions and simplify.</li>
+<li>Conjoin with the initial conditions (from the current configuration) and simplify.</li>
+<li>Check that the conditions include substitutions for every variable on the left-hand side of the rule.</li>
+<li>Conjoin with the <code>ensures</code> clause.</li>
+<li>Instantiate the rule with the combined conditions.</li>
+<li>Calculate the <em>remainder</em> from the (unification+requires) conditions of all applied rules.</li>
+</ol>
+<p>The procedures to apply one-path and all-path reachability claims is described in other documents.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/Step.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.Step</code></a></li>
+</ul>
+<h3 id="function-rules">Function rules</h3>
+<p>Function rules are instantiated by matching, as described above.
+Function evaluation occurs during simplification, but not during unification.
+Function evaluation <em>may</em> split the configuration
+if multiple branches of a function&apos;s definition match the configuration;
+this point is planned to change.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/Function/Evaluator.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.Function.Evaluator</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/Axiom/EvaluationStrategy.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.Axiom.EvaluationStrategy</code></a></li>
+</ul>
+<h3 id="simplification">Simplification</h3>
+<p>Patterns are simplified from the bottom up.
+The top-level condition of the configuration is passed down as context for function and predicate evaluation.
+New conditions are accumulated as simplification moves up the syntax tree,
+requiring substitution normalization at the top.
+<code>TermLike</code> is simplified in a single pass, but this is planned to change.
+<code>Condition</code> is simplified in a loop where new substitutions are applied and the result is re-simplified.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Simplify/TermLike.hs" target="_blank" rel="noopener"><code>Kore.Simplify.TermLike</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Simplify/Condition.hs" target="_blank" rel="noopener"><code>Kore.Simplify.Condition</code></a></li>
+</ul>
+<h3 id="refuting-predicates">Refuting predicates</h3>
+<p>Some predicates can be evaluated by an external solver;
+in theory this can be any solver with an SMT-LIB 2 interface, but in practice we use Z3.
+Generally, we only check satisfiability of a predicate,
+using the solver to refute impossible execution paths.
+Predicate logic connectives are translated to their corresponding connectives in the solver.
+<code>\equals</code> can be translated if its arguments are in <code>Int</code> or <code>Bool</code>.
+It is essential that the arguments be functional (match exactly one value)
+because of the solver&apos;s internal assumptions.
+Other predicates cannot be translated directly,
+but they are translated as unknown (uninterpreted) <code>Bool</code> variables.
+An uninterpreted predicate is translated as the same variable wherever it occurs in a formula
+so that the solver can refute predicates such as <code>\in(a, b) &#x2227; \not \in(a, b)</code>.</p>
+<p>The backend uses a single solver process for all queries.
+The solver is initialized with all the symbols and sorts defined by the user
+and many axioms (such as constructor axioms).
+While proving, queries are sent to the solver incrementally,
+avoiding the overhead of restarting the solver for each query.</p>
+<p>References:</p>
+<ul>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/SMT/Translate.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.SMT.Translate</code></a></li>
+<li><a href="https://github.com/kframework/kore/blob/master/kore/src/Kore/Rewrite/SMT/Evaluator.hs" target="_blank" rel="noopener"><code>Kore.Rewrite.SMT.Evaluator</code></a></li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#introduction-to-the-haskell-backend" class="bd-toc-link">Introduction to the Haskell backend</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#data" class="bd-toc-link">Data</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#external-representations"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                External representations
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#termlike" class="bd-toc-link"><code>TermLike</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#cofree-and-synthetic"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>Cofree</code> and <code>Synthetic</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#builtin"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>Builtin</code>
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#condition" class="bd-toc-link"><code>Condition</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#predicate"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>Predicate</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#substitution"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                <code>Substitution</code>
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#pattern"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                <code>Pattern</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#conditional"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                <code>Conditional</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#orpattern"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                <code>OrPattern</code>
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#behavior" class="bd-toc-link">Behavior</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#substitution-normalization"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Substitution normalization
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#matching"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Matching
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#semantic-rules"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Semantic rules
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#function-rules"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Function rules
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#simplification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Simplification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#refuting-predicates"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Refuting predicates
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

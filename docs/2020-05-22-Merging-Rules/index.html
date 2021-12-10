@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="combining-multiple-rules-in-a-single-equivalent-rule">Combining multiple rules in a single equivalent rule</h1>
+<h2 id="introduction">Introduction</h2>
+<p>Rule application can benefit from indexing of rules and using efficient
+data-structures to decide faster which rule can be applied on a given
+configuration.</p>
+<p>This document attempts to justify this approach from a provability point of
+view, to ensure that the indexing algorithms are provably sound.</p>
+<h3 id="background">Background</h3>
+<p>K rules, are of the form</p>
+<pre><code>rule l =&gt; r requires c
+</code></pre>
+<p>where, in general, l is a constructor-based term
+(modulo axioms: may contain Ac constructors, overloadable constructors)</p>
+<p>When translated into matching logic, they are of the form</p>
+<pre><code>axiom l &#x2227; c &#x2192; &#x2022; r
+</code></pre>
+<p>Where &#x2022; is the next operator, meaning that there is a possible transition
+from l (satisfying c) to r.</p>
+<h2 id="approach">Approach</h2>
+<p>We will only discuss here combining two rules, but it should be clear
+that this easily extends to any finite number of rules.</p>
+<h3 id="fol-interlude">FOL Interlude</h3>
+<p>The following is provable using FOL reasoning:</p>
+<pre class="language-text"><code>Theorem combine
+  (p1 q1 p2 q2 : var &#x2192; Prop)
+  (i j : nat)
+  (Hnij : i &lt;&gt; j)
+  : (&#x2200; x, p1  x &#x2192; q1 x) &#x2227; (&#x2200; y, p2 y &#x2192; q2 y) 
+    &#x2194; &#x2200; (c : nat) x y,
+        (c = i &#x2227; p1 x) &#x2228; (c = j &#x2227; p2 y)
+        &#x2192; (c = i &#x2227; q1 x) &#x2228; (c = j &#x2227; q2 y).
+</code></pre>
+<h3 id="back-to-ml">Back to ML</h3>
+<p>Given two rules</p>
+<pre><code>axiom &#x2200; x1 . l1 &#x2192; &#x2022; r1
+axiom &#x2200; x2 . l2 &#x2192; &#x2022; r2
+</code></pre>
+<p>From the theorem above, we can combine the two axiom into an equivalent one:</p>
+<pre><code>axiom &#x2200; c x1 x2 .
+    (c = 1 &#x2227; l1) &#x2228; (c = 2 &#x2227; l2) &#x2192;
+    (c = 1 &#x2227; &#x2022; r1) &#x2228; (c = 2 &#x2227; &#x2022; r2)
+</code></pre>
+<p>Given that <code>c = 1</code> and <code>c = 2</code> are predicates, and that &#x2022; is a standard symbol,
+we can transform the RHS of the rule into</p>
+<pre><code>&#x2022; ((c = 1 &#x2227; r1) &#x2228; (c = 2 &#x2227; r2))
+</code></pre>
+<p>Reasoning:</p>
+<pre><code>        (c=1 &#x2227; &#x2022; r1) &#x2228; (c=2 &#x2227; &#x2022; r2)
+equals  &#x2022; (c=1 &#x2227; r1) &#x2228; &#x2022; (c=2 &#x2227; r2)
+equals  &#x2022; ((c=1 &#x2227; r1) &#x2227; (c=2 &#x2227; r2))
+</code></pre>
+<h2 id="dealing-with-side-conditions">Dealing with side conditions</h2>
+<p>If <code>l1 = tl1 &#x2227; pl1</code> and <code>l2 = tl2 &#x2227; pl2</code> then we can transform the lhs above
+into <code>((c = 1 &#x2227; tl1) &#x2228; (c = 2 &#x2227; tl2)) &#x2227; ((c = 1 &#x2227; tp1) &#x2228; (c = 2 &#x2227; tp2))</code></p>
+<p>Then, using the distributivity of <code>&#x2227;</code> over <code>&#x2228;</code> we can factor out common
+predicates from the side condition.</p>
+<p>Note: in the case we have the same predicate / term / variable / constant
+in both rules, we can transform <code>(c = 1 &#x2227; t) &#x2228; (c = 2 &#x2227; t)</code> into
+<code>t &#x2227; (c = 1 &#x2228; c = 2)</code>.</p>
+<h3 id="pushing-choice-predicates-into-terms">Pushing choice predicates into terms</h3>
+<p>Let us generalize the property we stated above for <code>&#x2022;</code> for any symbol in the
+signature. We will prove that</p>
+<pre><code>(c = 1 &#x2227; f(t11, .., t1n)) &#x2228; c = 2 &#x2227; f(t21, ..., t2n))
+</code></pre>
+<p>is equivalent to</p>
+<pre><code>f((c = 1 &#x2227; t11) &#x2228; (c = 2 &#x2227; t21), ..., (c = 1 &#x2227; t1n) &#x2228; (c = 2 &#x2227; t2n))
+</code></pre>
+<p>Reasoning:</p>
+<pre><code>f((c = 1 &#x2227; t11) &#x2228; (c = 2 &#x2227; t21), ..., (c = 1 &#x2227; t1n) &#x2228; (c = 2 &#x2227; t2n))
+equals   &#x2228;     f(c = p(1) &#x2227; tp(1)1, ..., c = p(n) &#x2227; tp(n)n)
+       p&#x2208;{1,2}&#x207F;
+equals    &#x2228;     (c = p(1) &#x2227; ... &#x2227; c = p(n) &#x2227; f(tp(1)1, ..., tp(n)n))
+       p&#x2208;{1,2}&#x207F;
+equals (c = 1 &#x2227; f(t11, ..., t1n)) &#x2228; (c = 2 &#x2227; f(t21, ..., t2n))
+</code></pre>
+<p>The last equality occurs because the cases where p is not constant 1 or 2 would
+contain <code>c = 1 &#x2227; c = 2</code> as part of the disjunct, yielding <code>&#x22A5;</code>.</p>
+<p>Note: When reaching a builtin construct we might choose not to push choices
+further on.  If we do, then builtin unification would have to handle choices as
+well.</p>
+<h3 id="indexed-normal-form">Indexed normal form</h3>
+<p>Applying the above we can compress two rules of the form</p>
+<pre><code>axiom &#x2200; x1 . l1 &#x2227; p1 &#x2192; &#x2022; r1 &#x2227; p1&apos;
+axiom &#x2200; x2 . l2 &#x2227; p2 &#x2192; &#x2022; r2 &#x2227; p2&apos;
+</code></pre>
+<p>to something like:</p>
+<pre><code>axiom &#x2200; x1 x2 c .
+  G[(c = 1 &#x2227; t11) &#x2228; (c = 2 &#x2227; t21), ..., (c = 1 &#x2227; t1m) &#x2228; (c = 2 &#x2227; t2m)]
+  &#x2227; ((c = 1 &#x2227; p1) &#x2228; (c = 2 &#x2227; p2))
+  =&gt;
+  G&apos;[(c = 1 &#x2227; t11&apos;) &#x2228; (c = 2 &#x2227; t21&apos;), ..., (c = 1 &#x2227; t1n&apos;) &#x2228; (c = 2 &#x2227; t2n&apos;)]
+  &#x2227; ((c = 1 &#x2227; p1&apos;) &#x2228; (c = 2 &#x2227; p2&apos;))
+</code></pre>
+<p>Where <code>G</code> and <code>G&apos;</code> are multi-hole contexts such that:</p>
+<ul>
+<li><code>G[t11, ..., t1m] = l1</code> and <code>G[t21, ..., t2m] = l2</code>,</li>
+<li><code>symbol(t1i) != symbol(t2i)</code> for each <code>1 &lt;= i &lt;= m</code></li>
+<li><code>G&apos;[t11&apos;, ..., t1n&apos;] = r1</code> and <code>G&apos;[t21&apos;, ..., t2n&apos;] = r2</code>,</li>
+<li><code>symbol(t1j&apos;) != symbol(t2j&apos;)</code> for each <code>1 &lt;= j &lt;= n</code></li>
+</ul>
+<p>Note 1: the restrictions on top symbols are optional; we might not want to
+enforce maximal sharing.</p>
+<p>Note 2: we can choose not to index the RHSs, in which case G&apos; will be the empty
+context</p>
+<h3 id="pushing-choices-to-variable-%2F-constant-level%3F">Pushing choices to variable / constant level?</h3>
+<p>We could continue the pushing down process for the choice predicates even after
+<code>symbol(t1i) != symbol(t2i)</code> for each <code>1 &lt;= i &lt;= m</code>, pushing the choices up to
+the leafs.</p>
+<p>Note, however, that this might not bring us additional benefits, because:</p>
+<ul>
+<li>having them at the junction point still propagates the choice predicate to
+the side condition for that branch</li>
+<li>all leafs would need to carry the choices to ensure not mixing up matches</li>
+<li>checking for conflicts between choices at end of unification is still needed</li>
+</ul>
+<h3 id="sharing-variables%3F">Sharing variables?</h3>
+<p>Variables can be shared and there is no need to rename rules&apos; variables;
+indeed; the choice being exclusive, there is no danger of contagion between
+variables with the same name belogining to different rules, as the choice
+variable would make the whole substitution bottom if that happens.</p>
+<p>On the other hand, care should be taken, as not renaming rules might allow
+for the same identifier to be used with different sorts in the same combined
+axiom, which might violate some existing assumptions.</p>
+<h3 id="example">Example</h3>
+<p>When indexing the following two rules</p>
+<pre><code>rule &lt;T&gt; &lt;k&gt; (X:Id =&gt; V) ~&gt; K:K &lt;/k&gt;, &lt;store&gt; __(X &#x21A6; V, Mem:Map) &lt;/store&gt; &lt;/T&gt;
+rule &lt;T&gt; &lt;k&gt; (X:Id := V =&gt; .K) ~&gt; K:K &lt;/k&gt;, &lt;store&gt; __(X &#x21A6; (_ &#x2192; V), Mem:Map) &lt;/store&gt; &lt;/T&gt;
+</code></pre>
+<p>The merged axiom might look of the form</p>
+<pre><code>axiom
+  &lt;T&gt;
+    &lt;k&gt; _~&gt;_(X:Id &#x2227; c = 1 &#x2228; X:Id := V &#x2227; c = 2, K:K &#x2227; (c = 1 &#x2228; c = 2))
+    &lt;/k&gt;
+    &lt;store&gt;
+        __(
+            _&#x21A6;_(
+                X &#x2227; (c = 1 &#x2228; c = 2),
+                (V &#x2227; c = 1) &#x2228; (Any &#x2227; c = 2)
+            ),
+            Mem:Map &#x2227; (c = 1 &#x2228; c = 2)
+        )
+    &lt;/store&gt;
+=&gt; (c = 1 &#x2227; &lt;T&gt; &lt;k&gt; V ~&gt; K &lt;/k&gt; &lt;store&gt; __(X &#x21A6; V, Mem) &lt;/store&gt;)
+   &#x2228;
+   (c = 2 &#x2227; &lt;T&gt; &lt;k&gt; .K ~&gt; K &lt;/k&gt; &lt;store&gt; __(X &#x21A6; V, Mem) &lt;/store&gt;)
+</code></pre>
+<h2 id="merging-multiple-rules">Merging multiple rules</h2>
+<p>When merging multiple rules, if not pushing choice predicates up to the
+leaves, it makes sense to only insert them at the moment that a certain
+rule diverges from all other rules. Rules sharing the same leaves will be
+handled as described above.</p>
+<h3 id="example-1">Example</h3>
+<p>Consider the following 4 rules:</p>
+<pre><code>rule &lt;k&gt; (X:Exp / Y:Exp =&gt; X ~&gt; []/ Y) ~&gt; K:K &lt;/k&gt;
+  requires notBool(isKResult(X))
+
+ rule &lt;k&gt; (X:Int / Y:Exp =&gt; Y ~&gt; X:Int /[]) ~&gt; K:K &lt;/k&gt;
+  requires notBool(isKResult(Y))
+
+rule &lt;k&gt; (X:Int / Y:Int =&gt; X /Int Y) ~&gt; K:K &lt;/k&gt;
+  requires Y =/=Int 0
+
+rule &lt;k&gt; (X:Int / 0 =&gt; error(&quot;Division by 0!) ~&gt; K:K) &lt;/k&gt;
+</code></pre>
+<p>They could be merged into the following axiom:</p>
+<pre><code>axiom
+  &lt;k&gt;
+    _~&gt;_(
+        _/_(
+            (X:Exp &#x2227; c = 0)
+            &#x2228;
+            inj{Int,Exp}(X:Int &#x2227; (c = 1 &#x2228; c = 2 &#x2228; c = 3))
+        , (Y:Exp &#x2227; (c = 0 &#x2228; c = 1))
+          &#x2228; inj{Int, Exp}(
+              (Y:Int &#x2227; c = 2)
+              &#x2228; (0 &#x2227; c = 3)
+          )
+        )
+
+        ,
+        K:K &#x2227; (c = 0 &#x2228; c = 1 &#x2228; c = 2 &#x2228; c = 3)
+    )
+  &lt;/k&gt;
+  &#x2227;
+  ((c = 0 &#x2227; notBool(isKResult(X:Exp)))
+   &#x2228;
+   (c = 1 &#x2227; notBool(isKResult(Y:Exp)))
+   &#x2228;
+   (c = 2 &#x2227; Y:Int =/=Int 0)
+   &#x2228;
+   c = 3
+  )
+=&gt; (c = 0 &#x2227; &lt;k&gt; X:Exp ~&gt; []/ Y:Exp ~&gt; K &lt;/k&gt;)
+   &#x2228; (c = 1 &#x2227; &lt;k&gt; Y:Exp ~&gt; X:Int /[] ~&gt; K &lt;/k&gt;)
+   &#x2228; (c = 2 &#x2227; &lt;k&gt; X:Int /Int Y:Int ~&gt; K &lt;/k&gt;)
+   &#x2228; (c = 3 &#x2227; &lt;k&gt; error(&quot;Division by 0&quot;) ~&gt; K &lt;/k&gt;)
+</code></pre>
+<h2 id="on-merging-all-path-%2F-one-path-claims">On merging all-path / one-path claims</h2>
+<p>Since all-path claims are of the form <code>&#x2200;x&#x1D62;.&#x3C6;&#x1D62; &#x2192; [w] &#x2203;z&#x1D62;.&#x3C8;&#x1D62;</code> where
+<code>[w]</code> denotes the weak always finally operator, the reasoning above works,
+yielding the following merged rule:</p>
+<pre><code>axiom &#x2200; x1 x2 ... xn c .
+  (c = 1 &#x2227; l1) &#x2228; ... (c = n &#x2227; ln) &#x2192; [w] (c = 1 &#x2227; r1) &#x2228; ... (c = n &#x2227; rn)
+</code></pre>
+<p>We can then continue merging the lhs part as pointed above.</p>
+<p>A similar argument applies for one-path claims.</p>
+<h2 id="all-path-reachability-proofs">All path reachability proofs</h2>
+<p>(See <a href="https://github.com/kframework/kore/tree/master/2019-03-28-All-Path-Reachability-Proofs">All Path Reachability Proofs</a>)</p>
+<p>Assumption: in a goal to be proven, <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code>, <code>&#x3C6;</code> will be assumed to be
+function-like.
+This allows transforming any conjunction <code>&#x3C6; &#x2227; &#x3B3;</code> into the equivalent
+<code>&#x3C6; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3B3;&#x2309;</code>.</p>
+<h3 id="reinterpreting-unification">Reinterpreting unification</h3>
+<p>The main idea is to transform <code>&#x2308;&#x3C6; &#x2227; &#x3B3;&#x2309;</code> through equivalences to a disjunction
+of conjunctions of equalities between variables and terms representing a
+substitution.  Using equivalences guarantees that a MGU is achieved.</p>
+<p>In fact, the existing cases for unification stay the same; however, we now need
+to take into account disjunctions and rule choice predicates.</p>
+<p>For strongly deterministic definitions (using non-overlapping rules),
+the unification itself will be deterministic, yielding substitutions
+guarded by the choice predicate corresponding to the (only) rule unifying
+with the current configuration.</p>
+<h3 id="reinterpreting-the-derivepar-algorithm">Reinterpreting the <code>derivePar</code> algorithm</h3>
+<p>Upone merging the one step axioms and the all path claims we interpret the
+all-path algorithm as follows:</p>
+<p><strong>Input</strong>: goal <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code>  and set of tuples <code>{ (x&#x1D62;,&#x3C6;&#x1D62;,z&#x1D62;,&#x3C8;&#x1D62;) : 1 &#x2264; i &#x2264; n }</code>
+representing either</p>
+<ul>
+<li>a merged claim <code>&#x2200;x&#x2081; x&#x2082; ... x&#x2099; c . l &#x2192; [w] r</code></li>
+<li>a merged axiom <code>&#x2200;x&#x2081; x&#x2082; ... x&#x2099; c . l &#x2192; &#x2022; &#x2203; z&#x2081; ... z&#x2099; . r</code></li>
+</ul>
+<p>where</p>
+<ul>
+<li><code>l &#x2227; (c = i)</code> is equal to &#x3C6;&#x1D62; &#x2227; (c = i)<code>for</code>1 &#x2264; i &#x2264; n<code>,  and </code>l &#x2227; (c = i)<code>is equal to</code>&#x22A5;<code>if</code>&#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)`</li>
+<li><code>r &#x2227; (c = i)</code> is equal to <code>&#x3C8;&#x1D62; &#x2227; (c = i)</code> for <code>1 &#x2264; i &#x2264; n</code>,
+and <code>r &#x2227; (c = i)</code> is equal to <code>&#x22A5;</code> if <code>&#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)</code></li>
+</ul>
+<p><strong>Output:</strong> <code>(Goal, goal&#x1D63;&#x2091;&#x2098;)</code></p>
+<ul>
+<li>Let <code>goal&#x1D63;&#x2091;&#x2098; := &#x2200;x.(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c .&#x2308;&#x3C6; &#x2227; l&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>Let <code>Goal := &#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c.r &#x2227; &#x2308;&#x3C6;&#x2227;l&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+</ul>
+<h4 id="argument-for-equivalence-to-the-original-algorithm">Argument for equivalence to the original algorithm</h4>
+<p>Say we want to prove <code>&#x2200;x.&#x3C6; &#x2192; [w]&#x2203;z.&#x3C8;</code>, and say we want to apply
+circularities, i.e., the merged claim <code>&#x2200;x&#x2081; x&#x2082; ... x&#x2099; c . l &#x2192; [w] r</code>.</p>
+<h5 id="unification-predicate-%E2%8C%88%CF%86-%E2%88%A7-l%E2%8C%89">Unification predicate <code>&#x2308;&#x3C6; &#x2227; l&#x2309;</code></h5>
+<ul>
+<li><code>&#x2308;&#x3C6; &#x2227; l&#x2309;</code> equals <code>&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; &#x2203;i.c=i</code></li>
+<li>equals
+<code>&#x2203;i.&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; c=i &#x2227; (i = 1 &#x2228; i = 2 &#x2228; ... &#x2228; i = n &#x2228; &#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)</code></li>
+<li>equals
+<code>&#x2203;i.(&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; c=i &#x2227; i = 1) &#x2228; (&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; c=i &#x2227; i = 2) &#x2228; ... &#x2228; (&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; c=i &#x2227; i = n) &#x2228; (&#x2308;&#x3C6; &#x2227; l&#x2309; &#x2227; c=i &#x2227; &#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n))</code></li>
+<li>equals
+<code>&#x2203;i.&#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = 1&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = 2&#x2309; &#x2228; ... &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = n&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; &#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)&#x2309;</code></li>
+<li>equals
+<code>&#x2203;i.&#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = 1&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = 2&#x2309; &#x2228; ... &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; i = n&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; l &#x2227; c=i &#x2227; &#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)&#x2309;</code></li>
+<li>equals
+<code>&#x2203;i.&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081; &#x2227; c = i &#x2227; i = 1&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082; &#x2227; c = i &#x2227;i = 2&#x2309; &#x2228; ... &#x2228; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099; &#x2227; c = i &#x2227; i = n&#x2309; &#x2228; &#x2308;&#x3C6; &#x2227; &#x22A5; &#x2227; &#xAC;(i = 1) &#x2227; ... &#x2227; &#xAC;(i = n)&#x2309;</code></li>
+<li>equals
+<code>&#x2203;i.(&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = i &#x2227; i = 1) &#x2228; &#x2203;i.(&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082;&#x2309; &#x2227; c = i &#x2227; i = 2) &#x2228; ... &#x2228; &#x2203;i.(&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = i &#x2227; i = n)</code></li>
+<li>equals
+<code>(&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = 1) &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082;&#x2309; &#x2227; c = 2) &#x2228; ... &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = n)</code></li>
+</ul>
+<h4 id="goal%E1%B5%A3%E2%82%91%E2%82%98"><code>goal&#x1D63;&#x2091;&#x2098;</code></h4>
+<p><code>goal&#x1D63;&#x2091;&#x2098;</code> equals <code>&#x2200;x.(&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c .&#x2308;&#x3C6; &#x2227; l&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></p>
+<ul>
+<li>equals (from the above)
+<code>forall x. (&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081; ... x&#x2099; c . ((&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = 1) &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082;&#x2309; &#x2227; c = 2) &#x2228; ... &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = n))) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (FOL manipulation)
+<code>forall x. (&#x3C6; &#x2227; &#xAC;(&#x2203;x&#x2081; ... x&#x2099; . &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2228;  ... &#x2228;  &#x2203;x&#x2081; ... x&#x2099; .&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (x&#x1D62; distinct, &#x3C6;&#x1D62; contains only x&#x1D62;, &#x3C6; does not contain any of the x&#x1D62;s)
+<code>forall x. (&#x3C6; &#x2227; &#xAC;(&#x2203;x&#x2081;. &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2228;  ... &#x2228;  &#x2203;x&#x2099; .&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (&#xAC; distribution)
+<code>forall x. (&#x3C6; &#x2227; &#xAC;&#x2203;x&#x2081;. &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227;  ... &#x2227; &#xAC;&#x2203;x&#x2099; .&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code>
+which is precisely the remainder from the original <code>derivePar</code> algorithm</li>
+</ul>
+<h5 id="goal">Goal</h5>
+<p><code>Goal</code> equals <code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c.r &#x2227; &#x2308;&#x3C6;&#x2227;l&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;</code></p>
+<ul>
+<li>equals
+<code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c.r &#x2227; ((&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = 1) &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082;&#x2309; &#x2227; c = 2) &#x2228; ... &#x2228; (&#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = n))) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (distributivity)
+<code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c.(r &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = 1) &#x2228; (r &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2082;&#x2309; &#x2227; c = 2) &#x2228; ... &#x2228; (r &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = n)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (rules for <code>r</code>)
+<code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; c.(&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309; &#x2227; c = 1) &#x2228; ... &#x2228; (&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309; &#x2227; c = n)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (FOL manipulation)
+<code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081; x&#x2082; ... x&#x2099; .(&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309;) &#x2228; ... &#x2228; &#x2203;x&#x2081; x&#x2082; ... x&#x2099; .(&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (x&#x1D62; distinct, &#x3C6;&#x1D62; and &#x3C8;&#x1D62; contain only x&#x1D62;, &#x3C6; does not contain any of the x&#x1D62;s)
+<code>&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.(&#x2203;x&#x2081;.(&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309;) &#x2228; ... &#x2228; &#x2203;x&#x2099;.(&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (FOL manipulation
+<code>(&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.&#x2203;x&#x2081;.(&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;) &#x2227; ... &#x2227;  (&#x2200;x z&#x2081; z&#x2082; ... z&#x2099;.&#x2203;x&#x2099;.(&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+<li>equals (z&#x1D62; distinct, &#x3C8;&#x1D62; contains only z&#x1D62;, &#x3C6;, &#x3C6;&#x1D62; does not contain any of the x&#x1D62;s, and all types are inhabited)
+<code>(&#x2200;x z&#x2081;.&#x2203;x&#x2081;.(&#x3C8;&#x2081; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2081;&#x2309;) &#x2192; [w]&#x2203;z.&#x3C8;) &#x2227; ... &#x2227;  (&#x2200;x z&#x2099;.&#x2203;x&#x2099;.(&#x3C8;&#x2099; &#x2227; &#x2308;&#x3C6; &#x2227; &#x3C6;&#x2099;&#x2309;)) &#x2192; [w]&#x2203;z.&#x3C8;</code></li>
+</ul>
+<p>Which is precisely the conjunction of <code>Goals</code> from the original <code>derivePar</code> algorithm.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#combining-multiple-rules-in-a-single-equivalent-rule" class="bd-toc-link">Combining multiple rules in a single equivalent rule</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#introduction" class="bd-toc-link">Introduction</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Background
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#approach" class="bd-toc-link">Approach</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fol-interlude"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                FOL Interlude
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#back-to-ml"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Back to ML
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#dealing-with-side-conditions" class="bd-toc-link">Dealing with side conditions</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#pushing-choice-predicates-into-terms"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Pushing choice predicates into terms
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#indexed-normal-form"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Indexed normal form
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#pushing-choices-to-variable-%2F-constant-level%3F"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Pushing choices to variable / constant level?
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#sharing-variables%3F"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Sharing variables?
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Example
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#merging-multiple-rules" class="bd-toc-link">Merging multiple rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#example-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Example
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#on-merging-all-path-%2F-one-path-claims"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                On merging all-path / one-path claims
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#all-path-reachability-proofs" class="bd-toc-link">All path reachability proofs</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#reinterpreting-unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Reinterpreting unification
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#reinterpreting-the-derivepar-algorithm" class="bd-toc-link">Reinterpreting the <code>derivePar</code> algorithm</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#argument-for-equivalence-to-the-original-algorithm" class="bd-toc-link">Argument for equivalence to the original algorithm</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unification-predicate-%E2%8C%88%CF%86-%E2%88%A7-l%E2%8C%89"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Unification predicate <code>&#x2308;&#x3C6; &#x2227; l&#x2309;</code>
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#goal%E1%B5%A3%E2%82%91%E2%82%98" class="bd-toc-link"><code>goal&#x1D63;&#x2091;&#x2098;</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#goal"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Goal
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
