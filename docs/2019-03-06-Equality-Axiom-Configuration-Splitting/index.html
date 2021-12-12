@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="equality-axiom-configuration-splitting">Equality Axiom Configuration Splitting</h1>
+<h2 id="background">Background</h2>
+<p>Functions are defined through axioms of the type <code>&#x2200; Z . &#x3B1;(Z) = &#x3B2;(Z)</code>. The same
+axioms are used for <code>ceil</code> evaluation and for simplifying functions without
+evaluating them.</p>
+<p>These axioms are interpreted in a directional way, i.e. if we find <code>&#x3B1;(Z)</code>,
+we can transform it into <code>&#x3B2;(Z)</code>.</p>
+<p>In order to apply this axiom to a pattern <code>&#x3C6;(X)</code>, let us first take an example:
+if the axiom is <code>sgn(z) = -1 if z &lt; 0</code>, which means that <code>&#x3B1;(z) = sgn(z) &#x2227; z&lt;0</code>
+and <code>&#x3B2;(Z) = -1</code>, and if <code>&#x3C6;(x)=sgn(x+1)</code>, then we will try to find an unifier
+for <code>&#x3B1;(z)</code> and <code>&#x3C6;(x)</code>. It&apos;s easy to identify a substitution <code>S(x,z) = [z = x+1]</code>
+which must be part5 of this unifier, but <code>z&lt;0</code> must also be part of it, so our
+unifier will be a predicate <code>P(x, z) = [z = x+1] &#x2227; z&lt;0</code> (check the &quot;Details&quot;
+section to see why).</p>
+<p>In general, the unifier will be in the form of a predicate <code>P(X, Z)</code>, which can
+be <code>&#x22A5;</code>, such that</p>
+<pre class="language-text"><code>P(X, Z) &#x2227; &#x3C6;(X) = P(X, Z) &#x2227; &#x3B1;(Z)
+</code></pre>
+<p>In other words:</p>
+<pre class="language-text"><code>(&#x3C6;(X) &#x2227; &#x2203; Z . P(X, Z))
+  = (&#x2203; Z . P(X, Z) &#x2227; &#x3C6;(X))  -- X is not quantified by &#x2203; Z
+  = (&#x2203; Z . P(X, Z) &#x2227; &#x3B1;(Z))  -- From the equation above
+  = (&#x2203; Z . P(X, Z) &#x2227; &#x3B2;(Z))  -- Since &#x3B1;(Z) = &#x3B2;(Z)
+</code></pre>
+<p><code>P(X, Z)</code> usually contains a substitution which has an assignment for each
+variable in <code>Z</code>. Note that here we don&apos;t require <code>P</code> to be maximal,
+i.e. <code>P</code> does not have to be <code>&#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;</code>.</p>
+<p>Also see <code>docs/2018-11-08-Configuration-Splitting-Simplification.md</code> for a
+similar problem that involves rewriting axioms.</p>
+<h2 id="details">Details</h2>
+<h3 id="unification">Unification</h3>
+<p>When matching two terms, <code>t(X)</code> and <code>s(Z)</code>, one normally gets a substitution
+<code>S(X, Z)</code>. As an example, when matching <code>f(sigma(x1), tau(x2))</code> with
+<code>f(y1, tau(y2))</code> one may get <code>[y1=sigma(x1), y2=x2]</code>.</p>
+<p>In some cases, this substitution may be accompanied by a predicate <code>P(X, Z)</code>,
+e.g. when matching <code>f(g(x1), x2)</code> with <code>f(a, y1)</code> one will get a predicate
+<code>g(x1)=a</code> and a substitution <code>y1=x2</code>.</p>
+<p>However, let us note that, unlike when rewriting, we usually don&apos;t want to
+use the most general unifier. As an example, let&apos;s say that we want to define
+<code>f(z)</code> with these axioms:</p>
+<pre class="language-text"><code>f(z) = sin(z) if z &lt; 0
+f(z) = cos(z) if z &gt;= 0
+</code></pre>
+<p>and let&apos;s say that we want to apply the first of these equations to <code>f(x)</code>.
+The most general unifier is</p>
+<pre class="language-text"><code>&#x2308;f(x) &#x2227; f(z) &#x2227; z &lt; 0&#x2309;
+
+    -- since f is a function
+  = &#x2308;f(x)&#x2309; &#x2227; (f(x) == f(z)) &#x2227; z &lt; 0
+
+    -- since f is actually functional
+  = (f(x) == f(z)) &#x2227; z &lt; 0
+</code></pre>
+<p>from which we can&apos;t infer a substitution for <code>z</code> since <code>(f(x) == f(z)) &#x2227; z &lt; 0</code>
+has an infinity of solutions.</p>
+<p>At the opposite end of the spectrum, <code>&#x22A5;</code> is always a unifier, but we usually
+want something better, since we do want to apply the axiom if possible.</p>
+<p>So we search for a unifier which lies somewhere between <code>&#x22A5;</code> and the most
+general unifier. For this, we match the structure of the two terms as much as
+possible, identifying identical node types (e.g. both nodes are <code>application</code>s
+of the same head, both nodes are <code>and</code> and so on), and we have a few special
+cases for handling different node types (e.g. a variable vs a functional term
+becomes a substitution).</p>
+<p>This unifier consists of a predicate <code>Q(X, Z)</code> and a substitution <code>S(X,Z)</code>.
+But, since a substitution is a predicate, we can say that we end up with a
+predicate <code>P(X, Z)=Q(X, Z) &#x2227; S(X, Z)</code>.</p>
+<p>As an example, if we try to apply the axiom
+<code>if (true, z1, Z2)</code> to <code>if(x&lt;2, 10, 20)</code>, we will get
+<code>S(x, z1, z2) = [z1=10, z2=20]</code> and <code>Q(X, Y) = (true == x&lt;2)</code>.</p>
+<p>Now, when we generalize this to random formulas, <code>&#x3C6;(X)</code> and <code>&#x3B1;(Z)</code>, we still
+get a predicate <code>P(X, Z)</code> as a unifier, with <code>&#x22A5; &#x2286; P(X, Z) &#x2286; &#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Z)&#x2309;</code>.
+If, say, we have terms <code>t(X)</code> and <code>s(Z)</code> with predicates <code>Q(X)</code> and <code>R(Z)</code>
+such that <code>&#x3C6;(X) = t(X) &#x2227; Q(X)</code> and <code>&#x3B1;(Z) = s(Z) &#x2227; R(Z)</code>, and <code>P&apos;(X, Z)</code> is
+a unifier for <code>t(X)</code> and <code>s(Z)</code>, then we can take <code>P(X, Z)</code> to be
+<code>Q(X) &#x2227; P&apos;(X, Z) &#x2227; R(Z)</code>.</p>
+<p>As an example, if we try to apply <code>sgn(z) = -1 if z &lt; 0</code>
+(so <code>&#x3B1;(z) = sgn(z) &#x2227; z&lt;0</code>) to <code>&#x3C6;(x) = sgn(x+1) &#x2227; x&gt;-5</code>, we would have:</p>
+<pre class="language-text"><code>t(x) = sgn(x+1)
+s(z) = sgn(z)
+Q(x) = x&gt;-5
+R(z) = z&lt;0
+</code></pre>
+<p>And we would compute:</p>
+<pre class="language-text"><code>P&apos;(x, z) = S(x, z) = [z=x+1]
+P(x, z) = x&gt;-5 &#x2227; z&lt;0 &#x2227; [z=x+1]
+</code></pre>
+<h3 id="removing-exists">Removing exists</h3>
+<p>Assuming that <code>P(X, Z)</code> contains a substitution <code>S(X, Z)</code> which covers all
+variables in <code>Z</code>, then, for all formulas <code>&#x3C8;(Z)</code>, there is another formula
+<code>&#x3C8;&apos;(X)</code> and a predicate <code>P&apos;(X)</code>, which we get through substitution, such that:</p>
+<pre class="language-text"><code>&#x2203; Z . P(X, Z) &#x2227; &#x3C8;(Z)
+
+  -- apply the substitution
+  = &#x2203; Z . P&apos;(X) &#x2227; &#x3C8;&apos;(X) &#x2227; S(X, Z)
+
+  -- &#x2203; Z . a &#x2227; b = a &#x2227; &#x2203; Z . b if Z does not occur free in a
+  = P&apos;(X) &#x2227; &#x3C8;&apos;(X) &#x2227; &#x2203; Z . S(X, Z)
+
+  -- &#x2203; Z . Z = a is always top if a is functional, and we assume that
+  -- patterns used in substitutions are relatively functional.
+  = P&apos;(X) &#x2227; &#x3C8;&apos;(X)
+</code></pre>
+<p>Continuing the <code>sgn(x+1)</code> example above, if</p>
+<pre class="language-text"><code>P(x, z) = x&gt;-5 &#x2227; z&lt;0 &#x2227; [z=x+1]
+</code></pre>
+<p>then we would have</p>
+<pre class="language-text"><code>P&apos;(x) = x&gt;-5 &#x2227; z&lt;0
+&#x3C8;&apos;(x) = &#x3C8;(x+1)
+</code></pre>
+<p>So we can do this:</p>
+<pre class="language-text"><code>&#x2203; z . P(x, z) &#x2227; &#x3C8;(z)
+
+  -- term expansion
+  = &#x2203; z . x&gt;-5 &#x2227; z&lt;0 &#x2227; [z=x+1] &#x2227; &#x3C8;(z)
+
+  -- apply substitution
+  = &#x2203; z . x&gt;-5 &#x2227; x+1&lt;0 &#x2227; [z=x+1] &#x2227; &#x3C8;(x+1)
+
+  -- &#x2203; Z . a &#x2227; b = a &#x2227; &#x2203; Z . b if Z does not occur free in a
+  = x&gt;-5 &#x2227; x+1&lt;0 &#x2227; &#x3C8;(x+1) &#x2227; (&#x2203; z . [z=x+1])
+
+  -- (&#x2203; z . [z=x+1]) is top
+  = x&gt;-5 &#x2227; x+1&lt;0 &#x2227; &#x3C8;(x+1)
+
+  = P&apos;(x) &#x2227; &#x3C8;&apos;(x)
+</code></pre>
+<h2 id="problem">Problem</h2>
+<p>Above I described how we can transform parts of a pattern
+(<code>&#x2203; Z . P(X, Z) &#x2227; &#x3B1;(Z)</code> being transformed to <code>&#x2203; Z . P(X, Z) &#x2227; &#x3B2;(Z)</code>). The
+main question is how to transform the entire pattern with, e.g., a function
+definition.</p>
+<h2 id="solution">Solution</h2>
+<p>Let us assume that we have several axioms <code>&#x2200; Zi . &#x3B1;i(Zi) = &#x3B2;i(Zi)</code> which we
+think we should apply together (e.g. they form a function definition).</p>
+<p>We identify <code>Pi(X, Zi)</code> such that</p>
+<pre class="language-text"><code>(&#x2203; Zi . Pi(X, Zi) &#x2227; &#x3C6;(X)) = (&#x2203; Zi . Pi(X, Zi) &#x2227; &#x3B1;i(Zi)).
+</code></pre>
+<p>Let</p>
+<pre class="language-text"><code>Qi(X) = (&#xAC; &#x2203; Z1 . P1(X, Z1)) &#x2227; ... &#x2227; (&#xAC; &#x2203; Zi . Pi(X, Zi))
+</code></pre>
+<p>Note that, if all <code>Pi(X, Zi)</code> contain a substitution for all variables in <code>Zi</code>,
+then <code>Qi(X)</code> and <code>&#x2203; Zi . P1(X, Zi) &#x2227; &#x3B2;1(Zi)</code> can be reduced to formulas without
+<code>&#x2203; Zi</code>. Also,</p>
+<p>Then we evaluate <code>&#x3C6;(X)</code> as follows:</p>
+<pre class="language-text"><code>&#x3C6;(X)
+
+    --| a = (a &#x2227; b) &#x2228; (a &#x2227; &#xAC;b)
+  = (&#x3C6;(X) &#x2227; &#x2203; Z1 . P1(X, Z1)) &#x2228; (&#x3C6;(X) &#x2227; &#xAC; &#x2203; Z1 . P1(X, Z1))
+
+    --| Q1&apos;s definition
+  = (&#x3C6;(X) &#x2227; &#x2203; Z1 . P1(X, Z1)) &#x2228; (&#x3C6;(X) &#x2227; Q1(X))
+
+    --| &#x3B1;1(Z1) = &#x3B2;1(Z1)
+  = (&#x2203; Z1 . P1(X, Z1) &#x2227; &#x3B2;1(Z1)) &#x2228; (&#x3C6;(X) &#x2227; Q1(X))
+
+    --| a = (a &#x2227; b) &#x2228; (a &#x2227; &#xAC;b)
+  = (&#x2203; Z1 . P1(X, Z1) &#x2227; &#x3B2;1(Z1))
+    &#x2228; (&#x2203; Z2 . P2(X, Z2) &#x2227; &#x3B2;2(Z2) &#x2227; Q1(X))
+    &#x2228; (&#x3C6;(X) &#x2227; Q1(X)) &#x2227; (&#xAC; &#x2203; Z2 . P2(X, Z2)))
+
+    --| Q2&apos;s definition
+  = (&#x2203; Z1 . P1(X, Z1) &#x2227; &#x3B2;1(Z1))
+    &#x2228; (&#x2203; Z2 . P2(X, Z2) &#x2227; &#x3B2;2(Z2) &#x2227; Q1(X))
+    &#x2228; (&#x3C6;(X) &#x2227; Q2(X))
+...
+  = (&#x2203; Z1 . P1(X, Z1) &#x2227; &#x3B2;1(Z1))
+    &#x2228; (&#x2203; Z2 . P2(X, Z2) &#x2227; &#x3B2;2(Z2) &#x2227; Q1(X))
+    ...
+    &#x2228; (&#x2203; Zn . Pn(X, Zn) &#x2227; &#x3B2;n(Zn) &#x2227; Qn-1(X))
+    &#x2228; (&#x3C6;(X) &#x2227; Qn(X))
+</code></pre>
+<p>At the end, we usually expect that <code>&#x2308;&#x3C6;(X) &#x2227; Qn(X)&#x2309; = &#x22A5;</code>. Currently
+we only check whether <code>Qn(X) = &#x22A5;</code>, but we may want to do more in the future.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#equality-axiom-configuration-splitting" class="bd-toc-link">Equality Axiom Configuration Splitting</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#details" class="bd-toc-link">Details</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removing-exists"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removing exists
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#solution"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Solution
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
