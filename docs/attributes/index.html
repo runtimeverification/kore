@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="attributes">Attributes</h1>
+<p>As pointed out in
+<a href="../../design-decisions/2018-07-25%20Attributes%20as%20patterns/">Attributes as Patterns</a>,
+attributes are encoded as Kore patterns that only use application and string
+literals.</p>
+<h2 id="axiom-pattern-attributes">Axiom Pattern Attributes</h2>
+<p>Kore.Attribute.Axiom</p>
+<p>Attributes specific to interpreting axiom patterns.</p>
+<h3 id="assoc">Assoc</h3>
+<p>Associativity axiom</p>
+<pre class="language-text"><code>assoc{}()
+</code></pre>
+<p>Example, List concatenation</p>
+<pre class="language-text"><code>axiom{R} \equals{SortList{}, R} (
+  Lbl&apos;Unds&apos;List&apos;Unds&apos;{}(
+    Lbl&apos;Unds&apos;List&apos;Unds&apos;{}(K1:SortList{},K2:SortList{}),
+    K3:SortList{}),
+  Lbl&apos;Unds&apos;List&apos;Unds&apos;{}(
+    K1:SortList{},
+    Lbl&apos;Unds&apos;List&apos;Unds&apos;{}(K2:SortList{},K3:SortList{}))) [assoc{}()]
+</code></pre>
+<h3 id="comm">Comm</h3>
+<p>Commutativity axiom</p>
+<pre class="language-text"><code>comm{}()
+</code></pre>
+<p>Example: Map concatenation</p>
+<pre class="language-text"><code>axiom{R} \equals{SortMap{}, R} (
+  Lbl&apos;Unds&apos;Map&apos;Unds&apos;{}(K1:SortMap{},K2:SortMap{}),
+  Lbl&apos;Unds&apos;Map&apos;Unds&apos;{}(K2:SortMap{},K1:SortMap{})) [comm{}()]
+</code></pre>
+<h3 id="concrete">Concrete</h3>
+<pre class="language-text"><code>concrete{}()
+</code></pre>
+<p>Concrete axioms are not applied to symbolic patterns (patterns containing
+variables).</p>
+<h3 id="heatcool">HeatCool</h3>
+<p>Heating and cooling axiom</p>
+<pre class="language-text"><code>heat{}()
+cool{}()
+</code></pre>
+<p>In each execution step, the execution strategy first heats the configuration,
+applies the normal rules (without <code>heat{}()</code> and <code>cool{}()</code>), and cools the
+result.</p>
+<h3 id="idem">Idem</h3>
+<p>Idempotency axiom</p>
+<pre class="language-text"><code>idem{}()
+</code></pre>
+<p>Example: concatenation of identical Sets</p>
+<pre class="language-text"><code>axiom{R} \equals{SortSet{}, R} (
+  Lbl&apos;Unds&apos;Set&apos;Unds&apos;{}(K:SortSet{},K:SortSet{}),K:SortSet{}) [idem{}()]
+</code></pre>
+<h3 id="owise">Owise</h3>
+<pre class="language-text"><code>owise{}()
+</code></pre>
+<p>This rule will apply only if the term does not unify with any other rules.
+Has default priority 200.</p>
+<h3 id="productionid">ProductionID</h3>
+<pre class="language-text"><code>productionID{}(&quot;id&quot;)
+</code></pre>
+<h3 id="priority">Priority</h3>
+<pre class="language-text"><code>priority{}(&quot;123&quot;)
+</code></pre>
+<p>The priority attribute specifies a number which determines the order of rule
+application. The attribute&apos;s argument is a string literal representing a decimal
+integer.</p>
+<h3 id="simplification">Simplification</h3>
+<pre class="language-text"><code>simplification{}()
+</code></pre>
+<p>There are 2 types of evaluation: definition evaluations that implement the
+actual semantics and simplification evaluations which are not the part of the
+semantics, but can be used for simplifying the configuration before applying
+definitions. For example, <code>(x + y) + z = (x + z) + y</code> where <code>x</code> and <code>z</code> are
+concrete and <code>y</code> is not concrete.</p>
+<h3 id="trusted">Trusted</h3>
+<pre class="language-text"><code>trusted{}()
+</code></pre>
+<p>Spec axioms with this attribute are excluded from verification.</p>
+<h3 id="unit">Unit</h3>
+<p>Unit element axiom</p>
+<pre class="language-text"><code>unit{}()
+</code></pre>
+<h3 id="unique-id">Unique ID</h3>
+<p>Unique identifier for axioms, usually assigned by the frontend at compile time.</p>
+<pre class="language-text"><code>UNIQUE&apos;Unds&apos;ID{}(&quot;07a34b11585162c291311c03441e08beb2532e48d&quot;)
+</code></pre>
+<h2 id="symbol-attributes">Symbol Attributes</h2>
+<p>Kore.Attribute.Symbol.Symbol</p>
+<p>Attributes assigned to symbols.</p>
+<h3 id="anywhere">Anywhere</h3>
+<pre class="language-text"><code>anywhere{}()
+</code></pre>
+<p>A symbol is given the <code>anywhere</code> attribute when it has <code>anywhere</code> rules
+associated with it.</p>
+<h3 id="constructor">Constructor</h3>
+<pre class="language-text"><code>constructor{}()
+</code></pre>
+<p>A symbol is injective if it is given the <code>injective</code> attribute, the
+<code>constructor</code> attribute, or the <code>sortInjection</code> attribute.</p>
+<h3 id="function">Function</h3>
+<pre class="language-text"><code>function{}()
+</code></pre>
+<p>A symbol is a function if it is given the <code>function</code> attribute or if it is
+functional.</p>
+<h3 id="functional">Functional</h3>
+<pre class="language-text"><code>functional{}()
+</code></pre>
+<p>A symbol is functional if it is given the <code>functional</code> attribute or the
+<code>sortInjection</code> attribute.</p>
+<h3 id="hook">Hook</h3>
+<pre class="language-text"><code>hook{}(&quot;BUILTIN.name&quot;)
+</code></pre>
+<p>The string <code>&quot;BUILTIN.name&quot;</code> is used to lookup for <a href="../hooks/">known builtins</a>.</p>
+<h3 id="injective">Injective</h3>
+<pre class="language-text"><code>injective{}()
+</code></pre>
+<p>A symbol is injective if it is given the <code>injective</code> attribute, the
+<code>constructor</code> attribute, or the <code>sortInjection</code> attribute.</p>
+<h3 id="memo">Memo</h3>
+<pre class="language-text"><code>memo{}()
+</code></pre>
+<p>The <code>memo</code> attribute signals that the backend may cache, or memoize, the result
+of a symbol application (usually a <code>function</code>).</p>
+<h3 id="smtlib">Smtlib</h3>
+<p>The <code>smtlib</code> attribute specifies how a Kore application pattern built with the
+symbol can be translated to SMT-LIB 2 list expression for an external SMT
+solver.</p>
+<pre class="language-text"><code>smtlib{}(&quot;&#x27E8;S-expression&#x27E9;&quot;)
+</code></pre>
+<h4 id="%E2%9F%A8s-expression%E2%9F%A9-is-an-atom">&#x27E8;S-expression&#x27E9; is an atom</h4>
+<pre class="language-text"><code>smtlib{}(&quot;max&quot;)
+</code></pre>
+<p>The atom is used as the head of the list and the arguments of the application
+are passed as arguments for the list.</p>
+<h4 id="%E2%9F%A8s-expression%E2%9F%A9-is-a-list">&#x27E8;S-expression&#x27E9; is a list</h4>
+<pre class="language-text"><code>smtlib{}(&quot;(mod (^ #1 #2) #3)&quot;)
+</code></pre>
+<p>The list may contain special meta-varialbes <code>#1</code>, <code>#2</code>, ... (not a valid
+SMT-LIB syntax) which indicate the position of the arguments of the application
+pattern.</p>
+<h3 id="smthook">Smthook</h3>
+<p>The <code>smt-hook</code> is similar to <a href="#Smtlib"><code>smtlib</code></a>, except that it&apos;s meant to
+specify that the symbol will be translated to a predefined SMT operator, so
+the SMT operator needs not be declared.</p>
+<h3 id="sortinjection">SortInjection</h3>
+<pre class="language-text"><code>sortInjection{}()
+</code></pre>
+<p>A symbol is injective if it is given the <code>injective</code> attribute, the
+<code>constructor</code> attribute, or the <code>sortInjection</code> attribute.</p>
+<p>A symbol is functional if it is given the <code>functional</code> attribute or the
+<code>sortInjection</code> attribute.</p>
+<h2 id="misc.">misc.</h2>
+<h3 id="location">Location</h3>
+<pre class="language-text"><code>org&apos;Stop&apos;kframework&apos;Stop&apos;attributes&apos;Stop&apos;Location{}(&quot;Location(sl,sc,el,ec)&quot;)
+</code></pre>
+<p>Used for defining the location of the current declaration in the original file.
+The numbers represent start line (sl), start column (sc), end line (el), and end
+column (ec).</p>
+<h3 id="source">Source</h3>
+<pre class="language-text"><code>org&apos;Stop&apos;kframework&apos;Stop&apos;attributes&apos;Stop&apos;Source{}(&quot;Source(FilePath)&quot;)
+
+</code></pre>
+<p>Used for defining the source (K) file of the current declaration. &apos;FilePath&apos; is
+the full path to the original file.</p>
+<h3 id="subsort">Subsort</h3>
+<pre class="language-text"><code>subsort{Sub,Super}()
+</code></pre>
+<p>Used to define subsorting relations, attached to subsort axiom. For example,</p>
+<pre class="language-text"><code>axiom{R} \exists{R} (Val:SortKResult{},
+  \equals{SortKResult{}, R}
+    (Val:SortKResult{},
+     inj{SortBool{}, SortKResult{}} (From:SortBool{})))
+  [subsort{SortBool{}, SortKResult{}}()]
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#attributes" class="bd-toc-link">Attributes</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#axiom-pattern-attributes" class="bd-toc-link">Axiom Pattern Attributes</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#assoc"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Assoc
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#comm"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Comm
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#concrete"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Concrete
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#heatcool"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                HeatCool
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#idem"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Idem
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#owise"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Owise
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#productionid"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                ProductionID
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#priority"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Priority
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#simplification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Simplification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#trusted"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Trusted
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unit"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Unit
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unique-id"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Unique ID
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#symbol-attributes" class="bd-toc-link">Symbol Attributes</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#anywhere"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Anywhere
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constructor"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Constructor
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#function"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Function
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#functional"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Functional
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#hook"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Hook
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#injective"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Injective
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#memo"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Memo
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#smtlib" class="bd-toc-link">Smtlib</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%E2%9F%A8s-expression%E2%9F%A9-is-an-atom"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                &#x27E8;S-expression&#x27E9; is an atom
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%E2%9F%A8s-expression%E2%9F%A9-is-a-list"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                &#x27E8;S-expression&#x27E9; is a list
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#smthook"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Smthook
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#sortinjection"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                SortInjection
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#misc." class="bd-toc-link">misc.</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#location"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Location
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#source"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Source
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#subsort"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Subsort
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

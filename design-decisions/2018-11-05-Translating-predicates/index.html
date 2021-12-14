@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="translating-predicates-for-smt">Translating predicates for SMT</h1>
+<h2 id="background">Background</h2>
+<p>Symbolic execution relies on an external SMT solver to eliminate program
+configurations that are conditioned on impossible predicates.</p>
+<p>In ordinary propositional logic, predicates inhabit the sort <code>Bool</code>. Matching
+logical predicates are more flexible: they are patterns in any sort <code>I</code> which
+are either equal to <code>\top{I}()</code> or <code>\bottom{I}()</code>. Throughout this document, we
+will use <code>I</code> as a distinguished sort variable indicating a predicate pattern of
+arbitrary sort. Matching logic predicates can be recognized by the structure of
+the pattern:</p>
+<ul>
+<li><code>\top{I}()</code> and</li>
+<li><code>\bottom{I}()</code> are constant predicates.</li>
+<li><code>\ceil{S, I}(&#x3C6;)</code> constructs a predicate in <code>I</code> from a pattern in <code>S</code>.</li>
+<li>The aliases (around <code>\ceil</code>) <code>\floor{S, I}(&#x3C6;)</code>,</li>
+<li><code>\equals{S, I}(&#x3C6;&#x2081;, &#x3C6;&#x2082;)</code>, and</li>
+<li><code>\in{S, I}(&#x3C6;&#x2081;, &#x3C6;&#x2082;)</code> are predicates.</li>
+<li>The ordinary logical connectives <code>\and{I}(&#x3C6;)</code>,</li>
+<li><code>\or{I}(&#x3C6;&#x2081;, &#x3C6;&#x2082;)</code>,</li>
+<li><code>\not{I}(&#x3C6;)</code>,</li>
+<li><code>\implies{I}(&#x3C6;&#x2081;, &#x3C6;&#x2082;)</code>, and</li>
+<li><code>\iff{I}(&#x3C6;&#x2081;, &#x3C6;&#x2082;)</code> are predicates when their arguments are predicates,</li>
+<li>as are the quantifiers <code>\exists{I}(x:S, &#x3C6;)</code> and</li>
+<li><code>\forall{I}(x:S, &#x3C6;)</code>.</li>
+</ul>
+<p>Generally, we ask SMT to disprove predicates involving the builtin <code>Bool</code> and
+<code>Int</code> sorts at the lowest level. However, matching logic allows these builtin
+predicates to be lifted into any sort <code>I</code>. We must allow translating predicates
+in arbitrary sorts so that the SMT solver has access to the entire predicate;
+otherwise it is unlikely to have the information required to disprove it.</p>
+<h2 id="problems">Problems</h2>
+<p>Although matching logic&apos;s connectives share the names of the solver&apos;s
+connectives, they operate differently in general. We are left with two problems:</p>
+<ol>
+<li>How will we translate builtin <code>Bool</code> and <code>Int</code> predicates?</li>
+<li>How will we translate arbitrary predicates?</li>
+</ol>
+<h2 id="builtin-translation">Builtin translation</h2>
+<p>Hooked symbols applied to the builtin <code>Bool</code> and <code>Int</code> sorts will be translated
+directly using the corresponding SMT operations.</p>
+<p>Builtin domain values (<code>\dv{Bool}</code> and <code>\dv{Int}</code>) are translated to the
+corresponding literals in the solver.</p>
+<p>Variables in the <code>Bool</code> and <code>Int</code> sorts are translated as variables in the
+solver. (This is allowed because matching logic variables are single-valued.)</p>
+<p>Equality defined by Kore <code>\equals{Bool, I}</code> and <code>\equals{Int, I}</code> is translated
+to the SMT equality operation on <code>Bool</code> and <code>Int</code> respectively. The result of
+the SMT operation inhabits sort <code>Bool</code>, which interacts with our decision below
+to translate predicates in arbitrary matching logic sorts to the SMT <code>Bool</code>
+sort. SMT equality corresponds to matching logic equality <em>only</em> for functional
+patterns, so we take care to only translate functional patterns in builtin
+sorts.</p>
+<p>The matching logic connectives are <em>not</em> interpreted as connectives in the
+solver because their interpretation differs. For example, consider that in
+matching logic,</p>
+<pre class="language-text"><code>\and{Bool}(true{}(), false{}()) === \bottom{}()
+</code></pre>
+<p>whereas in the solver,</p>
+<pre class="language-text"><code>true &#x2227; false === false.
+</code></pre>
+<h2 id="arbitrary-sort-translation">Arbitrary-sort translation</h2>
+<p>Predicates in arbitrary sorts are equal either to <code>\top{I}()</code> or <code>\bottom{I}()</code>,
+so they can be represented in the solver&apos;s <code>Bool</code> sort.</p>
+<p><code>\top{I}()</code> and <code>\bottom{I}()</code> can be interpreted by the solver as <code>true</code> and
+<code>false</code> respectively.</p>
+<p>The matching logic connectives (<code>\and{I}</code>, <code>\or{I}</code>, <code>\not{I}</code>, <code>\implies{I}</code>,
+<code>\iff{I}</code>) actually correspond to their counterparts in the solver, but only
+operating on predicates. Therefore, these patterns are interpreted directly in
+the solver when their children are predicates.</p>
+<p><code>\ceil{S, I}</code> and <code>\floor{S, I}</code> cannot be interpreted in the solver because
+their children are not predicates. These patterns are predicates, so they are
+translated as variables, i.e. left uninterpreted by the solver. <code>\in{S, I}</code> is
+also translated as a variable. Identical patterns will be translated to the
+same variable, so that the solver can reason over the predicates even if it
+cannot reason under them.</p>
+<p>As indicated above, <code>\equals{Bool, I}</code> and <code>\equals{Int, I}</code> are interpreted as
+the corresponding builtin equalities. This is possible because the predicate in
+<code>I</code> is translated to <code>Bool</code> in the solver. Equality on predicates (<code>\equals{I, I}</code>) is translated as <code>\iff{I}</code>. Equality on all other sorts is translated to a
+variable, i.e. left uninterpreted as <code>\ceil{S, I}</code>.</p>
+<p>The quantifiers <code>\forall{I}</code> and <code>\exists{I}</code> cannot be interpreted in the
+solver because we cannot generally introduce a solver variable in an arbitrary
+sort. These patterns are translated as variables.</p>
+<p>User-defined symbols and aliases should not occur as predicates except under an
+uninterpreted construction such as <code>\ceil</code>. If a &quot;bare&quot; user-defined symbol or
+alias occurs in a pattern, it cannot be translated as a predicate. This also
+applies to the <code>\next</code> symbol and the <code>\rewrites</code> alias. Single-valued patterns
+(variables and domain values) should not occur &quot;bare&quot; in a predicate and cannot
+be translated.</p>
+<h2 id="other-solutions-considered">Other solutions considered</h2>
+<p>We also considered to translate <em>only</em> symbols hooked to builtin sorts; however,
+we need to send the entire predicate to SMT (if possible) so that the solver has
+as much information as possible to disprove the condition. In practice, the
+solver would not be able to refute even simple program configurations without
+translating arbitrary-sort predicates.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#translating-predicates-for-smt" class="bd-toc-link">Translating predicates for SMT</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problems"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problems
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#builtin-translation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Builtin translation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#arbitrary-sort-translation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Arbitrary-sort translation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#other-solutions-considered"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Other solutions considered
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="unification">Unification</h1>
+<h2 id="background">Background</h2>
+<p>Whenever we want to apply an axiom <code>&#x2200; Y . &#x3B1;(Y) -&gt; &#x2022;&#x3B2;(Y)</code> to a pattern <code>&#x3C6;(X)</code>
+we have to find the pattern that contains whatever is common to <code>&#x3B1;(Y)</code>
+and <code>&#x3C6;(X)</code> (i.e. their intersection, a.k.a. <code>&#x3C6;(X) &#x2227; &#x3B1;(Y)</code>) and use that,
+together with <code>&#x3B2;(Y)</code> to compute a pattern <code>&#x3C6;&apos;(X)</code> such that <code>&#x3C6;(X) -&gt; &#x2022;&#x3C6;&apos;(X)</code>.</p>
+<p>In practice, we want to find a term pattern <code>t(x)</code>, preferably composed out of
+variables, constructors, functions and similar things,
+a substitution <code>S(X, Y)</code> and a predicate <code>P(X)</code> such that
+<code>&#x3C6;(X) &#x2227; &#x3B1;(Y) = t(X) &#x2227; S(X, Y) &#x2227; P(X)</code>.</p>
+<p>It is debatable whether we want to have substitutions for the <code>X</code> variables.</p>
+<h2 id="problem">Problem</h2>
+<ul>
+<li>Deciding if there are <code>t(X)</code>, <code>S(X, Y)</code> and <code>P(X)</code> such that
+<code>&#x3C6;(X) &#x2227; &#x3B1;(Y) = t(X) &#x2227; S(X, Y) &#x2227; P(X)</code>, i.e. finding if <code>&#x3C6;(X)</code> and <code>&#x3B1;(Y)</code>
+<em>unify</em>.</li>
+<li>Actually finding those patterns.</li>
+</ul>
+<h2 id="additional-constraints-and-assumptions">Additional constraints and assumptions</h2>
+<ul>
+<li>Note that one can&apos;t just ignore <code>t(X)</code> and use <code>S(X, Y)</code> and <code>P(X)</code>,
+because <code>t(X)</code> may be <code>&#x22A5;</code>, but it&apos;s safe to use
+<code>S(X, Y)</code> and <code>P(X) &#x2227; &#x2308;t(X)&#x2309;</code>. Indeed, many of the unification cases
+explicitly use <code>&#x2308;&#x3C6;(X) &#x2227; &#x3B1;(Y)&#x2309;</code>.</li>
+<li>The unification algorithm assumes that it mostly unifies term patterns, i.e.
+it usually works only with variables and functional symbols, but,
+in some cases, it can allow other symbols and logical operators.</li>
+<li>We are only interested in substitutions that resolve the entire <code>Y</code>.</li>
+<li>We will assume that infinite constructor-based recursion can&apos;t exist,
+e.g. <code>[x = C(x)]</code> is bottom.</li>
+<li>We will give up if we have infinite recursion based on things other than
+constructors, e.g. <code>[x = f(x)]</code>.</li>
+<li>Whenever we give up (i.e. because we don&apos;t know how how to handle something),
+we will return bottom instead of signaling an error.</li>
+</ul>
+<h2 id="solution">Solution</h2>
+<p>Note that it is not always possible to determine if two patterns unify.
+The algorithm below describes some of the cases when this is possible.</p>
+<p>The algorithm works in a top-down fashion, but since unification
+can&apos;t always be resolved efficiently locally
+(think <code>concat(X, Y-&gt;Z)</code> unified with a concrete map, where we&apos;d like
+to resolve the <code>Y</code> variable before the unification), we represent
+things that should normally be substitutions as predicates, and, at various
+points in the algorithm, we try to transform them into substitutions.
+The exact points where this happens are left open (current implementation
+does this whenever we merge substitutions and predicates).</p>
+<p>The algorithm has a list of algorithms for the cases where it knows how
+to solve unification. Each such algorithm is expected to return:</p>
+<ul>
+<li><em>not-handled-error</em> if it does not know how to handle the provided patterns</li>
+<li><em>handled-with-error</em> if it knows how to handle the provided patterns,
+but there was an error not specific to the current algorithm (e.g. children&apos;s
+unification failed with error).</li>
+<li><em>bottom</em> if it knows how to handle the patterns, but unification is
+impossible (e.g. it tries to unify different constructors).</li>
+<li>a <em>pattern</em> of the form <code>t(X) &#x2227; S(X, Y) &#x2227; P(X)</code> if unification succeeded.</li>
+</ul>
+<p>Then the algorithm looks like this:</p>
+<pre class="language-text"><code>unify(p1, p2):
+  for unifier in known-unification-algorithms
+    case unifier(p1, p2) of
+      not-handled-error -&gt; continue
+      handled-with-error -&gt; return handled-with-error
+      bottom -&gt; return bottom
+      pattern -&gt; return pattern
+  return handled-with-error  -- counterintuitive, but makes things easier.
+</code></pre>
+<h2 id="known-unification-cases">Known unification cases</h2>
+<p>The order of these cases in the <code>known-unification-algorithms</code> list is
+important both for optimization purposes and because, in practice,
+later cases rely on being called only when some of the previous cases fail
+(they could retest the previous cases&apos; conditions, but, for simplicity,
+they don&apos;t).</p>
+<h3 id="bool-and">bool and</h3>
+<p>Resolves unification with top and bottom patterns.</p>
+<pre class="language-text"><code>T &#x2227; &#x3C6; = &#x3C6;
+&#x3C6; &#x2227; T = &#x3C6;
+&#x22A5; &#x2227; &#x3C6; = &#x22A5;
+&#x3C6; &#x2227; &#x22A5; = &#x22A5;
+not-handled-error otherwise
+</code></pre>
+<h3 id="equal-patterns">equal patterns</h3>
+<p>Resolves the unification of two identical patterns. Currently
+it tests for actual equality and not for alpha equivalence.</p>
+<pre class="language-text"><code>&#x3C6; &#x2227; &#x3C6; = &#x3C6;
+not-handled-error otherwise
+</code></pre>
+<h3 id="variable-vs-function-like-pattern">variable vs function-like pattern</h3>
+<p>Creates a substitution for that variable and pattern. If the functional pattern
+is also a variable, the substitution maps the lower variable to the higher one (using the default variable order). This has two uses:</p>
+<ul>
+<li>The callers use it to substitute axiom variables for pattern variables
+whenever there is a choice.</li>
+<li>The substitution normalization algorithm can work under the assumption that
+we don&apos;t have both <code>x-&gt;y</code> and <code>y-&gt;x</code> as substitutions.</li>
+</ul>
+<p>Note that, at first sight, this should work only for functional patterns, not
+for random function-like patterns. However, the unification result is
+<code>f &#x2227; [x -&gt; f]</code>, which, if we check it carefully, is equal to <code>x &#x2227; f</code> for all
+function-like patterns <code>f</code>.</p>
+<pre class="language-text"><code>x &#x2227; y = y &#x2227; [x -&gt; y]
+y &#x2227; x = y &#x2227; [x -&gt; y]  -- because of the order test mentioned above
+x &#x2227; &#x3C6;
+  | if &#x3C6; is function-like    = &#x3C6; &#x2227; [x -&gt; &#x3C6;]
+  | otherwise                = not-handled-error
+</code></pre>
+<h3 id="function-like-pattern-vs-variable">function-like pattern vs variable</h3>
+<p>The same as above, but reversing the pattern-variable order.</p>
+<h3 id="equal-injective-heads">equal injective heads</h3>
+<pre class="language-text"><code>&#x3C3;(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) &#x2227; &#x3C3;(&#x3C8;1, &#x3C8;2, ..., &#x3C8;n)
+  | if `&#x3C3;` is injective    = &#x3C3;(&#x3C6;1 &#x2227; &#x3C8;1, &#x3C6;2 &#x2227; &#x3C8;2, ..., &#x3C6;n &#x2227; &#x3C8;n)
+  | otherwise              = not-handled-error
+</code></pre>
+<p>The evaluation of <code>&#x3C3;(&#x3C6;1 &#x2227; &#x3C8;1, &#x3C6;2 &#x2227; &#x3C8;2, ..., &#x3C6;n &#x2227; &#x3C8;n)</code> goes like this:</p>
+<pre class="language-text"><code>evaluate each &#x3C6;i &#x2227; &#x3C8;i by calling unify(&#x3C6;i, &#x3C8;i)
+if the result is an error, return handled-with-error
+if the result is &#x22A5;, return &#x22A5;  -- actually handled through the general
+                              -- case below.
+Otherwise, represent the result as ti &#x2227; si &#x2227; pi
+
+return &#x3C3;(t1, t2, ..., tn) &#x2227; (s1 &#x2227; s2 &#x2227; ... &#x2227; sn) &#x2227; (p1 &#x2227; p2 &#x2227; ... &#x2227; pn)
+</code></pre>
+<h3 id="distinct-sort-injections">Distinct sort injections</h3>
+<p>Does not actually test for the distinctness part, assumes that the
+&quot;equal injective heads&quot; case was checked before</p>
+<pre class="language-text"><code>inj(s2, s1)(&#x3C6;) &#x2227; inj(s3, s1)(&#x3C8;)
+  | if s2 is a subsort of s3            = inj(s3, s1)(inj(s2, s3)(&#x3C6;) &#x2227; &#x3C8;)
+  | if s3 is a subsort of s2            = inj(s2, s1)(&#x3C6; &#x2227; inj(s3, s2)(&#x3C8;))
+  | if &#x3C6; or &#x3C8; are constructor-like      = &#x22A5;
+  | if s2 and s3 have no common subsort = &#x22A5;
+  | otherwise                           = crash with error message
+
+not-handled-error otherwise
+</code></pre>
+<p>In this context, &quot;constructor-like&quot; means that the pattern behaves like a
+constructor-based one, i.e. it can&apos;t be equal to a sort injection.
+Examples include patterns having constructors at the top and domain values.</p>
+<h3 id="constructor-vs-sort-injection">Constructor vs sort injection</h3>
+<pre class="language-text"><code>Constr(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) &#x2227; inj(s2, s1)(&#x3C8;) = &#x22A5;
+inj(s2, s1)(&#x3C8;) &#x2227; Constr(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="different-constructors">Different constructors</h3>
+<p>Does not actually test for the distinctness part, assumes that the
+&quot;equal injective heads&quot; case was checked before</p>
+<pre class="language-text"><code>Constr1(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) &#x2227; Constr2(&#x3C8;1, &#x3C8;2, ..., &#x3C8;n) = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="builtin-map-unification">Builtin map unification</h3>
+<p>Note that currently map keys cannot have variables, so it does not make sense
+to worry about alpha equivalence.</p>
+<pre class="language-text"><code>{k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m} &#x2227; {l1 -&gt; &#x3C8;1, l2 -&gt; &#x3C8;2, ..., ln -&gt; &#x3C8;n}
+  | if {k1, k2, ..., km} &#x2260; {l1, l2, ..., ln}
+    = &#x22A5;
+  | otherwise
+    = {k1 -&gt; &#x3C6;1 &#x2227; &#x3C8;1, k2 -&gt; &#x3C6;2 &#x2227; &#x3C8;2, ..., kn -&gt; &#x3C6;n &#x2227; &#x3C8;n}
+
+{k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+    &#x2227; concat({l1 -&gt; &#x3C8;1, l2 -&gt; &#x3C8;2, ..., ln -&gt; &#x3C8;n}, x)
+  | if {l1, l2, ..., ln} &#x2284; {k1, k2, ..., kn}
+    = &#x22A5;
+  | otherwise
+    = {k1 -&gt; &#x3C6;1 &#x2227; &#x3C8;1, k2 -&gt; &#x3C6;2 &#x2227; &#x3C8;2, ..., km -&gt; &#x3C6;m &#x2227; &#x3C8;m}
+      &#x2227; x = {lm+1 -&gt; &#x3C8;m+1, ..., ln -&gt; &#x3C8;n}
+      renumbering such that {l1, l2, ..., lm} = {k1, k2, ..., km}
+      (see below for how the {k1 -&gt; &#x3C6;1 &#x2227; &#x3C8;1, ...} map is evaluated)
+
+{k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+    &#x2227; concat(x, {l1 -&gt; &#x3C8;1, l2 -&gt; &#x3C8;2, ..., ln -&gt; &#x3C8;n})
+  = identical to the above
+
+dv &#x2227; concat(&#x3C8;1, &#x3C8;2)
+  = dv &#x2227; &#x2308;dv &#x2227; concat(&#x3C8;1, &#x3C8;2)&#x2309;   -- ** different from the actual implementation.
+    where dv = {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+
+{k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m} &#x2227; element(l, &#x3C8;)
+  | if m &gt; 1     = &#x22A5;
+  | otherwise    = {k1 &#x2227; l -&gt; &#x3C6;1 &#x2227; &#x3C8;}
+
+&#x3C8; &#x2227; {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+  = {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m} &#x2227; &#x3C8;
+
+not-handled-error otherwise
+</code></pre>
+<p>The evaluation of <code>{k1 -&gt; &#x3C6;1 &#x2227; &#x3C8;1, k2 -&gt; &#x3C6;2 &#x2227; &#x3C8;2, ..., kn -&gt; &#x3C6;n &#x2227; &#x3C8;n}</code>
+is similar to the evaluation for equal injective heads and goes like this:</p>
+<pre class="language-text"><code>evaluate each &#x3C6;i &#x2227; &#x3C8;i by calling unify(&#x3C6;i, &#x3C8;i)
+if the result is an error, return handled-with-error
+if the result is &#x22A5;, return &#x22A5;  -- actually handled through the general
+                              -- case below.
+Otherwise, represent the result as ti &#x2227; si &#x2227; pi
+
+return {k1 -&gt; t1, k2 -&gt; t2, ..., kn -&gt; tn}
+       &#x2227; (s1 &#x2227; s2 &#x2227; ... &#x2227; sn)
+       &#x2227; (p1 &#x2227; p2 &#x2227; ... &#x2227; pn)
+</code></pre>
+<p>Note that the actual implementation uses <code>&#x3C6;i</code> instead of <code>ti</code> in the return
+value above.</p>
+<p>The evaluation of <code>{k1 &#x2227; l -&gt; &#x3C6;1 &#x2227; &#x3C8;}</code> is similar.</p>
+<h3 id="builtin-set-unification">Builtin set unification</h3>
+<p>Note that currently set elements cannot have variables, so it does not
+make sense to worry about alpha equivalence.</p>
+<pre class="language-text"><code>{k1, k2, ..., km} &#x2227; {l1, l2, ..., ln}
+  | if {k1, k2, ..., km} &#x2260; {l1, l2, ..., ln}    = &#x22A5;
+  | otherwise                                   = {k1, k2, ..., kn}
+
+{k1, k2, ..., km} &#x2227; concat({l1, l2, ..., ln}, x)
+  | if {l1, l2, ..., ln} &#x2284; {k1, k2, ..., km}
+    = &#x22A5;
+  | otherwise
+    = {k1, k2, ..., kn} &#x2227; x = {kn+1, ..., km}
+    where elements are renumbered such that {l1, ..., ln} = {k1, ..., kn}
+
+{k1, k2, ..., km} &#x2227; concat(x, {l1, l2, ..., ln})
+  = same as above
+
+dv &#x2227; concat(&#x3C8;1, &#x3C8;2)
+  = dv &#x2227; &#x2308;dv &#x2227; concat(&#x3C8;1, &#x3C8;2)&#x2309;   -- ** different from the actual implementation.
+    where dv = {k1, k2, ..., km}
+
+{k1, k2, ..., km} &#x2227; element(l)
+  | if m &gt; 1     = &#x22A5;
+  | otherwise    = {k &#x2227; l}
+
+&#x3C8; &#x2227; {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+  | if &#x3C8; is an application pattern   -- ** different from map and list handling.
+    = {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m} &#x2227; &#x3C8;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="builtin-list-unification">Builtin list unification</h3>
+<pre class="language-text"><code>[k1, k2, ..., km] &#x2227; [l1, l2, ..., ln]
+  | if m &#x2260; n     = &#x22A5;
+  | otherwise    = [k1 &#x2227; l1, k2 &#x2227; l2, ..., kn &#x2227; ln]
+    see below for how this list is evaluated.
+
+[k1, k2, ..., km] &#x2227; concat([l1, l2, ..., ln], x)
+  | if n &gt; m     = &#x22A5;
+  | otherwise    = [k1 &#x2227; l1, k2 &#x2227; l2, ..., kn &#x2227; ln] &#x2227; x = [kn+1, ..., km]
+
+[k1, k2, ..., km] &#x2227; concat(x, [l1, l2, ..., ln])
+  | if n &gt; m     = &#x22A5;
+  | otherwise    = [km-n+1 &#x2227; l1, km-n+2 &#x2227; l2, ..., km &#x2227; ln] &#x2227; x = [k1, ..., kn]
+
+dv &#x2227; concat(&#x3C8;1, &#x3C8;2)
+  = dv &#x2227; &#x2308;dv &#x2227; concat(&#x3C8;1, &#x3C8;2)&#x2309;   -- ** different from the actual implementation.
+    where dv = [k1, k2, ..., km]
+
+&#x3C8; &#x2227; {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m}
+  = {k1 -&gt; &#x3C6;1, k2 -&gt; &#x3C6;2, ..., km -&gt; &#x3C6;m} &#x2227; &#x3C8;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="domain-values-vs-constructors">Domain values vs constructors</h3>
+<pre class="language-text"><code>Constr(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) &#x2227; DV = &#x22A5;
+DV &#x2227; Constr(&#x3C6;1, &#x3C6;2, ..., &#x3C6;n) = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="different-domain-values">Different domain values</h3>
+<p>Does not test for distinctness, assumes that the &quot;equal patterns&quot; case
+was already checked.</p>
+<pre class="language-text"><code>DV &#x2227; DV = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="different-string-literals">Different string literals</h3>
+<p>Does not test for distinctness, assumes that the &quot;equal patterns&quot; case
+was already checked.</p>
+<pre class="language-text"><code>S1 &#x2227; S2 = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="different-char-literals">Different char literals</h3>
+<p>Does not test for distinctness, assumes that the &quot;equal patterns&quot; case
+was already checked.</p>
+<pre class="language-text"><code>C1 &#x2227; C2 = &#x22A5;
+
+not-handled-error otherwise
+</code></pre>
+<h3 id="different-function-like-patterns">Different function-like patterns</h3>
+<p>Does not test for distinctness, assumes that the &quot;equal patterns&quot; case
+was already checked.</p>
+<pre class="language-text"><code>&#x3C6; &#x2227; &#x3C8;
+  | if &#x3C6; and &#x3C8; are function-like    = &#x3C6; &#x2227; (&#x3C6; == &#x3C8;)
+  | otherwise                       = not-handled-error
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unification" class="bd-toc-link">Unification</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#additional-constraints-and-assumptions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Additional constraints and assumptions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#solution"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Solution
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#known-unification-cases" class="bd-toc-link">Known unification cases</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#bool-and"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                bool and
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#equal-patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                equal patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#variable-vs-function-like-pattern"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                variable vs function-like pattern
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#function-like-pattern-vs-variable"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                function-like pattern vs variable
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#equal-injective-heads"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                equal injective heads
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#distinct-sort-injections"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Distinct sort injections
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constructor-vs-sort-injection"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Constructor vs sort injection
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#different-constructors"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Different constructors
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#builtin-map-unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Builtin map unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#builtin-set-unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Builtin set unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#builtin-list-unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Builtin list unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#domain-values-vs-constructors"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Domain values vs constructors
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#different-domain-values"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Different domain values
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#different-string-literals"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Different string literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#different-char-literals"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Different char literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#different-function-like-patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Different function-like patterns
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
