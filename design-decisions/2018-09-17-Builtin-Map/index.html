@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="builtin-maps">Builtin Maps</h1>
+<h2 id="background">Background</h2>
+<p>K provides a builtin <code>Map</code> sort representing partial maps on sort <code>K</code>.
+Here &quot;partial&quot; means that some keys may not be associated with any value.
+KEVM relies on concrete operations only, but we will eventually need to support
+symbolic operations.</p>
+<h2 id="problem">Problem</h2>
+<p>KEVM requires that the builtin <code>Map</code> domain supports operations equivalent to:</p>
+<pre class="language-text"><code>module MAP
+    hooked-sort Map{}
+        [hook{}(&quot;MAP.Map&quot;)]
+
+    // unit:
+    // The empty map (containing no keys).
+    hooked-symbol unit{}() : Map{}
+        [hook{}(&quot;MAP.unit&quot;)]
+
+    // element(key, value):
+    // A map from with exactly one association: &#x2018;key |-&gt; value&#x2019;.
+    hooked-symbol element{}(K{}, K{}) : Map{}
+        [hook{}(&quot;MAP.element&quot;)]
+
+    // concat(map1, map2):
+    // Combine &#x2018;map1&#x2019; and &#x2018;map2&#x2019; so that the association &#x2018;key |-&gt; value&#x2019; is in
+    // the result if it is in one operand. The result is &#x2018;\bottom{}()&#x2019; if
+    // &#x2018;map1&#x2019; and &#x2018;map2&#x2019; have any keys in common.
+    hooked-symbol concat{}(Map{}, Map{}) : Map{}
+        [hook{}(&quot;MAP.concat&quot;)]
+
+    // update(map, key, value):
+    // Update &#x2018;map&#x2019; with the association &#x2018;key |-&gt; value&#x2019;.
+    // The &#x2018;key&#x2019; may or may not be present in &#x2018;map&#x2019;.
+    hooked-symbol update{}(Map{}, K{}, K{}) : Map{}
+        [hook{}(&quot;MAP.update&quot;)]
+
+    // lookup(map, key):
+    // If &#x2018;map&#x2019; contains the association &#x2018;key |-&gt; value&#x2019;, then the result
+    // is &#x2018;value&#x2019;; otherwise the result is &#x2018;\bottom{}()&#x2019;.
+    hooked-symbol lookup{}(Map{}, K{}) : K{}
+        [hook{}(&quot;MAP.lookup&quot;)]
+
+    // inKeys(map, key):
+    // If &#x2018;map&#x2019; contains any association &#x2018;key |-&gt; _&#x2019;, then the result is
+    // &#x2018;\dv{Bool{}}(&quot;true&quot;)&#x2019;; otherwise the result is &#x2018;\dv{Bool{}}(&quot;false&quot;)&#x2019;.
+    hooked-symbol inKeys{}(Map{}, K{}) : Bool{}
+        [hook{}(&quot;MAP.in_keys&quot;)]
+endmodule
+</code></pre>
+<h2 id="decision%3A-implement-concrete-operations-immediately">Decision: Implement concrete operations immediately</h2>
+<p>Existing semantics, particularly KEVM, rely on concrete map operations.
+Therefore, we may assume all keys are concrete, i.e. contain no variables.
+In case a key is symbolic, the existing backends treat it as a concrete pattern
+and perform lookup by exact structural equality of patterns.
+For the immediate purpose of supporting KEVM, we may do the same:
+perform key lookup by exact structural equality between patterns.</p>
+<h2 id="decision%3A-defer-implementing-symbolic-operations">Decision: Defer implementing symbolic operations</h2>
+<p>Eventually we will support both concrete and symbolic map operations.
+Once we support concrete operations, we can add support for symbolic operations
+by keeping symbolic constructions unevaluated, i.e. a symbolic map will be a
+pattern consisting of an unevaluated symbolic operation upon a symbolic or
+concrete map.
+Evaluating lookups from a symbolic map will require traversing the symbolic map
+pattern and attempting unification against each key.
+Looking up a symbolic key will traverse the entire map and will potentially be
+very expensive, so we will want to fall back to concrete lookup whenever
+possible; therefore it is in our best interest to implement concrete operations
+first.</p>
+<p>There is a trade-off to make between evaluating symbolic insertion and lookup.
+Either operation can be left as an unevaluated pattern.
+When evaluated, the symbolic operations may generate a large disjunction of
+patterns; the trade-off is <em>when</em> the disjunction is generated.
+We have tentatively decided to evaluate lookups and leave insertions unevaluated.
+During a lookup, all the branches where the key does not unify can be discarded,
+so there may be fewer branches to explore.
+On the other hand, the result of evaluating an insertion is always the largest
+possible disjunction.</p>
+<h2 id="questions">Questions</h2>
+<ul>
+<li>How should substitution behave with respect to symbolic maps?</li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#builtin-maps" class="bd-toc-link">Builtin Maps</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#background"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Background
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#problem"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Problem
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision%3A-implement-concrete-operations-immediately"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision: Implement concrete operations immediately
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#decision%3A-defer-implementing-symbolic-operations"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Decision: Defer implementing symbolic operations
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#questions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Questions
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
