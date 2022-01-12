@@ -1,8 +1,0 @@
-// The two claims should be proved in this exact number of steps.
-// The one-path claim should not apply to the all-path claim after the first step.
-// ^ should be tested when the issues with the frontend are fixed
-// Claim 0 -> one-path claim
-step 3
-// Claim 1 -> all-path claim
-prove 1
-step 4
