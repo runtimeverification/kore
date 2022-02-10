@@ -1,7 +1,0 @@
-test-dv-2.kore:3:22:
-  |
-3 |     axiom {s} \dv{s}(\or{#String{}}("0", "1")) []
-  |                      ^
-unexpected '\'
-expecting '"'
-
