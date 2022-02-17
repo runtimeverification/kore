@@ -1,8 +1,0 @@
-<T>
-  <k>
-    #lookup ( 3 |-> success , 3 ) ~> .
-  </k>
-  <a>
-    3 |-> success
-  </a>
-</T>
