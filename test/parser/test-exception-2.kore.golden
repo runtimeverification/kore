@@ -1,6 +1,0 @@
-test-exception-2.kore:6:9:
-  |
-6 |     sort:S []
-  |         ^
-Identifiers should not be keywords: 'sort'.
-
