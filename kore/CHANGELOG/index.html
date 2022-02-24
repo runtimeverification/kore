@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="changelog">Changelog</h1>
+<p>All notable changes to this project will be documented in this file.</p>
+<h2 id="unreleased">Unreleased</h2>
+<h3 id="added">Added</h3>
+<h3 id="changed">Changed</h3>
+<h3 id="deprecated">Deprecated</h3>
+<h3 id="removed">Removed</h3>
+<h3 id="fixed">Fixed</h3>
+<h2 id="%5B0.60.0.0%5D---2021-12-17">[0.60.0.0] - 2021-12-17</h2>
+<h3 id="added-1">Added</h3>
+<ul>
+<li>Support defining additional axioms in spec module (#2930).</li>
+<li>Add --simplifierx CL switch for enabling experimental simplifier (#2939).</li>
+<li>Kore-repl: add no. of nodes on dotted edges in graph visualizer (#2902).</li>
+</ul>
+<h3 id="fixed-1">Fixed</h3>
+<ul>
+<li>Use matching instead of unification when doing search (#2879).</li>
+<li>Kore-repl: if piped commands fail do not crash (#2940).</li>
+</ul>
+<h2 id="%5B0.58.0.0%5D---2021-11-19">[0.58.0.0] - 2021-11-19</h2>
+<h3 id="added-2">Added</h3>
+<ul>
+<li>Add error log entries to <code>kore-check-functions</code> (#2881).</li>
+</ul>
+<h3 id="changed-1">Changed</h3>
+<ul>
+<li>Change severity of log entry regarding retried Z3 queries to <code>debug</code> (#2888).</li>
+</ul>
+<h3 id="removed-1">Removed</h3>
+<ul>
+<li>Remove support for old equation encoding (#2889).</li>
+</ul>
+<h3 id="fixed-2">Fixed</h3>
+<ul>
+<li>Fix substitution application when simplifying claims (#2828).</li>
+<li>Add upper bound to <code>Condition</code> simplification loop (#2878).</li>
+</ul>
+<h2 id="%5B0.55.0.0%5D---2021-10-11">[0.55.0.0] - 2021-10-11</h2>
+<h3 id="added-3">Added</h3>
+<ul>
+<li>Add <code>oneLineDoc</code> implementations to all existing <code>Entry</code> instances (#2781).</li>
+<li>Cache the results of equation application (#2321).</li>
+<li>Parses multi-argument <code>\\or</code> with <code>\\left-assoc</code> and <code>\\right-assoc</code> (#2833).</li>
+</ul>
+<h3 id="fixed-3">Fixed</h3>
+<ul>
+<li>Fix bug which lost <code>Proven</code> states (#2786).</li>
+<li><code>graph</code> command does not crash <code>kore-repl</code> on MacOS (#2817).</li>
+<li>Fix bug related to equation application (#2785, #2849, #2793).</li>
+</ul>
+<h2 id="%5B0.53.0.0%5D---2021-09-08">[0.53.0.0] - 2021-09-08</h2>
+<h3 id="added-4">Added</h3>
+<ul>
+<li>Display log-format option values (#2808).</li>
+</ul>
+<h3 id="fixed-4">Fixed</h3>
+<ul>
+<li>Performance issues related to <code>SideCondition.definedTerms</code> (#2778, #2779).</li>
+</ul>
+<h2 id="%5B0.52.0.0%5D---2021-08-11">[0.52.0.0] - 2021-08-11</h2>
+<h3 id="added-5">Added</h3>
+<ul>
+<li>Warn when RHS of claim is #Bottom (#2703).</li>
+<li>New tool: <code>kore-match-disjunction</code> (#2649).</li>
+</ul>
+<h2 id="%5B0.51.0.0%5D---2021-07-28">[0.51.0.0] - 2021-07-28</h2>
+<h3 id="added-6">Added</h3>
+<ul>
+<li>Added log <code>DebugBeginClaim</code> (#2682).</li>
+<li>CL option for proving: maximum number of counterexamples (#2648).</li>
+<li><code>kore-repl</code>: option to turn on one-line logs (#2726).</li>
+<li>Relicensing to BSD-3-Clause (PR #2742).</li>
+<li>New (minor) matching case for AC structures (PR #2738).</li>
+</ul>
+<h3 id="changed-2">Changed</h3>
+<ul>
+<li>Changed <code>DebugClaimState</code> to <code>DebugTransition</code> (#2682).</li>
+</ul>
+<h3 id="fixed-5">Fixed</h3>
+<ul>
+<li>Fixed bug in Bool unification (#2695).</li>
+<li>Symbolic execution: don&apos;t crash when configuration starts as #Bottom (#2765).</li>
+<li>Fixed substitution application during claim simplification (#2740).</li>
+<li>Fixes looping behavior in the simplifier (#2570).</li>
+</ul>
+<h2 id="%5B0.49.0.0%5D---2021-06-30">[0.49.0.0] - 2021-06-30</h2>
+<h3 id="added-7">Added</h3>
+<ul>
+<li>Added option to output logs in one-line format (#2596).</li>
+<li>Improved performance of simplification (#2520).</li>
+</ul>
+<h3 id="fixed-6">Fixed</h3>
+<ul>
+<li>Fixed issue with <code>unifyStringEq</code> (#2586).</li>
+</ul>
+<h2 id="%5B0.48.0.0%5D---2021-06-16">[0.48.0.0] - 2021-06-16</h2>
+<h3 id="added-8">Added</h3>
+<ul>
+<li>Adds support for Z3&apos;s <code>:rlimit</code> with <code>--smt-rlimit</code> CL option (#2407).</li>
+<li>Enables building with <code>-eventlog</code> by default (#2658).</li>
+<li>Adds option <code>--not-matching-children</code> to <code>kore-prof</code> (#2631).</li>
+</ul>
+<h3 id="fixed-7">Fixed</h3>
+<ul>
+<li>The <code>SideCondition.andCondition</code> performance regression is fixed (#2454).</li>
+<li>Decoding bytes is improved (fixes added in relation to #2591).</li>
+</ul>
+<h2 id="%5B0.47.0.0%5D---2021-06-02">[0.47.0.0] - 2021-06-02</h2>
+<h3 id="added-9">Added</h3>
+<ul>
+<li>The hook <code>KEQUALS.neq</code> eagerly returns <code>false</code> when two symbolic patterns are
+equal. (#2634)</li>
+<li>The hooks <code>BYTES.decodeBytes</code> and <code>BYTES.encodeBytes</code> are implemented. (#2619)</li>
+<li>The warning <code>WarnIfLowProductivity</code> indicates the definition where the warning
+occurred. (#2594)</li>
+<li><code>kore-repl</code> records effect-ful commands from the current session when it
+saves a bug report. (#2614)</li>
+</ul>
+<h3 id="fixed-8">Fixed</h3>
+<ul>
+<li>The definitions of functions in <code>prelude.kore</code> are rewritten in the format
+expected by the LLVM backend. (#2629)</li>
+<li><code>\next</code> is correctly distributed over <code>\or</code> during simplification. (#2608)</li>
+</ul>
+<h2 id="%5B0.45.0.0%5D---2021-05-10">[0.45.0.0] - 2021-05-10</h2>
+<h3 id="fixed-9">Fixed</h3>
+<ul>
+<li>The hook <code>STRING.string2base</code> remains unevaluated where it is not implemented.
+(#2546)</li>
+<li>The backend no longer crashes when it unparses internal representations of
+certain terms. (#2494)</li>
+<li>The backend no longer crashes when it rewrites with a rule where the
+right-hand side is <code>\bottom</code>. (#2561)</li>
+<li>The backend accepts groups of equations containing <code>owise</code> rules. (#2523)</li>
+</ul>
+<h2 id="%5B0.44.0.0%5D---2021-04-22">[0.44.0.0] - 2021-04-22</h2>
+<h3 id="fixed-10">Fixed</h3>
+<ul>
+<li>Concrete side conditions will be fully simplified. (#2526)</li>
+<li>A memory leak is removed where deciding if a Map or Set is defined. (#2550)</li>
+</ul>
+<h2 id="%5B0.43.0.0%5D---2021-04-07">[0.43.0.0] - 2021-04-07</h2>
+<h3 id="changed-3">Changed</h3>
+<ul>
+<li><code>kore-repl</code> displays error messages in a user-friendly format. (#2514)</li>
+</ul>
+<h3 id="fixed-11">Fixed</h3>
+<ul>
+<li>Several performance regressions are fixed. (#2504, #2510)</li>
+<li>The backend does not report an error when unifying a Set- or Map-valued
+function with another term. (#2493)</li>
+</ul>
+<h2 id="%5B0.42.0.0%5D---2021-03-17">[0.42.0.0] - 2021-03-17</h2>
+<h3 id="added-10">Added</h3>
+<ul>
+<li><code>kore-repl</code> accepts the <code>--bug-report</code> and <code>--no-bug-report</code> options. (#2462)</li>
+</ul>
+<h3 id="changed-4">Changed</h3>
+<ul>
+<li>Apply user-defined equations as written, instead of simplifying the left-hand
+side during initialization. (#2392)</li>
+<li>Match <code>#as</code> (<code>\and</code>) patterns correctly, instead of relying on simplifying
+them during initialization. (#2392)</li>
+</ul>
+<h3 id="fixed-12">Fixed</h3>
+<ul>
+<li>A performance regression related to strictness is fixed. (#2447)</li>
+<li><code>kore-exec</code> distinguishes <code>\bottom</code> from stuck states, instead of reporting
+the last defined state as stuck. (#2451)</li>
+<li>Errors are reported on <code>stderr</code> instead of <code>stdout</code>. (#2458)</li>
+<li>Applying user-defined equations is more efficient. (#2438)</li>
+<li><code>kore-exec</code> reports an error when any input file is missing. (#2446)</li>
+</ul>
+<h2 id="%5B0.41.0.0%5D---2021-03-05">[0.41.0.0] - 2021-03-05</h2>
+<h3 id="changed-5">Changed</h3>
+<ul>
+<li>Clauses in the side condition of a configuration are considered when
+simplifying applying equations to other clauses in the side condition (#2393).</li>
+</ul>
+<h3 id="fixed-13">Fixed</h3>
+<ul>
+<li>Values of the <code>BYTES.Bytes</code> sort are unparsed in the correct 8-bit encoding
+instead of the base-16 encoding. (#2411)</li>
+</ul>
+<h2 id="%5B0.40.0.0%5D---2021-02-17">[0.40.0.0] - 2021-02-17</h2>
+<h3 id="fixed-14">Fixed</h3>
+<ul>
+<li>When a function equation is rejected for having the wrong form, the source
+location of the rule is displayed. (#2408)</li>
+<li>When a function cannot be evaluated because it was not given any rules, the
+source location of the function declaration is displayed. (#2377)</li>
+<li>When the proof of a reachability claim is stuck, the source location of the
+original claim is displayed. (#2377)</li>
+</ul>
+<h2 id="%5B0.39.0.0%5D---2021-02-04">[0.39.0.0] - 2021-02-04</h2>
+<h3 id="added-11">Added</h3>
+<ul>
+<li><code>kore-parser</code> accepts the <code>--pattern</code> argument multiple times. It will
+validate all the patterns with a single definition. (#2369)</li>
+</ul>
+<h3 id="changed-6">Changed</h3>
+<ul>
+<li><code>kore-exec --version</code> will report the version number and Git commit, but not
+the build date. The build date was never reported correctly anyway. (#2370)</li>
+</ul>
+<h3 id="fixed-15">Fixed</h3>
+<ul>
+<li>The priority of equations is respected again. (#2366)</li>
+<li>Terms are still equal if the backend has inferred that one is defined but not
+the other. (#2372)</li>
+<li>Uninterpreted functions appearing in the keys of maps and sets are handled
+correctly. (#2323)</li>
+</ul>
+<h2 id="%5B0.38.0.0%5D---2021-01-24">[0.38.0.0] - 2021-01-24</h2>
+<h3 id="added-12">Added</h3>
+<ul>
+<li>Add profiling traces for rewriting and simplification during ordinary
+execution. (#2331)</li>
+</ul>
+<h3 id="changed-7">Changed</h3>
+<ul>
+<li>Apply symbolic simplification rules to hook <code>KEQUAL.eq</code> under <code>\and</code> and
+<code>\equals</code>. (#2346)</li>
+<li>Include <code>result.kore</code> in output with <code>--bug-report</code>. (#2018)</li>
+<li>Predicates have a distinguished internal representation. (#2099)</li>
+<li>Unification problems in the argument positions of equations are solved during
+initialization. (#2326)</li>
+</ul>
+<h3 id="fixed-16">Fixed</h3>
+<ul>
+<li><code>kore-repl</code> no longer reports all remaining states (after rewriting) as stuck.
+(#2335)</li>
+<li>The bounded model checker returns <code>\top</code> when the property holds up to the
+specified bound, but emits a warning if the bound was reached before execution
+finished. (#2342)</li>
+</ul>
+<h2 id="%5B0.37.0.0%5D---2021-01-07">[0.37.0.0] - 2021-01-07</h2>
+<h3 id="added-13">Added</h3>
+<ul>
+<li>Added option <code>--no-bug-report</code> to suppress generation of the bug report
+archive. (#2311)</li>
+<li>Check the validity of SMT declarations at initialization. (#2314)</li>
+</ul>
+<h3 id="changed-8">Changed</h3>
+<ul>
+<li>Removed single-quote delimiters around Kore identifiers in validation error
+messages. (#2316)</li>
+<li>Relaxed the check on total functions to permit functions with undefined
+arguments. (#2334)</li>
+<li>The <code>--solver-transcript</code> option will cause an existing log file to be
+overwritten, instead of appending to it. (#2307)</li>
+</ul>
+<h3 id="fixed-17">Fixed</h3>
+<ul>
+<li>Correctly check the final implication of claims where the right-hand side is
+\bottom. (#2329)</li>
+</ul>
+<h2 id="%5B0.36.0.0%5D---2020-12-09">[0.36.0.0] - 2020-12-09</h2>
+<h3 id="added-14">Added</h3>
+<ul>
+<li>Added option <code>--error-entries</code> to turn any log entry into an error. (#2285)</li>
+</ul>
+<h3 id="changed-9">Changed</h3>
+<ul>
+<li><code>krun</code> always prints fully-simplified states. (#2299)</li>
+<li><code>kore-exec</code> sends terms to the SMT solver if it can infer dynamically that
+they are defined at runtime. (#2287)</li>
+<li>The <code>kore-parser</code> options <code>--no-print-definition</code> and <code>--no-print-pattern</code> are
+now the default. (#2264)</li>
+</ul>
+<h3 id="deprecated-1">Deprecated</h3>
+<h3 id="removed-2">Removed</h3>
+<h3 id="fixed-18">Fixed</h3>
+<ul>
+<li>The performance of the parser is significantly improved. (#2189)</li>
+<li><code>kore-parser</code> prints a helpful error message if the <code>--module</code> option is
+omitted where it is required. (#2254)</li>
+</ul>
+<h2 id="%5B0.35.0.0%5D---2020-11-30">[0.35.0.0] - 2020-11-30</h2>
+<h3 id="added-15">Added</h3>
+<ul>
+<li>Added hooked function <code>LIST.make</code>. (#2253)</li>
+</ul>
+<h3 id="changed-10">Changed</h3>
+<ul>
+<li>Hooked function <code>LIST.update</code> is <code>\bottom</code> for negative indices. (#2278)</li>
+<li>The concrete syntax of domain values in <code>BYTES.Bytes</code> matches the LLVM
+backend. (#2256)</li>
+</ul>
+<h3 id="fixed-19">Fixed</h3>
+<ul>
+<li>Execution with <code>krun</code> reports all stuck configurations. (#2205)</li>
+<li>Bug reports generated by <code>kore-exec</code> display the command-line options
+correctly. (#2245)</li>
+</ul>
+<h2 id="%5B0.34.0.0%5D---2020-11-16">[0.34.0.0] - 2020-11-16</h2>
+<h3 id="added-16">Added</h3>
+<ul>
+<li>The <code>STRING.string2base</code> hook parses signed hexadecimal values. (#2251)</li>
+<li>The <code>\left-assoc</code> and <code>\right-assoc</code> notations are parsed. (#2124)</li>
+<li>Functional terms are translated as uninterpreted functions for the SMT solver
+if no other translation is available. (#2261)</li>
+</ul>
+<h3 id="fixed-20">Fixed</h3>
+<ul>
+<li>The environment variable <code>KORE_EXEC_OPTS</code> has no effect outside
+<code>kore-exec</code>. (#2235)</li>
+<li>Claims with an <code>ensures</code> clause does not cause an internal error. (#2221)</li>
+<li>The <code>--strategy all</code> option is effective. (#2205)</li>
+<li>The rule merger does not complain about duplicate names when there are not
+duplicate names. (#2226, #2228)</li>
+<li><code>kore-parser</code> prints human-readable error messages. (#2243)</li>
+</ul>
+<h2 id="%5B0.33.0.0%5D---2020-10-29">[0.33.0.0] - 2020-10-29</h2>
+<h3 id="added-17">Added</h3>
+<ul>
+<li>The <code>--solver-reset-interval</code> option allows the user to specify how often the
+SMT solver will be reset. (#2207)</li>
+<li>Conditions quantified by <code>\forall</code> are sent to the SMT solver. (#2183)</li>
+</ul>
+<h3 id="changed-11">Changed</h3>
+<ul>
+<li>Failing queries to the SMT solver are retried once, after resetting the
+solver. (#2208)</li>
+<li>The <code>--save-proofs</code> option is always effective, even when all claims are
+successfully proven. (#2183)</li>
+<li>The <code>--strategy all</code> option is now the default, instead of <code>--strategy any</code>.
+(#2204)</li>
+</ul>
+<h3 id="removed-3">Removed</h3>
+<ul>
+<li>The <code>--strategy any-heating-cooling</code> and <code>--strategy all-heating-cooling</code>
+options are removed. (#2204)</li>
+</ul>
+<h2 id="%5B0.32.0.0%5D---2020-10-15">[0.32.0.0] - 2020-10-15</h2>
+<h3 id="changed-12">Changed</h3>
+<ul>
+<li><code>\equals</code> clauses are normalized by ordering their child terms. (#2137)</li>
+<li>The SMT solver is reset at fixed intervals. (#2125)</li>
+</ul>
+<h3 id="fixed-21">Fixed</h3>
+<ul>
+<li>The warning about trivial claims shows the original source location. (#2155)</li>
+</ul>
+<h2 id="%5B0.31.0.0%5D---2020-09-30">[0.31.0.0] - 2020-09-30</h2>
+<h3 id="added-18">Added</h3>
+<ul>
+<li>Inferred conditions are used to simplify unevaluated functions. (#2095)</li>
+</ul>
+<h3 id="changed-13">Changed</h3>
+<ul>
+<li>The prover infers that the right-hand sides of claims are defined. (#2110)</li>
+</ul>
+<h3 id="fixed-22">Fixed</h3>
+<ul>
+<li>Unsatisfiable configurations are filtered from the right-hand side of
+claims. (#2145)</li>
+<li>Function evaluation is disabled while matching the left-hand side of an
+equation. (#2143)</li>
+</ul>
+<h2 id="%5B0.30.0.0%5D---2020-09-18">[0.30.0.0] - 2020-09-18</h2>
+<h3 id="changed-14">Changed</h3>
+<ul>
+<li>The prover halts if the SMT solver returns <code>unknown</code>. (#2072)</li>
+</ul>
+<h3 id="fixed-23">Fixed</h3>
+<ul>
+<li>Function evaluation returns a result after the first equation which
+applies. (#1146)</li>
+</ul>
+<h2 id="%5B0.29.0.0%5D---2020-09-04">[0.29.0.0] - 2020-09-04</h2>
+<h3 id="added-19">Added</h3>
+<ul>
+<li>The SMT solver transcript (<code>--solver-transcript</code>) shows reponses received from
+the solver. (#1688)</li>
+</ul>
+<h3 id="changed-15">Changed</h3>
+<ul>
+<li>The internal representation of terms is simplified. (#2104)</li>
+<li>The prover keeps the right-hand side of its working claim simplified. (#1278)</li>
+</ul>
+<h3 id="fixed-24">Fixed</h3>
+<ul>
+<li>The SMT solver no longer fails to solve simple queries. (#2075)</li>
+<li>The SMT solver no longer leaks memory. (#2087)</li>
+<li>Simplifying conjunctions of predicates runs in linear time, rather than
+quadratic. (#2102)</li>
+<li>Proven states are not accidentally reported as &quot;stuck&quot;. (#2021)</li>
+<li>The prover halts at the first unproven state. (#2071)</li>
+</ul>
+<h2 id="%5B0.28.0.0%5D---2020-08-19">[0.28.0.0] - 2020-08-19</h2>
+<h3 id="added-20">Added</h3>
+<ul>
+<li>Add symbolic rules for <code>STRING.eq</code>. (#2014)</li>
+<li>Add symbolic rules for <code>INT.eq</code>. (#2019)</li>
+</ul>
+<h3 id="changed-16">Changed</h3>
+<ul>
+<li>Throw an error when <code>\not(\ceil(_))</code> appears in a stuck configuration. (#2059,
+#2061)</li>
+<li>Produce a helpful error message when the <code>--smt-prelude</code> file is
+missing. (#2055)</li>
+<li>Solicit a bug report when catching <code>AssertionFailed</code>. (#2060)</li>
+<li>Solicit a bug report when recording <code>WarnIfLowProductivity</code>. (#2037)</li>
+<li>Disable the <code>WarnIfLowProductivity</code> message when total run time is
+short. (#2036)</li>
+<li>Allow an empty argument to the <code>simplification</code> attribute. (#2029)</li>
+<li>Infer that the left-hand sides of claims are defined. (#1911)</li>
+</ul>
+<h3 id="deprecated-2">Deprecated</h3>
+<h3 id="removed-4">Removed</h3>
+<h3 id="fixed-25">Fixed</h3>
+<ul>
+<li>Correctly re-construct the unified term when unifying <code>\equals(_, _)</code>. (#2067)</li>
+<li>Erase predicate sorts before sending to the SMT solver. (#2076)</li>
+<li><code>--bug-report</code> captures the <code>--smt-prelude</code> file. (#2054)</li>
+<li><code>kore-repl</code> does not terminate after sub-process errors. (#1992)</li>
+<li>Send correct command to solver to set timeout. (#2048)</li>
+<li><code>kore-exec</code> no longer leaks memory. (#2028)</li>
+</ul>
+<h2 id="%5B0.27.0.0%5D---2020-08-05">[0.27.0.0] - 2020-08-05</h2>
+<h3 id="added-21">Added</h3>
+<ul>
+<li>Add symbolic reasoning for SET.difference.</li>
+<li>Add SET.inclusion hook.</li>
+</ul>
+<h3 id="changed-17">Changed</h3>
+<ul>
+<li>Add more context to some error messages.</li>
+<li>Update stack.yaml to GHC 8.10.</li>
+</ul>
+<h3 id="fixed-26">Fixed</h3>
+<ul>
+<li>Fix several memory leaks.</li>
+<li>Enable RTS statistics by default in all build configurations.</li>
+<li>Allow narrowing on uninterpreted functions.</li>
+</ul>
+<h2 id="%5B0.26.0.0%5D---2020-07-24">[0.26.0.0] - 2020-07-24</h2>
+<h3 id="added-22">Added</h3>
+<ul>
+<li>Speedscope is now supported for profiling proofs.</li>
+<li>kore-repl can list rules applied between any related nodes.</li>
+<li>kore-repl allows enabling debug-equation dynamically.</li>
+<li>A warning is emitted to distinguish the types of proof failure.</li>
+</ul>
+<h3 id="fixed-27">Fixed</h3>
+<ul>
+<li>A bug is fixed where variables introduced by symbolic narrowing could be
+captured incorrectly.</li>
+<li>A more helpful message is provided when the external solver crashes.</li>
+<li>The interrupt signal no longer triggers the creation of a bug report archive
+automatically.</li>
+<li>The overhead of logging is significantly reduced.</li>
+<li>Polymorphic symbols can now be encoded for the external solver.</li>
+</ul>
+<h2 id="%5B0.25.0.0%5D---2020-07-08">[0.25.0.0] - 2020-07-08</h2>
+<h3 id="added-23">Added</h3>
+<ul>
+<li>The <code>simplification</code> attribute takes an optional integer argument indicating
+the priority of the simplification rule.</li>
+<li>The hooked function <code>INT.ediv</code> implements Euclidean division.</li>
+</ul>
+<h3 id="changed-18">Changed</h3>
+<ul>
+<li><code>ErrorBottomTotalFunction</code> is thrown when a function declared total
+(<code>functional</code>) returns <code>\bottom</code>.</li>
+<li><code>ErrorDecidePredicateUnknown</code> is thrown when the solver cannot decide if a
+condition is satisfiable or unsatisfiable.</li>
+</ul>
+<h3 id="fixed-28">Fixed</h3>
+<ul>
+<li><code>kore-exec</code> exits with the code specified by the semantics, even when the
+final configuration has side conditions.</li>
+<li><code>kore-exec</code> and <code>kore-repl</code> halt when the limit specified by the <code>--breadth</code>
+option is exceeded.</li>
+<li>Proofs are no longer incomplete when the final configuration is undefined.</li>
+<li><code>kore-repl</code> does not allow <code>clear</code>-ing the direct child of a branching node
+because this can invalidate a proof.</li>
+</ul>
+<h2 id="%5B0.24.0.0%5D---2020-06-25">[0.24.0.0] - 2020-06-25</h2>
+<h3 id="added-24">Added</h3>
+<ul>
+<li>The hook <code>INT.eq</code> is reflexive with symbolic arguments.</li>
+<li>The unification-based interpretation of function equations is supported.</li>
+</ul>
+<h3 id="fixed-29">Fixed</h3>
+<ul>
+<li>Improved function evaluation performance by reducing book-keeping.</li>
+<li>Improved unification performance by removing excess logs.</li>
+<li>Improved execution performance by discarding historical configurations.</li>
+<li><code>kore-repl</code> respects all logging options.</li>
+</ul>
+<h2 id="%5B0.23.0.0%5D---2020-06-10">[0.23.0.0] - 2020-06-10</h2>
+<h3 id="added-25">Added</h3>
+<ul>
+<li><code>kore-exec</code> and <code>kore-repl</code> save the information necessary to reproduce a bug
+with the option <code>--bug-report</code>.</li>
+<li>The hook <code>BOOL.or</code> is simplified to <code>\and</code> when possible.</li>
+<li>The hook <code>SET.in</code> is simplified to <code>\and</code> when possible.</li>
+</ul>
+<h3 id="fixed-30">Fixed</h3>
+<ul>
+<li>The error message thrown when a rewrite rule cannot be instantiated uses
+variable names consistently.</li>
+</ul>
+<h2 id="%5B0.22.0.0%5D---2020-05-27">[0.22.0.0] - 2020-05-27</h2>
+<h3 id="added-26">Added</h3>
+<ul>
+<li>A warning is emitted when a total function returns <code>\bottom</code>.</li>
+</ul>
+<h3 id="changed-19">Changed</h3>
+<ul>
+<li>Execution does not branch when evaluating the hooked <code>KEQUAL.eq</code> function.</li>
+</ul>
+<h3 id="fixed-31">Fixed</h3>
+<ul>
+<li>Overloaded symbols are now correctly unified with injected variables.</li>
+<li>Error messages are no longer duplicated in the log.</li>
+</ul>
+<h2 id="%5B0.21.0.0%5D---2020-05-13">[0.21.0.0] - 2020-05-13</h2>
+<h3 id="added-27">Added</h3>
+<ul>
+<li>Injections into hooked sorts are forbidden.</li>
+<li>Semantic rules with the same left- and right-hand sides will be rejected.
+Such rules will always cause the backend to loop endlessly.</li>
+<li><code>kore-repl</code> prints output in script mode with the option <code>--save-run-output</code>.</li>
+</ul>
+<h3 id="changed-20">Changed</h3>
+<ul>
+<li>kore-repl: <code>stepf</code> command advances the current configuration.</li>
+<li><code>kore-exec</code> does not retain the interior of the execution graph.
+Only the leaf nodes of the execution graph are retained during
+execution. Memory use is bounded by the size of the largest configuration and
+does not increase with the length of the proof.</li>
+<li>Applying semantic (rewrite) rules is more efficient.
+Run time is improved 10-15% by avoiding duplicate work when refreshing the
+free variables of semantic rules.</li>
+</ul>
+<h2 id="%5B0.20.0.0%5D---2020-04-29">[0.20.0.0] - 2020-04-29</h2>
+<h3 id="added-28">Added</h3>
+<ul>
+<li>Added documentation for the <code>--log-entries</code> option.</li>
+</ul>
+<h3 id="changed-21">Changed</h3>
+<ul>
+<li>Clarified the message accompanying the &quot;substitution coverage&quot; error.</li>
+</ul>
+<h3 id="fixed-32">Fixed</h3>
+<ul>
+<li>The <code>smtlib</code> and <code>smt-hook</code> attributes handle SMT-LIB lists correctly.
+The argument of these attributes would not be instantiated correctly if it was
+a list, but SMT-LIB atoms were always handled correctly.</li>
+</ul>
+<h2 id="%5B0.19.0.0%5D---2020-04-15">[0.19.0.0] - 2020-04-15</h2>
+<h3 id="added-29">Added</h3>
+<ul>
+<li>Added options for debugging equation application:
+<ul>
+<li><code>--debug-attempt-equation</code></li>
+<li><code>--debug-apply-equation</code></li>
+<li><code>--debug-equation</code></li>
+</ul>
+</li>
+<li>Added log entry types:
+<ul>
+<li><code>DebugApplyEquation</code></li>
+<li><code>DebugAttemptEquation</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="changed-22">Changed</h3>
+<ul>
+<li>Applying equation-based rules (primarily function rules and simplification rules) is more efficient.</li>
+<li>Equations may not have free variables occurring only on the right-hand side.</li>
+<li>Command-line options that expect a module name check that their argument is a <em>valid</em> module name.</li>
+<li>The log displays the context of each entry.</li>
+<li>The log displays the <em>type</em> of each context to be used with option <code>--log-entries</code> for more information.</li>
+<li>The format of parsing and validation errors is more similar to other parsers and compilers.</li>
+</ul>
+<h3 id="removed-5">Removed</h3>
+<ul>
+<li>Removed options for debugging equation application:
+<ul>
+<li><code>--debug-applied-rule</code></li>
+<li><code>--debug-simplification-axiom</code></li>
+<li><code>--debug-simplification-axiom-patterns</code></li>
+</ul>
+</li>
+<li>Removed log entry types:
+<ul>
+<li><code>DebugAppliedRule</code></li>
+<li><code>DebugAxiomEvaluation</code></li>
+<li><code>DebugSkipSimplification</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="%5B0.0.1.0%5D---2018-01-17">[0.0.1.0] - 2018-01-17</h2>
+<h3 id="added-30">Added</h3>
+<ul>
+<li>Initial release of the Kore Haskell parser.</li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#changelog" class="bd-toc-link">Changelog</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unreleased" class="bd-toc-link">Unreleased</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#deprecated"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Deprecated
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.60.0.0%5D---2021-12-17" class="bd-toc-link">[0.60.0.0] - 2021-12-17</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.58.0.0%5D---2021-11-19" class="bd-toc-link">[0.58.0.0] - 2021-11-19</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.55.0.0%5D---2021-10-11" class="bd-toc-link">[0.55.0.0] - 2021-10-11</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.53.0.0%5D---2021-09-08" class="bd-toc-link">[0.53.0.0] - 2021-09-08</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-4"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-4"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.52.0.0%5D---2021-08-11" class="bd-toc-link">[0.52.0.0] - 2021-08-11</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-5"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.51.0.0%5D---2021-07-28" class="bd-toc-link">[0.51.0.0] - 2021-07-28</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-6"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-5"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.49.0.0%5D---2021-06-30" class="bd-toc-link">[0.49.0.0] - 2021-06-30</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-7"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-6"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.48.0.0%5D---2021-06-16" class="bd-toc-link">[0.48.0.0] - 2021-06-16</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-8"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-7"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.47.0.0%5D---2021-06-02" class="bd-toc-link">[0.47.0.0] - 2021-06-02</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-9"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-8"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.45.0.0%5D---2021-05-10" class="bd-toc-link">[0.45.0.0] - 2021-05-10</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-9"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.44.0.0%5D---2021-04-22" class="bd-toc-link">[0.44.0.0] - 2021-04-22</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-10"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.43.0.0%5D---2021-04-07" class="bd-toc-link">[0.43.0.0] - 2021-04-07</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-11"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.42.0.0%5D---2021-03-17" class="bd-toc-link">[0.42.0.0] - 2021-03-17</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-10"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-4"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-12"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.41.0.0%5D---2021-03-05" class="bd-toc-link">[0.41.0.0] - 2021-03-05</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-5"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-13"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.40.0.0%5D---2021-02-17" class="bd-toc-link">[0.40.0.0] - 2021-02-17</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-14"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.39.0.0%5D---2021-02-04" class="bd-toc-link">[0.39.0.0] - 2021-02-04</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-11"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-6"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-15"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.38.0.0%5D---2021-01-24" class="bd-toc-link">[0.38.0.0] - 2021-01-24</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-12"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-7"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-16"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.37.0.0%5D---2021-01-07" class="bd-toc-link">[0.37.0.0] - 2021-01-07</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-13"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-8"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-17"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.36.0.0%5D---2020-12-09" class="bd-toc-link">[0.36.0.0] - 2020-12-09</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-14"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-9"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#deprecated-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Deprecated
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-18"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.35.0.0%5D---2020-11-30" class="bd-toc-link">[0.35.0.0] - 2020-11-30</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-15"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-10"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-19"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.34.0.0%5D---2020-11-16" class="bd-toc-link">[0.34.0.0] - 2020-11-16</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-16"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-20"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.33.0.0%5D---2020-10-29" class="bd-toc-link">[0.33.0.0] - 2020-10-29</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-17"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-11"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.32.0.0%5D---2020-10-15" class="bd-toc-link">[0.32.0.0] - 2020-10-15</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-12"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-21"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.31.0.0%5D---2020-09-30" class="bd-toc-link">[0.31.0.0] - 2020-09-30</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-18"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-13"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-22"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.30.0.0%5D---2020-09-18" class="bd-toc-link">[0.30.0.0] - 2020-09-18</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-14"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-23"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.29.0.0%5D---2020-09-04" class="bd-toc-link">[0.29.0.0] - 2020-09-04</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-19"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-15"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-24"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.28.0.0%5D---2020-08-19" class="bd-toc-link">[0.28.0.0] - 2020-08-19</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-20"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-16"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#deprecated-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Deprecated
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed-4"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-25"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.27.0.0%5D---2020-08-05" class="bd-toc-link">[0.27.0.0] - 2020-08-05</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-21"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-17"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-26"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.26.0.0%5D---2020-07-24" class="bd-toc-link">[0.26.0.0] - 2020-07-24</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-22"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-27"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.25.0.0%5D---2020-07-08" class="bd-toc-link">[0.25.0.0] - 2020-07-08</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-23"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-18"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-28"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.24.0.0%5D---2020-06-25" class="bd-toc-link">[0.24.0.0] - 2020-06-25</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-24"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-29"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.23.0.0%5D---2020-06-10" class="bd-toc-link">[0.23.0.0] - 2020-06-10</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-25"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-30"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.22.0.0%5D---2020-05-27" class="bd-toc-link">[0.22.0.0] - 2020-05-27</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-26"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-19"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-31"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.21.0.0%5D---2020-05-13" class="bd-toc-link">[0.21.0.0] - 2020-05-13</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-27"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-20"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.20.0.0%5D---2020-04-29" class="bd-toc-link">[0.20.0.0] - 2020-04-29</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-28"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-21"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fixed-32"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Fixed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.19.0.0%5D---2020-04-15" class="bd-toc-link">[0.19.0.0] - 2020-04-15</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-29"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#changed-22"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Changed
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#removed-5"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Removed
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5B0.0.1.0%5D---2018-01-17" class="bd-toc-link">[0.0.1.0] - 2018-01-17</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#added-30"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Added
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
