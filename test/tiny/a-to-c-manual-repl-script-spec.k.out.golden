@@ -1,6 +1,0 @@
-Kore (0)> TryF (ByName (RuleName {unRuleName = "A2B"}))
-Kore (1)> TryF (ByName (RuleName {unRuleName = "B2C"}))
-Kore (2)> ProveSteps 1
-Stopped after 0 step(s) due to reaching end of proof on current branch.
-
-#Top
