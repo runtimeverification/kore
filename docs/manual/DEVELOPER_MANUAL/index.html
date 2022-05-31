@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="kore-manual">Kore Manual</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a>
+<ol>
+<li><a href="#introduction-motivation">Motivation</a></li>
+<li><a href="#introduction-document-structure">Document Structure</a></li>
+</ol>
+</li>
+<li><a href="#basics">Basics</a></li>
+<li><a href="#design">Design</a></li>
+<li><a href="#implementation">Implementation</a>
+<ol>
+<li><a href="#implementation-context-map">Context Map</a>
+<ol>
+<li><a href="#implementation-context-map-low-level">Low-level</a></li>
+<li><a href="#implementation-context-map-interface">Interface</a></li>
+<li><a href="#implementation-context-map-workflow">Workflow</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks">Hooks</a>
+<ol>
+<li><a href="#implementation-hooks-add-builtin-hook">How To: Add Builtin Hook</a></li>
+<li><a href="#implementation-hooks-bool">BOOL</a>
+<ol>
+<li><a href="#implementation-hooks-bool-bool">BOOL.Bool</a></li>
+<li><a href="#implementation-hooks-bool-or">BOOL.or</a></li>
+<li><a href="#implementation-hooks-bool-and">BOOL.and</a></li>
+<li><a href="#implementation-hooks-bool-xor">BOOL.xor</a></li>
+<li><a href="#implementation-hooks-bool-eq">BOOL.eq</a></li>
+<li><a href="#implementation-hooks-bool-ne">BOOL.ne</a></li>
+<li><a href="#implementation-hooks-bool-not">BOOL.not</a></li>
+<li><a href="#implementation-hooks-bool-implies">BOOL.implies</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-int">INT</a>
+<ol>
+<li><a href="#implementation-hooks-int-int">INT.Int</a></li>
+<li><a href="#implementation-hooks-int-gt">INT.gt</a></li>
+<li><a href="#implementation-hooks-int-ge">INT.ge</a></li>
+<li><a href="#implementation-hooks-int-eq">INT.eq</a></li>
+<li><a href="#implementation-hooks-int-le">INT.le</a></li>
+<li><a href="#implementation-hooks-int-lt">INT.lt</a></li>
+<li><a href="#implementation-hooks-int-ne">INT.ne</a></li>
+<li><a href="#implementation-hooks-int-add">INT.add</a></li>
+<li><a href="#implementation-hooks-int-sub">INT.sub</a></li>
+<li><a href="#implementation-hooks-int-mul">INT.mul</a></li>
+<li><a href="#implementation-hooks-int-abs">INT.abs</a></li>
+<li><a href="#implementation-hooks-int-tdiv">INT.tdiv</a></li>
+<li><a href="#implementation-hooks-int-tmod">INT.tmod</a></li>
+<li><a href="#implementation-hooks-int-ediv">INT.ediv</a></li>
+<li><a href="#implementation-hooks-int-emod">INT.emod</a></li>
+<li><a href="#implementation-hooks-int-and">INT.and</a></li>
+<li><a href="#implementation-hooks-int-or">INT.or</a></li>
+<li><a href="#implementation-hooks-int-xor">INT.xor</a></li>
+<li><a href="#implementation-hooks-int-not">INT.not</a></li>
+<li><a href="#implementation-hooks-int-shl">INT.shl</a></li>
+<li><a href="#implementation-hooks-int-shr">INT.shr</a></li>
+<li><a href="#implementation-hooks-int-pow">INT.pow</a></li>
+<li><a href="#implementation-hooks-int-powmod">INT.powmod</a></li>
+<li><a href="#implementation-hooks-int-log2">INT.log2</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-string">STRING</a>
+<ol>
+<li><a href="#implementation-hooks-string-string">STRING.String</a></li>
+<li><a href="#implementation-hooks-string-eq">STRING.eq</a></li>
+<li><a href="#implementation-hooks-string-lt">STRING.lt</a></li>
+<li><a href="#implementation-hooks-string-concat">STRING.concat</a></li>
+<li><a href="#implementation-hooks-string-string2int">STRING.string2int</a></li>
+<li><a href="#implementation-hooks-string-int2string">STRING.int2string</a></li>
+<li><a href="#implementation-hooks-string-string2base">STRING.string2base</a></li>
+<li><a href="#implementation-hooks-string-base2string">STRING.base2string</a></li>
+<li><a href="#implementation-hooks-string-substr">STRING.substr</a></li>
+<li><a href="#implementation-hooks-string-length">STRING.length</a></li>
+<li><a href="#implementation-hooks-string-find">STRING.find</a></li>
+<li><a href="#implementation-hooks-string-token2string">STRING.token2string</a></li>
+<li><a href="#implementation-hooks-string-string2token">STRING.string2token</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-map">MAP</a>
+<ol>
+<li><a href="#implementation-hooks-map-map">MAP.Map</a></li>
+<li><a href="#implementation-hooks-map-unit">MAP.unit</a></li>
+<li><a href="#implementation-hooks-map-element">MAP.element</a></li>
+<li><a href="#implementation-hooks-map-concat">MAP.concat</a></li>
+<li><a href="#implementation-hooks-map-update">MAP.update</a></li>
+<li><a href="#implementation-hooks-map-remove">MAP.remove</a></li>
+<li><a href="#implementation-hooks-map-removeall">MAP.removeAll</a></li>
+<li><a href="#implementation-hooks-map-size">MAP.size</a></li>
+<li><a href="#implementation-hooks-map-lookup">MAP.lookup</a></li>
+<li><a href="#implementation-hooks-map-lookupordefault">MAP.lookupOrDefault</a></li>
+<li><a href="#implementation-hooks-map-inkeys">MAP.in_keys</a></li>
+<li><a href="#implementation-hooks-map-keys">MAP.keys</a></li>
+<li><a href="#implementation-hooks-map-keyslist">MAP.keys_list</a></li>
+<li><a href="#implementation-hooks-map-values">MAP.values</a></li>
+<li><a href="#implementation-hooks-map-inclusion">MAP.inclusion</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-list">LIST</a>
+<ol>
+<li><a href="#implementation-hooks-list-list">LIST.List</a></li>
+<li><a href="#implementation-hooks-list-unit">LIST.unit</a></li>
+<li><a href="#implementation-hooks-list-element">LIST.element</a></li>
+<li><a href="#implementation-hooks-list-concat">LIST.concat</a></li>
+<li><a href="#implementation-hooks-list-get">LIST.get</a></li>
+<li><a href="#implementation-hooks-list-update">LIST.update</a></li>
+<li><a href="#implementation-hooks-list-in">LIST.in</a></li>
+<li><a href="#implementation-hooks-list-size">LIST.size</a></li>
+<li><a href="#implementation-hooks-list-make">LIST.make</a></li>
+<li><a href="#implementation-hooks-list-updateall">LIST.updateAll</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-set">SET</a>
+<ol>
+<li><a href="#implementation-hooks-set-set">SET.Set</a></li>
+<li><a href="#implementation-hooks-set-unit">SET.unit</a></li>
+<li><a href="#implementation-hooks-set-element">SET.element</a></li>
+<li><a href="#implementation-hooks-set-concat">SET.concat</a></li>
+<li><a href="#implementation-hooks-set-intersection">SET.intersection</a></li>
+<li><a href="#implementation-hooks-set-in">SET.in</a></li>
+<li><a href="#implementation-hooks-set-inclusion">SET.inclusion</a></li>
+<li><a href="#implementation-hooks-set-list2set">SET.list2set</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-kequal">KEQUAL</a>
+<ol>
+<li><a href="#implementation-hooks-kequal-eq">KEQUAL.eq</a></li>
+<li><a href="#implementation-hooks-kequal-neq">KEQUAL.neq</a></li>
+<li><a href="#implementation-hooks-kequal-ite">KEQUAL.ite</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-krypto">KRYPTO</a>
+<ol>
+<li><a href="#implementation-hooks-krypto-keccak266">KRYPTO.keccak256</a></li>
+<li><a href="#implementation-hooks-krypto-ripemd160">KRYPTO.ripemd160</a></li>
+<li><a href="#implementation-hooks-krypto-sha256">KRYPTO.sha256</a></li>
+<li><a href="#implementation-hooks-krypto-sha3256">KRYPTO.sha3256</a></li>
+</ol>
+</li>
+<li><a href="#implementation-hooks-bytes">BYTES</a>
+<ol>
+<li><a href="#implementation-hooks-bytes-bytes2string">BYTES.bytes2string</a></li>
+<li><a href="#implementation-hooks-bytes-string2bytes">BYTES.string2bytes</a></li>
+<li><a href="#implementation-hooks-bytes-update">BYTES.update</a></li>
+<li><a href="#implementation-hooks-bytes-substr">BYTES.substr</a></li>
+<li><a href="#implementation-hooks-bytes-replaceat">BYTES.replaceAt</a></li>
+<li><a href="#implementation-hooks-bytes-padright">BYTES.padRight</a></li>
+<li><a href="#implementation-hooks-bytes-padleft">BYTES.padLeft</a></li>
+<li><a href="#implementation-hooks-bytes-reverse">BYTES.reverse</a></li>
+<li><a href="#implementation-hooks-bytes-length">BYTES.length</a></li>
+<li><a href="#implementation-hooks-bytes-concat">BYTES.concat</a></li>
+<li><a href="#implementation-hooks-bytes-int2bytes">BYTES.int2bytes</a></li>
+<li><a href="#implementation-hooks-bytes-bytes2int">BYTES.bytes2int</a></li>
+<li><a href="#implementation-hooks-bytes-decodebytes">BYTES.decodeBytes</a></li>
+<li><a href="#implementation-hooks-bytes-encodebytes">BYTES.encodeBytes</a></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><a href="#implementation-source-tree-and-build-system">Source Tree and Build System</a></li>
+</ol>
+</li>
+<li><a href="#language">Language</a>
+<ol>
+<li><a href="#language-lexical-structure">Lexical Structure</a>
+<ol>
+<li><a href="#language-lexical-structure-comments">Comments</a></li>
+<li><a href="#language-lexical-structure-string-literals">String literals</a></li>
+<li><a href="#language-lexical-structure-keywords">Keywords</a></li>
+<li><a href="#language-lexical-structure-identifiers">Identifiers</a></li>
+</ol>
+</li>
+<li><a href="#language-syntax">Syntax</a>
+<ol>
+<li><a href="#language-syntax-sorts">Sorts</a></li>
+<li><a href="#language-syntax-patterns">Patterns</a></li>
+<li><a href="#language-syntax-attributes">Attributes</a></li>
+<li><a href="#language-syntax-sentences">Sentences</a></li>
+<li><a href="#language-syntax-definition-and-modules">Definition and Modules</a></li>
+</ol>
+</li>
+<li><a href="#language-validity">Validity</a></li>
+</ol>
+</li>
+<li><a href="#commands">Commands</a>
+<ol>
+<li><a href="#commands-kore-exec">kore-exec</a></li>
+<li><a href="#commands-kore-repl">kore-repl</a></li>
+</ol>
+</li>
+<li><a href="#kframework">K Framework</a></li>
+<li><a href="#application-notes">Application Notes</a></li>
+<li><a href="#glossary">Glossary</a></li>
+</ol>
+<h2 id="introduction">Introduction</h2>
+<h3 id="introduction-motivation">Motivation</h3>
+<h3 id="introduction-document-structure">Document Structure</h3>
+<h2 id="basics">Basics</h2>
+<h2 id="design">Design</h2>
+<h2 id="implementation">Implementation</h2>
+<h3 id="implementation-context-map">Context Map</h3>
+<blockquote>
+<p>[Domain Driven Design] deals with large models by dividing them into different Bounded Contexts and being explicit about their interrelationships.&quot;</p>
+</blockquote>
+<p><a href="https://martinfowler.com/bliki/BoundedContext.html" target="_blank" rel="noopener">BoundedContext - martinfowler.com</a></p>
+<p>Our boundaries are not very strict, because our domain is well-defined; that is, Kore is given a formal semantics. The map has basically two kinds of entities:</p>
+<ul>
+<li><em>Languages</em> define an interface between contexts. For us, these are mostly internal representations of Kore patterns and definitions.</li>
+<li><em>Workflows</em> implement the behavior of the model, for example: parsing, validation, rewriting, simplification, proving.</li>
+</ul>
+<p>Sometimes <em>languages</em> and <em>workflows</em> overlap, but this should be avoided.</p>
+<h4 id="implementation-context-map-low-level">Low-level</h4>
+<p><img src="../../../assets/img/gh-pages/docs/manual/img/implementation/context-map/context-map-low-level.jpg" alt="context-map-low-level.jpg"></p>
+<p>This diagram is intended to be normative. Question carefully any instance where the actual dependencies differ significantly from the relationships shown here. Note that all internal modules depend on Kore.Internal, but these are omitted for clarity. The diagram only depicts the core domain models. There are utility contexts for logging, databases, etc. which are not shown.</p>
+<h4 id="implementation-context-map-interface">Interface</h4>
+<p><img src="../../../assets/img/gh-pages/docs/manual/img/implementation/context-map/context-map-interface.jpg" alt="context-map-interface.jpg"></p>
+<h4 id="implementation-context-map-workflow">Workflow</h4>
+<p><img src="../../../assets/img/gh-pages/docs/manual/img/implementation/context-map/context-map-workflow.jpg" alt="context-map-workflow.jpg"></p>
+<p>Kore.Exec and Kore.Repl control the input/output cycle with the user. These modules drive the data flow through the backend. Input passes through parsing and validation. The interface between these is mediated by Kore.Syntax. The valid definition and claims or patterns pass to Kore.Reachability, with the interface mediated by Kore.Internal and the other representations. The claims or program iterate through Kore.Rewrite and Kore.Simplify according to the controller, Kore.Reachability.</p>
+<h3 id="implementation-hooks">Hooks</h3>
+<h4 id="implementation-hooks-add-builtin-hook">How To: Add Builtin Hook</h4>
+<p><a href="https://github.com/runtimeverification/haskell-backend/pull/632/files" target="_blank" rel="noopener">Pull request #632</a> (<a href="https://github.com/runtimeverification/haskell-backend/pull/2845#discussion_r715497574" target="_blank" rel="noopener">TODO update PR</a>)is a self-contained example of adding a builtin symbol. When adding a builtin symbol we should add:</p>
+<ol>
+<li>An entry to the hooks document.</li>
+<li>A symbol verifier.</li>
+<li>An evaluator for concrete arguments (at least).</li>
+<li>A declaration to <code>Test.Kore.Builtin.Definition</code>.</li>
+<li>A few tests with different concrete arguments.</li>
+</ol>
+<p>The builtin domains are listed below, categorized by sort. Each sort and symbol is described and an example hooked declaration is given. Note that some domains depend on others being defined!</p>
+<h4 id="implementation-hooks-bool">BOOL</h4>
+<p>No dependencies.</p>
+<h5 id="implementation-hooks-bool-bool">BOOL.Bool</h5>
+<p>The builtin Boolean sort:</p>
+<pre class="language-text"><code>hooked-sort Bool{}
+    [hook{}(&quot;BOOL.Bool&quot;)]
+</code></pre>
+<p>Two domain values are recognized:</p>
+<pre class="language-text"><code>\dv{Bool{}}(&quot;true&quot;)  // Boolean true
+\dv{Bool{}}(&quot;false&quot;) // Boolean false
+</code></pre>
+<h5 id="implementation-hooks-bool-or">BOOL.or</h5>
+<p>Logical OR: <code>\dv{Bool{}}(&quot;true&quot;)</code> if either operand is <code>\dv{Bool{}}(&quot;true&quot;)</code>, otherwise <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>hooked-symbol or{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.or&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-and">BOOL.and</h5>
+<p>Logical AND: <code>\dv{Bool{}}(&quot;true&quot;)</code> if both operands are <code>\dv{Bool{}}(&quot;true&quot;)</code>, otherwise <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>hooked-symbol and{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.and&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-xor">BOOL.xor</h5>
+<p>Logical XOR: <code>\dv{Bool{}}(&quot;true&quot;)</code> if exactly one operand is <code>\dv{Bool{}}(&quot;true&quot;)</code>, otherwise <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>hooked-symbol xor{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.xor&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-eq">BOOL.eq</h5>
+<p><code>\dv{Bool{}}(&quot;true&quot;)</code> if the operands are equal, otherwise <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>hooked-symbol eq{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.eq&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-ne">BOOL.ne</h5>
+<p><code>\dv{Bool{}}(&quot;true&quot;)</code> if the operands are <strong>not</strong> equal, otherwise <code>\dv{Bool{}}(&quot;false&quot;)</code>.</p>
+<pre class="language-text"><code>hooked-symbol ne{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.ne&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-not">BOOL.not</h5>
+<p>Logical negation: <code>\dv{Bool{}}(&quot;true&quot;)</code> when its argument is <code>\dv{Bool{}}(&quot;false&quot;)</code> and vice versa.</p>
+<pre class="language-text"><code>hooked-symbol not{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.not&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-bool-implies">BOOL.implies</h5>
+<p>Logical implication.</p>
+<pre class="language-text"><code>hooked-symbol implies{}(Bool{}, Bool{}) : Bool{}
+    [hook{}(&quot;BOOL.implies&quot;)]
+</code></pre>
+<h4 id="implementation-hooks-int">INT</h4>
+<p>Depends on <code>BOOL</code>.</p>
+<h5 id="implementation-hooks-int-int">INT.Int</h5>
+<p>The builtin sort of arbitrary-precision integers.</p>
+<pre class="language-text"><code>hooked-sort Int{}
+    [hook{}(&quot;INT.Int&quot;)]
+</code></pre>
+<p>Valid domain values are a string of decimal digits, optionally preceeded by a sign.</p>
+<pre class="language-text"><code>\dv{Int{}}(&quot;256&quot;)   // positive 256, sign omitted
+\dv{Int{}}(&quot;-1024&quot;) // negative 1024
+\dv{Int{}}(&quot;+3&quot;)    // positive 3
+</code></pre>
+<h5 id="implementation-hooks-int-gt">INT.gt</h5>
+<p>Comparison: is the first argument greater than the second?</p>
+<pre class="language-text"><code>hooked-symbol gt{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.gt&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-ge">INT.ge</h5>
+<p>Comparison: is the first argument greater than or equal to the second?</p>
+<pre class="language-text"><code>hooked-symbol ge{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.ge&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-eq">INT.eq</h5>
+<p>Comparison: is the first argument equal to the second?</p>
+<pre class="language-text"><code>hooked-symbol eq{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.eq&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-le">INT.le</h5>
+<p>Comparison: is the first argument less than or equal to the second?</p>
+<pre class="language-text"><code>hooked-symbol le{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.le&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-lt">INT.lt</h5>
+<p>Comparison: is the first argument less than the second?</p>
+<pre class="language-text"><code>hooked-symbol lt{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.lt&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-ne">INT.ne</h5>
+<p>Comparison: is the first argument inequal to the second?</p>
+<pre class="language-text"><code>hooked-symbol ne{}(Int{}, Int{}) : Bool{}
+    [hook{}(&quot;INT.ne&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-add">INT.add</h5>
+<p>The sum of the arguments.</p>
+<pre class="language-text"><code>hooked-symbol add{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.add&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-sub">INT.sub</h5>
+<p>The difference of the arguments (the first less the second).</p>
+<pre class="language-text"><code>hooked-symbol sub{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.sub&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-mul">INT.mul</h5>
+<p>The product of the arguments.</p>
+<pre class="language-text"><code>hooked-symbol mul{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.mul&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-abs">INT.abs</h5>
+<p>The absolute value of the argument.</p>
+<pre class="language-text"><code>hooked-symbol abs{}(Int{}) : Int{}
+    [hook{}(&quot;INT.abs&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-tdiv">INT.tdiv</h5>
+<p>Quotient of the first argument divided by the second (truncated toward zero). The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>hooked-symbol tdiv{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.tdiv&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-tmod">INT.tmod</h5>
+<p>Remainder of the first argument divided by the second (truncated toward zero). The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>hooked-symbol tmod{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.tmod&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-ediv">INT.ediv</h5>
+<p>Quotient of the first argument divided by the second (using the euclidean algorithm). The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>hooked-symbol ediv{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.ediv&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-emod">INT.emod</h5>
+<p>Remainder of the first argument divided by the second (using the euclidean algorithm). The result is guaranteed to be positive. The result is <code>bottom{}()</code> if the second argument is zero.</p>
+<pre class="language-text"><code>hooked-symbol emod{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.emod&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-and">INT.and</h5>
+<p>Bitwise and of the arguments.</p>
+<pre class="language-text"><code>hooked-symbol and{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.and&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-or">INT.or</h5>
+<p>Bitwise or of the arguments.</p>
+<pre class="language-text"><code>hooked-symbol or{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.or&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-xor">INT.xor</h5>
+<p>Bitwise exclusive or of the arguments.</p>
+<pre class="language-text"><code>hooked-symbol xor{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.xor&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-not">INT.not</h5>
+<p>Bitwise complement of the argument.</p>
+<pre class="language-text"><code>hooked-symbol not{}(Int{}) : Int{}
+    [hook{}(&quot;INT.not&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-shl">INT.shl</h5>
+<p>Shift the bits of the first argument to the left. The second argument specifies how many bits to shift by, and will be truncated to the least-significant Haskell Int. The second argument can be negative, in which case the first argument will be shifted right.</p>
+<pre class="language-text"><code>hooked-symbol shl{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.shl&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-shr">INT.shr</h5>
+<p>Shift the bits of the first argument to the right. The second argument specifies how many bits to shift by, and will be truncated to the least-significant Haskell Int. The second argument can be negative, in which case the first argument will be shifted left.</p>
+<pre class="language-text"><code>hooked-symbol shr{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.shr&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-pow">INT.pow</h5>
+<p>The first argument raised to the power of the second argument. The result is <code>bottom{}()</code> if the second argument is negative.</p>
+<pre class="language-text"><code>hooked-symbol pow{}(Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.pow&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-powmod">INT.powmod</h5>
+<p>The first argument raised to the power of the second argument, but performed modulo the third argument. The result is <code>\bottom{}()</code> if either:</p>
+<ul>
+<li>The second argument is zero, or</li>
+<li>the second argument is negative and the first and third arguments are not coprime.</li>
+</ul>
+<pre class="language-text"><code>hooked-symbol powmod{}(Int{}, Int{}, Int{}) : Int{}
+    [hook{}(&quot;INT.powmod&quot;)]
+</code></pre>
+<h5 id="implementation-hooks-int-log2">INT.log2</h5>
+<p>The base 2 logarithm of the argument. The result is <code>\bottom{}()</code> if the second argument is not positive.</p>
+<pre class="language-text"><code>hooked-symbol log2{}(Int{}) : Int{}
+    [hook{}(&quot;INT.log2&quot;)]
+</code></pre>
+<h2 id="language">Language</h2>
+<h3 id="language-lexical-structure">Lexical Structure</h3>
+<h4 id="language-lexical-structure-comments">Comments</h4>
+<p>Kore allows C-style comments:</p>
+<ul>
+<li><code>//</code> line comment</li>
+<li><code>/*</code> block comment (non-nested) <code>*/</code></li>
+</ul>
+<h4 id="language-lexical-structure-string-literals">String literals</h4>
+<pre class="language-text"><code>&lt;string-literal&gt;
+  ::= [&apos;&quot;&apos;] &lt;char&gt;* [&apos;&quot;&apos;]
+
+&lt;char&gt;
+  ::= &lt;escape-sequence&gt;
+    | &lt;printable-ascii-char&gt; except [&apos;&quot;&apos;, &apos;\&apos;]
+
+&lt;printable-ascii-char&gt;
+  ::= U+0020 through U+007E
+</code></pre>
+<p>The following table summarizes the escape sequences allowed in string literals. <code>h</code> stands for a single hexadecimal digit. The surrogate code points in the range <code>[U+D800, U+DFFF]</code> are illegal in the Unicode escape sequences. The UTF-32 code point must not exceed <code>U+10FFFF</code>.</p>
+<p>TODO insert table</p>
+<h4 id="language-lexical-structure-keywords">Keywords</h4>
+<pre class="language-text"><code>&lt;keyword&gt;
+  ::= &quot;module&quot;  | &quot;endmodule&quot;
+    | &quot;import&quot;
+    | &quot;sort&quot;    | &quot;hooked-sort&quot;
+    | &quot;symbol&quot;  | &quot;hooked-symbol&quot;
+    | &quot;axiom&quot;   | &quot;claim&quot;
+    | &quot;alias&quot;   | &quot;where&quot;
+</code></pre>
+<h4 id="language-lexical-structure-identifiers">Identifiers</h4>
+<pre class="language-text"><code>&lt;identifier&gt;
+  ::= &lt;identifier-first-char&gt; &lt;identifier-char&gt;*
+
+&lt;identifier-char&gt;
+  ::= &lt;identifier-first-char&gt;
+    | &lt;identifier-other-char&gt;
+
+&lt;identifier-first-char&gt;
+  ::= [&apos;A&apos;..&apos;Z&apos;, &apos;a&apos;..&apos;z&apos;]
+
+&lt;identifier-other-char&gt;
+  ::= [&apos;0&apos;..&apos;9&apos;, &apos;\&apos;&apos;, &apos;-&apos;]
+
+&lt;symbol-identifier&gt;
+  ::= [&apos;\&apos;]? &lt;identifier&gt;
+
+&lt;element-variable-identifier&gt;
+  ::= &lt;identifier&gt;
+
+&lt;set-variable-identifier&gt;
+  ::= [&apos;@&apos;] &lt;identifier&gt;
+
+&lt;sort-identifier&gt;
+  ::= &lt;identifier&gt;
+
+&lt;module-name&gt;
+  ::= &lt;identifier&gt;
+</code></pre>
+<p>Identifiers must not be <code>&lt;keyword&gt;</code>s.</p>
+<h3 id="language-syntax">Syntax</h3>
+<p>The syntax of Kore is defined here in <a href="https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form" target="_blank" rel="noopener">Backus-Naur form</a>, augmented with the following meta-syntactic notations for brevity:</p>
+<pre class="language-text"><code>&lt;[$item]-sep-by-[$separator]&gt;
+  ::= &quot;&quot;
+    | &lt;[$item]-sep-by-1-[$separator]&gt;
+
+&lt;[$item]-sep-by-1-[$separator]&gt;
+  ::= $item
+    | $item $separator &lt;[$item]-sep-by-1-[$separator]&gt;
+
+</code></pre>
+<h4 id="language-syntax-sorts">Sorts</h4>
+<p>A sort is either a <em>sort variable</em> or a <em>sort constructor</em> applied to a list of <em>sort parameters</em>.</p>
+<pre class="language-text"><code>&lt;sort&gt;
+  ::= &lt;sort-variable&gt;
+    | &lt;sort-identifier&gt; &quot;{&quot; &lt;sorts&gt; &quot;}&quot;
+
+&lt;sorts&gt;
+  ::= &lt;[sort]-sep-by-[&quot;,&quot;]&gt;
+
+&lt;sort-variable&gt;
+  ::= &lt;sort-identifier&gt;
+
+&lt;sort-variables&gt;
+  ::= &lt;[sort-variable]-sep-by-[&quot;,&quot;]&gt;
+</code></pre>
+<h4 id="language-syntax-patterns">Patterns</h4>
+<pre class="language-text"><code>&lt;pattern&gt;
+  ::= &lt;variable-pattern&gt;
+    | &lt;matching-logic-pattern&gt;
+    | &lt;application-pattern&gt;
+    | &lt;string-literal&gt;
+
+&lt;patterns&gt;
+  ::= &lt;[pattern]-sep-by-[&quot;,&quot;]&gt;
+
+&lt;variable-pattern&gt;
+  ::= &lt;element-variable&gt;
+    | &lt;set-variable&gt;
+
+&lt;element-variable&gt;
+  ::= &lt;element-variable-identifier&gt; &quot;:&quot; &lt;sort&gt;
+
+&lt;set-variable&gt;
+  ::= &lt;set-variable-identifier&gt; &quot;:&quot; &lt;sort&gt;
+
+&lt;application-pattern&gt; ::=
+    &lt;symbol-identifier&gt; &quot;{&quot; &lt;sorts&gt; &quot;}&quot; &quot;(&quot; &lt;patterns&gt; &quot;)&quot;
+
+&lt;matching-logic-pattern&gt;
+  ::=
+    // Connectives
+      &quot;\top&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &quot;)&quot;
+    | &quot;\bottom&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &quot;)&quot;
+    | &quot;\not&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\and&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\or&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\implies&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\iff&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Quantifiers
+    | &quot;\exists&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;element-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\forall&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot;
+        &quot;(&quot; &lt;element-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Fixpoints
+    | &quot;\mu&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;set-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\nu&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;set-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Predicates
+    | &quot;\ceil&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\floor&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\equals&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\in&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Rewriting
+    | &quot;\next&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\rewrites&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Domain values
+    | &quot;\dv&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;string-literal&gt; &quot;)&quot;
+    // Syntax sugar
+    | &quot;\left-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;application-pattern&gt; &quot;)&quot;
+    | &quot;\right-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;application-pattern&gt; &quot;)&quot;
+</code></pre>
+<h4 id="language-syntax-attributes">Attributes</h4>
+<p>Attributes are hints to the backend, often collected by the frontend. Some attributes express syntactic information, while others express semantic information. All semantic information contained in attributes should correspond to axioms declared explicitly. The hints indicate when the backend may use faster algorithms, more efficient data structures, etc. (TODO be more specific). The meaning of particular attributes is implementation-defined. The order of attributes is <strong>never</strong> significant.</p>
+<pre class="language-text"><code>&lt;attribute&gt;
+  ::= &lt;application-pattern&gt;
+
+&lt;attributes&gt;
+  ::= &lt;[attribute]-sep-by-[&quot;,&quot;]&gt;
+</code></pre>
+<h4 id="language-syntax-sentences">Sentences</h4>
+<p>A sentence is a single declaration. Sentences always appear inside modules, defined below.</p>
+<pre class="language-text"><code>&lt;sentence&gt;
+  ::= &lt;sentence-import&gt;
+    | &lt;sentence-sort&gt;
+    | &lt;sentence-hooked-sort&gt;
+    | &lt;sentence-symbol&gt;
+    | &lt;sentence-hooked-symbol&gt;
+    | &lt;sentence-alias&gt;
+    | &lt;sentence-axiom&gt;
+    | &lt;sentence-claim&gt;
+
+&lt;sentence-import&gt;
+  ::= &quot;import&quot; &lt;module-name&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-sort&gt;
+  ::= &quot;sort&quot; &lt;sort-identifier&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-hooked-sort&gt;
+  ::= &quot;hooked-sort&quot; &lt;sort-id&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-symbol&gt;
+  ::= &quot;symbol&quot; &lt;symbol&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-hooked-symbol&gt;
+  ::= &quot;hooked-symbol&quot; &lt;symbol&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-alias&gt;
+  ::= &quot;alias&quot; &lt;alias&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;where&quot; &lt;application-pattern&gt; &quot;:=&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-axiom&gt;
+  ::= &quot;axiom&quot; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-claim&gt;
+  ::= &quot;claim&quot; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;alias&gt; ::= &lt;symbol-or-alias&gt;
+&lt;symbol&gt; ::= &lt;symbol-or-alias&gt;
+&lt;symbol-or-alias&gt; ::= &lt;symbol-id&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot;
+</code></pre>
+<h4 id="language-syntax-definition-and-modules">Definition and modules</h4>
+<p>A definition is a non-empty sequence of modules.</p>
+<pre class="language-text"><code>&lt;definition&gt;
+  ::= &quot;[&quot; &lt;attributes&gt; &quot;]&quot; &lt;modules&gt;
+
+&lt;module&gt;
+  ::= &quot;module&quot; &lt;module-name&gt; &lt;sentences&gt; &quot;endmodule&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;modules&gt;
+  :: &lt;[module]-sep-by-1-[whitespace]&gt;
+</code></pre>
+<h3 id="language-validity">Validity</h3>
+<p>A valid Kore definition conforms to the grammar of <code>&lt;definition&gt;</code> described above and the following conditions:</p>
+<ol>
+<li>In any sentence:
+<ol>
+<li>every sort variable used in the sentence appears in the sort variable list</li>
+<li>the sort variable list contains only distinct sort variable names (without duplicates)</li>
+</ol>
+</li>
+<li>In any symbol or alias sentence:
+<ol>
+<li>the sort parameters of the declared symbol or alias are distinct sort variables</li>
+<li>the argument and result sorts have declarations in scope</li>
+</ol>
+</li>
+<li>Every sort, symbol, and alias must have a unique (in the definition) name. No sort, symbol, or alias may be declared more than once. Names may not be shared between categories; i.e. the same name may not be used for a sort and a symbol.</li>
+<li>In any alias sentence:
+<ol>
+<li>the variables on the left-hand side are distinct</li>
+<li>their number and sorts agrees with the declaration of the alias</li>
+<li>the pattern is valid and its sort agrees with the declared result sort</li>
+<li>the pattern contains no free variables other than the declared variables</li>
+</ol>
+</li>
+<li>Module names are unique</li>
+<li>In any import sentence:
+<ol>
+<li>the imported module appears earlier in the definition, i.e. the modules in the definition are topologically sorted</li>
+<li>the sentence appears before any non-import declarations in the module</li>
+</ol>
+</li>
+</ol>
+<p>A declaration is in scope in a particular module if it appears in the module or if it is in scope (transitively) in any module imported by the module. (TODO I think this has changed). Within a module, the order of non-import sentences is not significant.</p>
+<p>A valid Kkore pattern conforms to the grammar of <code>&lt;pattern&gt;</code> described above and the following conditions:</p>
+<ol>
+<li>In any application pattern:
+<ol>
+<li>the number of sort parameters to the symbol or alias agrees with its declaration</li>
+<li>the number and sort of pattern arguments to the symbol or alias agrees with its declaration</li>
+</ol>
+</li>
+<li>In any occurrence of a sort, the number of sort parameters agrees with the declaration.</li>
+<li>All sorts, symbols, and aliases are declared before being used.</li>
+<li>In any matching logic pattern, the sort of pattern arguments agrees with the specified argument sort parameter.</li>
+<li>In any binder (quantifier or fixpoint), the sort of the variable argument agrees with its free occurrences in the pattern argument.</li>
+</ol>
+<h3 id="language-implicit-sort-signatures">Implicit Sort Signatures</h3>
+<h4 id="language-implicit-sort-signatures-connectives">Connectives</h4>
+<pre class="language-text"><code>\top{S}() : S
+\bottom{S}() : S
+\not{S}(S) : S
+\and{S}(S, S) : S
+\or{S}(S, S) : S
+\implies{S}(S, S) : S
+\iff{S}(S, S) : S
+</code></pre>
+<h4 id="language-implicit-sort-signatures-quantifiers">Quantifiers</h4>
+<pre class="language-text"><code>\exists{S}(x:T, S)
+\forall{S}(x:T, S)
+</code></pre>
+<h4 id="language-implicit-sort-signatures-fixpoints">Fixpoints</h4>
+<pre class="language-text"><code>\mu{}(@X:S, S) : S
+\nu{}(@X:S, S) : S
+</code></pre>
+<h4 id="language-implicit-sort-signatures-rewriting">Rewriting</h4>
+<pre class="language-text"><code>\next{S}(S) : S
+\rewrites{S}(S, S) : S
+</code></pre>
+<h4 id="language-implicit-sort-signatures-domain-values">Domain values</h4>
+<pre class="language-text"><code>\dv{S}(#String) : S
+</code></pre>
+<h2 id="commands">Commands</h2>
+<h3 id="commands-kore-exec">kore-exec</h3>
+<h3 id="commands-kore-repl">kore-repl</h3>
+<h2 id="kframework">K Framework</h2>
+<h2 id="application-notes">Application Notes</h2>
+<h2 id="glossary">Glossary</h2>
+<p id="glossary-bmc">[<em>BMC</em>]</p>
+<ol>
+<li>(noun, acronym) Bounded model checking. Execute the program on all paths for a given number of steps (a.k.a. bound), attempting to identify given properties (bugs, unexpected behaviours, etc.) in the execution graph.</li>
+</ol>
+<p id="glossary-constructor-like">[<em>constructor-like</em>]</p>
+<ol>
+<li>(adjective) A pattern is <em>constructor-like</em> if logical equality is syntactic equality. A <a href="#glossary-pattern">pattern</a> is constructor-like if it is logically equal (in the <code>\equals</code> sense) to another constructor-like pattern if and only if the patterns are syntactically equal. The constructor-like patterns of a sort comprise a normal form of elements in that sort.</li>
+<li>(adjective) A symbol is <em>constructor-like</em> if it may form the head of a constructor-like application pattern (in the sense defined about). Roughly, this means the symbol has injectivity and no-confusion axioms.</li>
+</ol>
+<p id="glossary-function">[<em>function</em>]</p>
+<ol>
+<li>(noun) An application symbol that, when applied to <a href="#glossary-function-like">function-like</a> patterns, produces function-like patterns.</li>
+<li>(noun/adjective) A <a href="#glossary-function-like">function-like</a> pattern.</li>
+</ol>
+<p id="glossary-function-like">[<em>function-like</em>]</p>
+<ol>
+<li>(adjective) A function-like <a href="#glossary-pattern">pattern</a> can have at most one value, i.e. it satisfies <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">&#x2203;</mi><mi>x</mi><mi mathvariant="normal">.</mi><mi>x</mi><mo>=</mo><mi>&#x3C6;</mi><mo stretchy="false">)</mo><mo>&#x2228;</mo><mi mathvariant="normal">&#xAC;</mi><mo stretchy="false">&#x2308;</mo><mi>&#x3C6;</mi><mo stretchy="false">&#x2309;</mo></mrow><annotation encoding="application/x-tex">(\exists x . x = \varphi ) \vee \neg \lceil \varphi \rceil</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">&#x2203;</span><span class="mord mathnormal">x</span><span class="mord">.</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">&#x3C6;</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">&#x2228;</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">&#xAC;</span><span class="mopen">&#x2308;</span><span class="mord mathnormal">&#x3C6;</span><span class="mclose">&#x2309;</span></span></span></span>.</li>
+</ol>
+<p id="glossary-functional">[<em>functional</em>]</p>
+<ol>
+<li>(adjective) A functional <a href="#glossary-pattern">pattern</a> has exactly one value, i.e. it satisfies <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">&#x2203;</mi><mi>x</mi><mi mathvariant="normal">.</mi><mi>x</mi><mo>=</mo><mi>&#x3C6;</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(\exists x . x = \varphi)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">&#x2203;</span><span class="mord mathnormal">x</span><span class="mord">.</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">&#x3C6;</span><span class="mclose">)</span></span></span></span>.</li>
+</ol>
+<p id="glossary-pattern">[<em>pattern</em>]</p>
+<ol>
+<li>(noun) The internal representation of a syntactic element. It may have constructs which cannot be represented directly into syntactic elements (e.g. map domain values), but it is expected that it is possible to create an equivalent syntactic representation.</li>
+</ol>
+<p id="glossary-predicate">[<em>predicate</em>]</p>
+<ol>
+<li>(noun) A <a href="#glossary-pattern">pattern</a> that can evaluate only to top and bottom. Application patterns that can only evaluate to top and bottom are hard to identify (TODO Why?), so some of the code that identifies predicates fails on these (TODO clarify what code?). Whenever a <a href="#glossary-substitution">substitution</a> can be extracted efficiently, the &quot;predicate&quot; term may refer to the non-substitution part of the predicate.</li>
+</ol>
+<p id="glossary-sbc">[<em>SBC</em>]</p>
+<ol>
+<li>(noun, acronym) Semantics-based compilation. Compilation that uses the semantics of the language to analyze the behaviour of the program (e.g. through symbolic execution), and uses what it learned to improve the compilation result.</li>
+</ol>
+<p id="glossary-sort-injection">[<em>sort injection</em>]</p>
+<ol>
+<li>(noun) A <a href="#glossary-symbol">symbol</a> with the <code>sortInjection</code> attribute. The sort injection symbol is used to represent the K sub-sort relation in Kore. K sorts contain symbols and sorts (their sub-sorts), but Kore sorts contain only symbols. The sort injection symbol wraps patterns of a sub-sort so they can be included (<em>injected</em>) into the super-sort. Two important properties follow from this definition. First, sort injection symbols are injective. Second, the sort injection symbol from a particular sub-sort is distinct (in the no-confusion-different-constructors sense) from the super-sort&apos;s constructors.</li>
+<li>(noun) A sort injection is a <a href="#glossary-pattern">pattern</a> of the form <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mi>n</mi><mi>j</mi><mo stretchy="false">{</mo><mi>S</mi><mi>u</mi><mi>b</mi><mo stretchy="false">{</mo><mo stretchy="false">}</mo><mo separator="true">,</mo><mi>S</mi><mi>u</mi><mi>p</mi><mi>e</mi><mi>r</mi><mo stretchy="false">{</mo><mo stretchy="false">}</mo><mo stretchy="false">}</mo><mo stretchy="false">(</mo><mi>&#x3C6;</mi><mo>:</mo><mi>S</mi><mi>u</mi><mi>b</mi><mo stretchy="false">{</mo><mo stretchy="false">}</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">inj\{Sub\{\}, Super\{\}\}(\varphi:Sub\{\})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.05724em;">inj</span><span class="mopen">{</span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mord mathnormal">u</span><span class="mord mathnormal">b</span><span class="mopen">{</span><span class="mclose">}</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mord mathnormal">u</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.02778em;">er</span><span class="mopen">{</span><span class="mclose">}}</span><span class="mopen">(</span><span class="mord mathnormal">&#x3C6;</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mord mathnormal">u</span><span class="mord mathnormal">b</span><span class="mopen">{</span><span class="mclose">})</span></span></span></span> where <code>inj{Sub{}, Super{}}</code> is a sort injection symbol (described above). Where the K sort <code>Super</code> contains <code>Sub</code>, the pattern <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>&#x3C6;</mi></mrow><annotation encoding="application/x-tex">\varphi</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord mathnormal">&#x3C6;</span></span></span></span> with least-sort <code>Sub</code> can appear anywhere that a term of sort <code>Super</code> is required. In Kore, this is represented with the injection above because all sorts are regarded as distinct.</li>
+</ol>
+<p id="glossary-substitution">[<em>substitution</em>]</p>
+<ol>
+<li>(noun) A <a href="#glossary-predicate">predicate</a> of the form <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>1</mn></msub><mo>=</mo><msub><mi>&#x3C6;</mi><mn>1</mn></msub><mo>&#x2227;</mo><msub><mi>x</mi><mn>2</mn></msub><mo>=</mo><msub><mi>&#x3C6;</mi><mn>2</mn></msub><mo>&#x2227;</mo><mo>&#x22EF;</mo><mo>&#x2227;</mo><msub><mi>x</mi><mi>n</mi></msub><mo>=</mo><msub><mi>&#x3C6;</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">x_1=\varphi_1 \land x_2=\varphi_2 \land \dots \land x_n=\varphi_n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.75em;vertical-align:-0.19444em;"></span><span class="mord"><span class="mord mathnormal">&#x3C6;</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">&#x2227;</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.75em;vertical-align:-0.19444em;"></span><span class="mord"><span class="mord mathnormal">&#x3C6;</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">&#x2227;</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.55556em;vertical-align:0em;"></span><span class="minner">&#x22EF;</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">&#x2227;</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord"><span class="mord mathnormal">&#x3C6;</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> where <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">x_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> are variables and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>&#x3C6;</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\varphi_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord"><span class="mord mathnormal">&#x3C6;</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">&#x200B;</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> are patterns.</li>
+</ol>
+<p id="glossary-symbol">[<em>symbol</em>]</p>
+<ol>
+<li>TODO</li>
+</ol>
+<p id="glossary-term-pattern">[<em>term pattern</em>]</p>
+<ol>
+<li>(noun) A <a href="#glossary-pattern">pattern</a> of a specific type. A term pattern is usually constructed with variables and function application patterns. In some cases, it is used for any pattern with the expectation that it will be reduced, as much as reasonably possible, to a variable-application form.</li>
+</ol>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#kore-manual" class="bd-toc-link">Kore Manual</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#table-of-contents"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Table of Contents
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#introduction" class="bd-toc-link">Introduction</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#introduction-motivation"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Motivation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#introduction-document-structure"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Document Structure
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#basics"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Basics
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#design"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Design
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation" class="bd-toc-link">Implementation</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation-context-map" class="bd-toc-link">Context Map</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-context-map-low-level"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Low-level
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-context-map-interface"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Interface
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-context-map-workflow"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Workflow
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation-hooks" class="bd-toc-link">Hooks</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-add-builtin-hook"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                How To: Add Builtin Hook
+              </a></div><details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation-hooks-bool" class="bd-toc-link">BOOL</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-bool"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.Bool
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-or"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.or
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-and"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.and
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-xor"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.xor
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-eq"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-ne"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.ne
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-not"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.not
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-bool-implies"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                BOOL.implies
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implementation-hooks-int" class="bd-toc-link">INT</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-int"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.Int
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-gt"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.gt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-ge"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.ge
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-eq"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.eq
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-le"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.le
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-lt"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.lt
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-ne"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.ne
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-add"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.add
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-sub"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.sub
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-mul"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.mul
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-abs"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.abs
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-tdiv"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.tdiv
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-tmod"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.tmod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-ediv"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.ediv
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-emod"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.emod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-and"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.and
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-or"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.or
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-xor"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.xor
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-not"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.not
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-shl"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.shl
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-shr"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.shr
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-pow"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.pow
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-powmod"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.powmod
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#implementation-hooks-int-log2"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                INT.log2
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#language" class="bd-toc-link">Language</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#language-lexical-structure" class="bd-toc-link">Lexical Structure</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-lexical-structure-comments"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Comments
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-lexical-structure-string-literals"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                String literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-lexical-structure-keywords"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Keywords
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-lexical-structure-identifiers"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Identifiers
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#language-syntax" class="bd-toc-link">Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-syntax-sorts"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Sorts
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-syntax-patterns"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-syntax-attributes"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Attributes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-syntax-sentences"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Sentences
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-syntax-definition-and-modules"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Definition and modules
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-validity"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Validity
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#language-implicit-sort-signatures" class="bd-toc-link">Implicit Sort Signatures</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-implicit-sort-signatures-connectives"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Connectives
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-implicit-sort-signatures-quantifiers"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Quantifiers
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-implicit-sort-signatures-fixpoints"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Fixpoints
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-implicit-sort-signatures-rewriting"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Rewriting
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#language-implicit-sort-signatures-domain-values"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Domain values
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#commands" class="bd-toc-link">Commands</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#commands-kore-exec"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                kore-exec
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#commands-kore-repl"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                kore-repl
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kframework"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                K Framework
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#application-notes"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Application Notes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#glossary"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Glossary
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../../assets/js/index.js"></script>
+  </body>
+</html>
