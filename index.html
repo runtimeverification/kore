@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="./assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="./assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="./assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="./index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="./downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="./">Homepage</a>
+      <a class="bd-toc-link" href="./docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="the-kore-language">The Kore Language</h1>
+<p>Kore is the &quot;core&quot; part of the K framework.</p>
+<h2 id="what-is-kore-all-about%3F">What is Kore all about?</h2>
+<p>In short, we need a formal semantics of K.
+In K, users can define formal syntax and semantics of
+programming languages as K definitions, and automatically obtain
+parsers, interpreters, compilers, and various verification tools
+for their languages.
+Therefore K is a language-independent framework.</p>
+<p>Thanks to years of research in matching logic and reachability
+logic, we know that all K does can be nicely formalized as
+logic reasoning in matching logic.
+To give K a formal semantics, we only need to formally specify
+the underlying matching logic theories with which K does reasoning.
+In practice, these underlying theories are complex and often
+infinite, and it is tricky to specify infinite theories without
+a carefully designed formal specification language.
+And Kore is such a language.</p>
+<h2 id="structure-of-this-project">Structure of this project</h2>
+<p>The <a href="https://github.com/runtimeverification/haskell-backend/tree/master/docs" target="_blank" rel="noopener">docs</a> directory contains a collection of documents
+that describe the mathematical foundation of Kore and a BNF grammar
+that defines the syntax of Kore language. See
+<a href="https://github.com/runtimeverification/haskell-backend/blob/master/docs/introduction.md" target="_blank" rel="noopener">/docs/introduction.md</a>
+for an overview of the components of Kore.</p>
+<p>The <code>kore</code> project is an implementation in Haskell of a Kore parser and symbolic execution engine,
+for use with the <a href="https://github.com/runtimeverification/k" target="_blank" rel="noopener">K Framework</a> as a backend.</p>
+<h2 id="building">Building</h2>
+<p>Besides <a href="https://git-scm.com/" target="_blank" rel="noopener">git</a>, you will need <a href="https://www.haskellstack.org/" target="_blank" rel="noopener">stack</a> or <a href="https://haskell.org/cabal" target="_blank" rel="noopener">cabal</a> to build <code>kore</code>.</p>
+<pre class="language-text"><code>stack build kore
+# or
+cabal build kore
+</code></pre>
+<p>If using <code>cabal</code>, version 3.0 or later is recommended.</p>
+<p>Using <a href="https://www.gnu.org/software/make/" target="_blank" rel="noopener">make</a>:</p>
+<pre class="language-text"><code>make all # builds all binaries
+</code></pre>
+<h3 id="macos">macOS</h3>
+<p>Currently, LLVM 13 from Homebrew installs an incompatible version of
+<code>install_name_tool</code>, which breaks the Haskell backend build on macOS. To resolve
+this, uninstall <code>llvm</code> and install <code>llvm@12</code> from Homebrew, then build from
+scratch.</p>
+<h4 id="apple-silicon">Apple Silicon</h4>
+<p>If you are building the project on an Apple Silicon machine, a temporary
+workaround is necessary to install a new enough version of GHC with support for
+ARM64 Darwin. To do so, follow the instructions in <a href="https://github.com/commercialhaskell/stack/pull/5562#issuecomment-913015550" target="_blank" rel="noopener">this
+comment</a>.
+The command-line flags for <code>stack</code> should then be specified <em>everywhere</em> an
+execution of <code>stack</code> is required. For <code>make</code> invocations in this project, set
+the environment variable <code>STACK_BUILD_OPTS=--compiler ghc-8.10.7 --system-ghc</code>.</p>
+<p>When <code>stack</code> and <code>ghc</code> merge their full support for ARM64 Darwin in future
+releases, it should be possible to remove this workaround.</p>
+<h2 id="developing">Developing</h2>
+<p>Developers will require all the dependencies listed above,
+in addition to the requirements and recommendations below.</p>
+<h3 id="required-dependencies">Required dependencies</h3>
+<p>For integration testing, we require:</p>
+<ul>
+<li>GNU <a href="https://www.gnu.org/software/make/" target="_blank" rel="noopener">make</a></li>
+<li>The <a href="https://github.com/runtimeverification/k" target="_blank" rel="noopener">K Framework</a> frontend.</li>
+</ul>
+<p>Instead of installing the frontend, you can use our <code>Dockerfile</code>
+to run the integration tests inside a container.
+Use <code>docker.sh</code> to run commands inside the container:</p>
+<pre class="language-text"><code>./docker/build.sh  # run once when dependencies change
+./docker/run.sh make all  # build the backend
+./docker/run.sh make test  # run all tests
+./docker/run.sh make -C test/imp test  # run all tests in test/imp
+</code></pre>
+<h3 id="recommended-dependencies">Recommended dependencies</h3>
+<p>For setting up a development environment, we recommend:</p>
+<ul>
+<li><a href="https://github.com/direnv/direnv" target="_blank" rel="noopener">direnv</a> to make the project&apos;s tools available in shells and editors.</li>
+<li><a href="https://github.com/haskell/haskell-language-server" target="_blank" rel="noopener">haskell-language-server</a>, a <a href="https://langserver.org/" target="_blank" rel="noopener">language server</a> for Haskell that is compatible
+with most editors. See instructions <a href="#running-a-language-server">below</a> to run
+a language server.</li>
+<li><a href="https://github.com/ndmitchell/hlint" target="_blank" rel="noopener">hlint</a> for compliance with project guidelines.</li>
+<li><a href="https://github.com/eradman/entr" target="_blank" rel="noopener">entr</a> and <a href="https://github.com/sharkdp/fd" target="_blank" rel="noopener">fd</a> for running <code>./entr.sh</code> to keep important files up-to-date.</li>
+</ul>
+<p>We recommend to keep <code>./entr.sh</code> running in the background
+to keep important files (such as package descriptions) up-to-date,
+especially if the developer is using Cabal.</p>
+<h3 id="running-a-language-server">Running a language server</h3>
+<p>To run a language server, developers will need to activate the appropriate
+<code>hie.yaml</code> file:</p>
+<pre class="language-text"><code>ln -s hie-stack.yaml hie.yaml  # for Stack
+# or
+ln -s hie-cabal.yaml hie.yaml  # for Cabal
+# or
+ln -s hie-bios.yaml hie.yaml  # if all else fails
+</code></pre>
+<p>The project&apos;s dependencies must be installed before starting the language
+server:</p>
+<pre class="language-text"><code>stack build --test --bench --only-dependencies
+# or
+cabal build --enable-tests --enable-benchmarks --only-dependencies kore
+</code></pre>
+<h3 id="developing-with-nix">Developing with Nix</h3>
+<p>We provide a <code>shell.nix</code> expression with a suitable development environment and
+a binary cache at <a href="https://runtimeverification.cachix.org/" target="_blank" rel="noopener">runtimeverification.cachix.org</a>. The development environment is intended to
+be used with <code>nix-shell</code> and <code>cabal</code>.</p>
+<p>When the <code>.cabal</code> package description file changes, run:</p>
+<pre class="language-text"><code># Requires Nix to be installed.
+./nix/rematerialize.sh
+</code></pre>
+<p>This script is also run by an automatic workflow.</p>
+<p>We provide a <code>test.nix</code> for running integration tests:</p>
+<pre class="language-text"><code>nix-build test.nix  # run all integration tests
+nix-build test.nix --argstr test imp  # run the integration tests in test/imp
+nix-shell test.nix  # enter a shell where we can run tests manually
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#the-kore-language" class="bd-toc-link">The Kore Language</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#what-is-kore-all-about%3F"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                What is Kore all about?
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#structure-of-this-project"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Structure of this project
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#building" class="bd-toc-link">Building</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#macos" class="bd-toc-link">macOS</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#apple-silicon"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Apple Silicon
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#developing" class="bd-toc-link">Developing</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#required-dependencies"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Required dependencies
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#recommended-dependencies"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Recommended dependencies
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#running-a-language-server"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Running a language server
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#developing-with-nix"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Developing with Nix
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="./assets/js/index.js"></script>
+  </body>
+</html>
