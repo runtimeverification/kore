@@ -1,9 +1,0 @@
-<T>
-  <k>
-    a ~> .
-  </k>
-  <s1>
-    SetItem ( b )
-    SetItem ( c )
-  </s1>
-</T>
