@@ -1,1 +1,0 @@
-checkInterval(1, 3, interval(1, 3))
