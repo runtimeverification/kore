@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="json-rpc-server-api">JSON RPC Server API</h1>
+<p>This document details the API and working of the <code>kore-rpc</code> executable. This binary has a similar CLI interface to <code>kore-exec</code> and running</p>
+<pre class="language-bash"><code>kore-rpc <span class="token operator">&lt;</span>DEFINITION<span class="token operator">&gt;</span>.kore --module <span class="token operator">&lt;</span>MODULE<span class="token operator">&gt;</span> --server-port <span class="token operator">&lt;</span>PORT<span class="token operator">&gt;</span>
+</code></pre>
+<p>will parse the <code>&lt;DEFINITION&gt;.kore</code> file with <code>&lt;MODULE&gt;</code> as the main module and then launch a JSON RPC server on port <code>&lt;PORT&gt;</code>.</p>
+<p>The server runs over sockets and can be interacted with by sending JSON RPC messages. Note that the server listens over raw sockets and doesn&apos;t use a high(er)-level protocol like HTTP. The server sends responses as single line strings, with <code>\n</code> used as the message delimiter. The server allows for bidirectional communication and once opened, a socket connection can be maintained throughout the session. However, this is not strictly necessary as all the API functions (except for <code>cancel</code>) are pure. Also note that the server uses the <code>id</code> of the request message as the <code>id</code> of the response, which allows the client to link responses back to their requests. It is therefore important to always send a unique <code>id</code> with each request witin the current socket session.</p>
+<h1 id="api">API</h1>
+<h2 id="execute">Execute</h2>
+<h3 id="request%3A">Request:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;method&quot;</span><span class="token operator">:</span> <span class="token string">&quot;execute&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;params&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;max-depth&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;cut-point-rules&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;rule1&quot;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;terminal-rules&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;ruleFoo&quot;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Optional parameters: <code>max-depth</code>, <code>cut-point-rules</code>, <code>terminal-rules</code></p>
+<p><em>Note: <code>id</code> can be an int or a string and each message must have a new <code>id</code>. The response objects have the same id as the message.</em></p>
+<h3 id="error-response%3A">Error Response:</h3>
+<p>If the message is malformed, e.g. the state is not serialized properly, the server will return</p>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;data&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;max-depth&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;cut-point-rules&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;rule1&quot;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;terminal-rules&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;ruleFoo&quot;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;code&quot;</span><span class="token operator">:</span> <span class="token number">-32602</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;message&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Invalid params&quot;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>If the verification of the <code>state</code> pattern fails, the following error is returned:</p>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;data&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;context&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+          <span class="token string">&quot;symbol or alias \&apos;Lbl\&apos;-LT-\&apos;generatedTop\&apos;-GT-\&apos;\&apos; (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;symbol or alias \&apos;Lbl\&apos;-LT-\&apos;k\&apos;-GT-\&apos;\&apos; (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;symbol or alias \&apos;kseq\&apos; (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;symbol or alias \&apos;inj\&apos; (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;symbol or alias \&apos;Lbl\&apos;UndsUndsUnds\&apos;TESTFOO-SYNTAX\&apos;Unds\&apos;Stmt\&apos;Unds\&apos;Stmt\&apos;Unds\&apos;Stmt\&apos; (&lt;unknown location&gt;)&quot;</span>
+      <span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Head \&apos;Lbl\&apos;UndsUndsUnds\&apos;TESTFOO-SYNTAX\&apos;Unds\&apos;Stmt\&apos;Unds\&apos;Stmt\&apos;Unds\&apos;Stmt\&apos; not defined.&quot;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;code&quot;</span><span class="token operator">:</span> <span class="token number">-32002</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;message&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Could not verify KORE pattern&quot;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="correct-response%3A">Correct Response:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;result&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;states&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span><span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;depth&quot;</span><span class="token operator">:</span> <span class="token number">1</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;reason&quot;</span><span class="token operator">:</span> <span class="token string">&quot;final-state&quot;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>The above will be also be the same for:</p>
+<ul>
+<li><code>&quot;reason&quot;: &quot;stuck&quot;</code></li>
+<li><code>&quot;reason&quot;: &quot;depth-bound&quot;</code></li>
+<li><code>&quot;reason&quot;: &quot;cut-point-rule&quot;</code></li>
+<li><code>&quot;reason&quot;: &quot;terminal-rule&quot;</code></li>
+</ul>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;result&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;states&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;depth&quot;</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;condition&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+          <span class="token property">&quot;substitution&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+          <span class="token property">&quot;predicate&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">{</span>
+        <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;depth&quot;</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;condition&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+          <span class="token property">&quot;substitution&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+          <span class="token property">&quot;predicate&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;reason&quot;</span><span class="token operator">:</span> <span class="token string">&quot;branching&quot;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2 id="implies">Implies</h2>
+<h3 id="request%3A-1">Request:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;method&quot;</span><span class="token operator">:</span> <span class="token string">&quot;implies&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;params&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;antecedent&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;consequent&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="error-response%3A-1">Error Response:</h3>
+<p>Same as for execute</p>
+<h3 id="correct-response%3A-1">Correct Response:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;result&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;satisfiable&quot;</span><span class="token operator">:</span> <span class="token boolean">false</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;result&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;satisfiable&quot;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;condition&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;substitution&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;predicate&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2 id="simplify">Simplify</h2>
+<h3 id="request%3A-2">Request:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;method&quot;</span><span class="token operator">:</span> <span class="token string">&quot;simplify&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;params&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="error-response%3A-2">Error Response:</h3>
+<p>Same as for execute</p>
+<h3 id="correct-response%3A-2">Correct Response:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;result&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;state&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token property">&quot;format&quot;</span><span class="token operator">:</span> <span class="token string">&quot;KORE&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;version&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">&quot;term&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2 id="cancel">Cancel</h2>
+<h3 id="request%3A-3">Request:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span><span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;method&quot;</span><span class="token operator">:</span> <span class="token string">&quot;cancel&quot;</span><span class="token punctuation">}</span>
+</code></pre>
+<h3 id="response%3A">Response:</h3>
+<p>none</p>
+<h3 id="response-from-cancelled-call%3A">Response from cancelled call:</h3>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;code&quot;</span><span class="token operator">:</span> <span class="token number">-32000</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;message&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Request cancelled&quot;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h1 id="api-error-codes">API Error codes</h1>
+<p>The server uses the JSON RPC spec way of returning errors. Namely, the returned object will be of the form</p>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span> 
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;code&quot;</span><span class="token operator">:</span> <span class="token number">-32002</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;message&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Could not verify KORE pattern&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;data&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>The kore-rpc specific error messages will use error codes in the range -32000 to -32099 and are listed for individual calles above as well as collected below for convenience.</p>
+<h2 id="-32001-cancel-request-unsupported-in-batch-mode">-32001 Cancel request unsupported in batch mode</h2>
+<p>Due tot he way that cancel is implemented, we do not allow a cancel message within batch mode. This message should never occur if batch mode is not used.</p>
+<h2 id="-32002-could-not-verify-kore-pattern">-32002 Could not verify KORE pattern</h2>
+<p>This error wraps the internal error thrown when validating the received pattern agains the loaded definition file.</p>
+<pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;jsonrpc&quot;</span><span class="token operator">:</span> <span class="token string">&quot;2.0&quot;</span><span class="token punctuation">,</span> 
+  <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+  <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;code&quot;</span><span class="token operator">:</span> <span class="token number">-32002</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;message&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Could not verify KORE pattern&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;data&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;context&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;\\top (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;sort &apos;IntSort&apos; (&lt;unknown location&gt;)&quot;</span><span class="token punctuation">,</span><span class="token string">&quot;(&lt;unknown location&gt;)&quot;</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;error&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Sort &apos;IntSort&apos; not defined.&quot;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#json-rpc-server-api"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                JSON RPC Server API
+              </a></div><details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#api" class="bd-toc-link">API</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#execute" class="bd-toc-link">Execute</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#request%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Request:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#error-response%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Error Response:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#correct-response%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Correct Response:
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#implies" class="bd-toc-link">Implies</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#request%3A-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Request:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#error-response%3A-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Error Response:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#correct-response%3A-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Correct Response:
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#simplify" class="bd-toc-link">Simplify</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#request%3A-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Request:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#error-response%3A-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Error Response:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#correct-response%3A-2"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Correct Response:
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#cancel" class="bd-toc-link">Cancel</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#request%3A-3"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Request:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#response%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Response:
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#response-from-cancelled-call%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Response from cancelled call:
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#api-error-codes" class="bd-toc-link">API Error codes</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#-32001-cancel-request-unsupported-in-batch-mode"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                -32001 Cancel request unsupported in batch mode
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#-32002-could-not-verify-kore-pattern"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                -32002 Could not verify KORE pattern
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
