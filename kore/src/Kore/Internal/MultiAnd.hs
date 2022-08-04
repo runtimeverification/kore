@@ -25,11 +25,12 @@ module Kore.Internal.MultiAnd (
 ) where
 
 import Data.Functor.Foldable qualified as Recursive
-import Data.HashSet(HashSet)
-import qualified Data.HashSet as HashSet
+import Data.HashSet (HashSet)
+import Data.HashSet qualified as HashSet
 import Data.List (genericLength)
 import Data.Traversable qualified as Traversable
 import Debug
+
 -- import GHC.Exts qualified as GHC
 import GHC.Generics qualified as GHC
 import GHC.Natural (Natural)
@@ -73,9 +74,10 @@ A non-empty 'MultiAnd' would also have a nice symmetry between 'Top' and
 'Bottom' patterns.
 -}
 
-data MultiAnd child = MultiAndTop
-                    | MultiAndBottom child
-                    | MultiAnd (HashSet child)
+data MultiAnd child
+    = MultiAndTop
+    | MultiAndBottom child
+    | MultiAnd (HashSet child)
     deriving stock (Eq, Ord, Show, Foldable)
     deriving stock (GHC.Generic)
     deriving anyclass (Hashable, NFData)
@@ -121,11 +123,9 @@ instance
 top :: MultiAnd term
 top = MultiAndTop
 
-
 {- |Does a very simple attempt to check whether a pattern
 is top or bottom.
 -}
-
 patternToMaybeBool ::
     TopBottom term =>
     term ->
@@ -134,7 +134,6 @@ patternToMaybeBool patt
     | isTop patt = Just True
     | isBottom patt = Just False
     | otherwise = Nothing
-
 
 -- | 'make' constructs a normalized 'MultiAnd'.
 singleton :: (Hashable term, Eq term, TopBottom term) => term -> MultiAnd term
@@ -163,11 +162,11 @@ a logical sense.
 make :: (Hashable term, Eq term, TopBottom term) => [term] -> MultiAnd term
 make = foldAndPatterns . HashSet.fromList
 
-
 {- | 'foldAndPatterns' simplifies a set of children according to the `patternToMaybeBool`
 function which evaluates to true/false/unknown.
 -}
-foldAndPatterns :: (Hashable child, Eq child, TopBottom child) =>
+foldAndPatterns ::
+    (Hashable child, Eq child, TopBottom child) =>
     HashSet child ->
     MultiAnd child
 foldAndPatterns patts = HashSet.foldr go mempty patts
