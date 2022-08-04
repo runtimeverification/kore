@@ -1345,7 +1345,8 @@ fromMultiAnd predicates =
         _ -> foldr1 makeAndPredicate predicates
 
 toMultiAnd ::
-    Ord variable =>
+    Hashable variable =>
+    Eq variable =>
     Predicate variable ->
     MultiAnd (Predicate variable)
 toMultiAnd = MultiAnd.make . getMultiAndPredicate

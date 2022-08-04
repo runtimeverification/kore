@@ -128,7 +128,8 @@ children of the 'Pattern' are considered simplified if the 'term' and
 simplified.
 -}
 hasSimplifiedChildren ::
-    Ord variable =>
+    Hashable variable =>
+    Eq variable =>
     SideCondition.Representation ->
     Pattern variable ->
     Bool
@@ -144,7 +145,8 @@ hasSimplifiedChildren sideCondition patt =
 used to simplify the children.
 -}
 hasSimplifiedChildrenIgnoreConditions ::
-    Ord variable =>
+    Hashable variable =>
+    Eq variable =>
     Pattern variable ->
     Bool
 hasSimplifiedChildrenIgnoreConditions patt =

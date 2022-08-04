@@ -259,7 +259,8 @@ assumeTrue assumedTrue =
  Does not modify the replacement table or the set of defined terms.
 -}
 addAssumption ::
-    Ord variable =>
+    Hashable variable =>
+    Eq variable =>
     Predicate variable ->
     SideCondition variable ->
     SideCondition variable
@@ -271,7 +272,8 @@ addAssumption predicate =
  Does not modify the replacement table or the set of defined terms.
 -}
 addAssumptions ::
-    Ord variable =>
+    Hashable variable =>
+    Eq variable =>
     MultiAnd (Predicate variable) ->
     SideCondition variable ->
     SideCondition variable

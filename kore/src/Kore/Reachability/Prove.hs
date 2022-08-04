@@ -166,6 +166,7 @@ newtype AlreadyProven = AlreadyProven {getAlreadyProven :: [Text]}
 newtype StuckClaim = StuckClaim {getStuckClaim :: SomeClaim}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (NFData, Hashable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

@@ -25,11 +25,12 @@ module Kore.Internal.MultiAnd (
 ) where
 
 import Data.Functor.Foldable qualified as Recursive
+import Data.HashSet(HashSet)
+import qualified Data.HashSet as HashSet
 import Data.List (genericLength)
-import Data.Set qualified as Set
 import Data.Traversable qualified as Traversable
 import Debug
-import GHC.Exts qualified as GHC
+-- import GHC.Exts qualified as GHC
 import GHC.Generics qualified as GHC
 import GHC.Natural (Natural)
 import Generics.SOP qualified as SOP
@@ -71,18 +72,19 @@ which should preserve pattern sorts.
 A non-empty 'MultiAnd' would also have a nice symmetry between 'Top' and
 'Bottom' patterns.
 -}
-newtype MultiAnd child = MultiAnd {getMultiAnd :: [child]}
-    deriving stock (Eq, Ord, Show)
+
+data MultiAnd child = MultiAndTop
+                    | MultiAndBottom child
+                    | MultiAnd (HashSet child)
+    deriving stock (Eq, Ord, Show, Foldable)
     deriving stock (GHC.Generic)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
-    deriving newtype (GHC.IsList)
-    deriving newtype (Foldable)
 
-instance TopBottom child => TopBottom (MultiAnd child) where
-    isTop (MultiAnd []) = True
+instance TopBottom (MultiAnd child) where
+    isTop MultiAndTop = True
     isTop _ = False
-    isBottom (MultiAnd [child]) = isBottom child
+    isBottom (MultiAndBottom _) = True
     isBottom _ = False
 
 instance
@@ -96,16 +98,18 @@ instance Debug child => Debug (MultiAnd child)
 instance (Debug child, Diff child) => Diff (MultiAnd child)
 
 instance Pretty child => Pretty (MultiAnd child) where
-    pretty = unparseAssoc' "\\and{_}" "\\top{_}()" . (<$>) pretty . getMultiAnd
+    pretty = unparseAssoc' "\\and{_}" "\\top{_}()" . (<$>) pretty . toList
     {-# INLINE pretty #-}
 
-instance (Ord child, TopBottom child) => Semigroup (MultiAnd child) where
-    (MultiAnd []) <> b = b
-    a <> (MultiAnd []) = a
-    (MultiAnd a) <> (MultiAnd b) = make (a <> b)
+instance (Hashable child, Eq child) => Semigroup (MultiAnd child) where
+    MultiAndTop <> b = b
+    a <> MultiAndTop = a
+    a@(MultiAndBottom _) <> _ = a
+    _ <> b@(MultiAndBottom _) = b
+    (MultiAnd a) <> (MultiAnd b) = MultiAnd (a <> b)
 
-instance (Ord child, TopBottom child) => Monoid (MultiAnd child) where
-    mempty = make []
+instance (Hashable child, Eq child) => Monoid (MultiAnd child) where
+    mempty = MultiAndTop
 
 instance
     InternalVariable variable =>
@@ -115,57 +119,35 @@ instance
     {-# INLINE from #-}
 
 top :: MultiAnd term
-top = MultiAnd []
+top = MultiAndTop
 
-{- | 'AndBool' is an some sort of Bool data type used when evaluating things
-inside a 'MultiAnd'.
--}
-
--- TODO(virgil): Refactor, this is the same as OrBool. Make it a
--- Top | Bottom | Other or a Maybe Bool.
-data AndBool = AndTrue | AndFalse | AndUnknown
 
 {- |Does a very simple attempt to check whether a pattern
 is top or bottom.
 -}
 
--- TODO(virgil): Refactor, this is the same as patternToOrBool
-patternToAndBool ::
+patternToMaybeBool ::
     TopBottom term =>
     term ->
-    AndBool
-patternToAndBool patt
-    | isTop patt = AndTrue
-    | isBottom patt = AndFalse
-    | otherwise = AndUnknown
+    Maybe Bool
+patternToMaybeBool patt
+    | isTop patt = Just True
+    | isBottom patt = Just False
+    | otherwise = Nothing
+
 
 -- | 'make' constructs a normalized 'MultiAnd'.
-make :: (Ord term, TopBottom term) => [term] -> MultiAnd term
-make patts = filterAnd (MultiAnd patts)
-
--- | 'make' constructs a normalized 'MultiAnd'.
-singleton :: (Ord term, TopBottom term) => term -> MultiAnd term
+singleton :: (Hashable term, Eq term, TopBottom term) => term -> MultiAnd term
 singleton term = make [term]
 
 size :: MultiAnd a -> Natural
-size (MultiAnd list) = genericLength list
+size = genericLength . toList
 
 {- | Simplify the conjunction.
 
 The arguments are simplified by filtering on @\\top@ and @\\bottom@. The
 idempotency property of conjunction (@\\and(φ,φ)=φ@) is applied to remove
 duplicated items from the result.
-
-See also: 'filterUnique'
--}
-filterAnd ::
-    (Ord term, TopBottom term) =>
-    MultiAnd term ->
-    MultiAnd term
-filterAnd =
-    filterGeneric patternToAndBool . filterUnique
-
-{- | Simplify the conjunction by eliminating duplicate elements.
 
 The idempotency property of conjunction (@\\and(φ,φ)=φ@) is applied to remove
 duplicated items from the result.
@@ -176,30 +158,28 @@ included in the Ord instance, items containing @\\forall@ and
 @\\exists@ may be considered inequal although they are equivalent in
 a logical sense.
 -}
-filterUnique :: Ord a => MultiAnd a -> MultiAnd a
-filterUnique = MultiAnd . Set.toList . Set.fromList . getMultiAnd
 
-{- | 'filterGeneric' simplifies a MultiAnd according to a function which
-evaluates its children to true/false/unknown.
+-- | 'make' constructs a simplified/normalized 'MultiAnd'.
+make :: (Hashable term, Eq term, TopBottom term) => [term] -> MultiAnd term
+make = foldAndPatterns . HashSet.fromList
+
+
+{- | 'foldAndPatterns' simplifies a set of children according to the `patternToMaybeBool`
+function which evaluates to true/false/unknown.
 -}
-filterGeneric ::
-    (child -> AndBool) ->
-    MultiAnd child ->
+foldAndPatterns :: (Hashable child, Eq child, TopBottom child) =>
+    HashSet child ->
     MultiAnd child
-filterGeneric andFilter (MultiAnd patts) =
-    go andFilter [] patts
+foldAndPatterns patts = HashSet.foldr go mempty patts
   where
-    go ::
-        (child -> AndBool) ->
-        [child] ->
-        [child] ->
-        MultiAnd child
-    go _ filtered [] = MultiAnd (reverse filtered)
-    go filterAnd' filtered (element : unfiltered) =
-        case filterAnd' element of
-            AndFalse -> MultiAnd [element]
-            AndTrue -> go filterAnd' filtered unfiltered
-            AndUnknown -> go filterAnd' (element : filtered) unfiltered
+    go element mand =
+        case patternToMaybeBool element of
+            Just False -> MultiAndBottom element
+            Just True -> mand
+            Nothing -> case mand of
+                MultiAnd es -> MultiAnd $ HashSet.insert element es
+                MultiAndTop -> MultiAnd $ HashSet.singleton element
+                bottom -> bottom
 
 fromTermLike ::
     InternalVariable variable =>
@@ -211,7 +191,8 @@ fromTermLike termLike =
         _ -> make [termLike]
 
 map ::
-    Ord child2 =>
+    Hashable child2 =>
+    Eq child2 =>
     TopBottom child2 =>
     (child1 -> child2) ->
     MultiAnd child1 ->
@@ -220,7 +201,8 @@ map f = make . fmap f . toList
 {-# INLINE map #-}
 
 traverse ::
-    Ord child2 =>
+    Hashable child2 =>
+    Eq child2 =>
     TopBottom child2 =>
     Applicative f =>
     (child1 -> f child2) ->
@@ -230,6 +212,7 @@ traverse f = fmap make . Traversable.traverse f . toList
 {-# INLINE traverse #-}
 
 distributeAnd ::
+    Hashable term =>
     Ord term =>
     TopBottom term =>
     MultiAnd (MultiOr term) ->
@@ -239,6 +222,7 @@ distributeAnd multiAnd =
 {-# INLINE distributeAnd #-}
 
 traverseOr ::
+    Hashable child2 =>
     Ord child2 =>
     TopBottom child2 =>
     Applicative f =>
@@ -249,8 +233,9 @@ traverseOr f = fmap distributeAnd . traverse f
 {-# INLINE traverseOr #-}
 
 traverseOrAnd ::
+    Hashable child2 =>
     Ord child2 =>
-    TopBottom child2 =>
+    -- TopBottom child2 =>
     Applicative f =>
     (child1 -> f (MultiOr (MultiAnd child2))) ->
     MultiOr (MultiAnd child1) ->

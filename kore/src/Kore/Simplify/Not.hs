@@ -178,7 +178,7 @@ makeTermNot term
 
 -- | Distribute 'Not' over 'MultiOr' using de Morgan's identity.
 distributeNot ::
-    (Ord sort, Ord child, TopBottom child) =>
+    (Hashable sort, Eq sort, Hashable child, Eq child, TopBottom child) =>
     Not sort (MultiOr child) ->
     MultiAnd (Not sort child)
 distributeNot notOr@Not{notChild} =
@@ -188,6 +188,7 @@ distributeNot notOr@Not{notChild} =
 
 -- | Distribute 'MultiAnd' over 'MultiOr' and 'scatter' into 'LogicT'.
 scatterAnd ::
+    Hashable child =>
     Ord child =>
     TopBottom child =>
     MultiAnd (MultiOr child) ->
