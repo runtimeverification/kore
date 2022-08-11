@@ -20,9 +20,6 @@ import Control.Error (
 import Control.Monad (
     (>=>),
  )
-import Control.Monad.Except (
-    catchError,
- )
 import Data.Map.Strict (
     Map,
  )
@@ -101,7 +98,6 @@ equation is actually used; @attemptEquation@ will only log when an equation is
 applicable.
 -}
 attemptEquation ::
-    HasCallStack =>
     SideCondition RewritingVariableName ->
     TermLike RewritingVariableName ->
     Equation RewritingVariableName ->
@@ -114,8 +110,8 @@ attemptEquation sideCondition termLike equation = do
   where
     attemptEquationWorker =
         whileDebugAttemptEquation' . runExceptT $ do
-            let Equation{left, argument, antiLeft} = equationRenamed
-            (equation', predicate) <- matchAndApplyResults left argument antiLeft
+            let Equation{left} = equationRenamed
+            (equation', predicate) <- matchAndApplyResults left
             let Equation{requires} = equation'
             checkRequires sideCondition predicate requires & whileCheckRequires
             let Equation{right, ensures} = equation'
@@ -132,43 +128,10 @@ attemptEquation sideCondition termLike equation = do
             & MaybeT
             & noteT matchError
 
-    matchAndApplyResults left' argument' antiLeft'
-        | isNothing argument'
-          , isNothing antiLeft' = do
-            matchResult <- match left' termLike & whileMatch
-            applyMatchResult equationRenamed matchResult
-                & whileApplyMatchResult
-        | otherwise = do
-            (matchPredicate, matchSubstitution) <-
-                match left' termLike
-                    & whileMatch
-            matchResults <-
-                applySubstitutionAndSimplify
-                    argument'
-                    antiLeft'
-                    matchSubstitution
-                    & whileMatch
-            (equation', predicate) <-
-                applyAndSelectMatchResult matchResults
-            return
-                ( equation'
-                , makeAndPredicate predicate matchPredicate
-                )
-
-    applyAndSelectMatchResult ::
-        [MatchResult RewritingVariableName] ->
-        ExceptT
-            (AttemptEquationError RewritingVariableName)
-            Simplifier
-            (Equation RewritingVariableName, Predicate RewritingVariableName)
-    applyAndSelectMatchResult [] =
-        throwE (WhileMatch matchError)
-    applyAndSelectMatchResult results =
-        whileApplyMatchResult $
-            foldr1
-                takeFirstSuccess
-                (applyMatchResult equationRenamed <$> results)
-    takeFirstSuccess first second = catchError first (const second)
+    matchAndApplyResults left' = do
+        matchResult <- match left' termLike & whileMatch
+        applyMatchResult equationRenamed matchResult
+            & whileApplyMatchResult
 
     whileDebugAttemptEquation' ::
         Simplifier (AttemptEquationResult RewritingVariableName) ->
