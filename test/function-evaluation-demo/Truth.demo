@@ -1,1 +1,0 @@
-divides(Succ(Succ(Zero)), Succ(Succ(Succ(Succ(Zero)))))
