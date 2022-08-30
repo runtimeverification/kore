@@ -582,12 +582,14 @@ anyway.
 -}
 checkImplicationWorker ::
     forall m.
-    (MonadLogic m, MonadSimplify m) =>
+    (MonadIO m, MonadLogic m, MonadSimplify m) =>
     ClaimPattern ->
     m (CheckImplicationResult ClaimPattern)
 checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     do
+        marker "StartCheck"
         (anyUnified, removal) <- getNegativeConjuncts
+        marker "CouldUnify"
         let definedConfig =
                 Pattern.andCondition left $
                     from $ makeCeilPredicate leftTerm
@@ -595,11 +597,15 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
         stuck <-
             Logic.scatter configs'
                 >>= Pattern.simplify
-                >>= liftSimplifier . SMT.Evaluator.filterMultiOr
+                >>= (marker "ReadyToRefute" *>) .
+                    liftSimplifier . SMT.Evaluator.filterMultiOr
                 >>= Logic.scatter
+        marker "CouldNotRefute"
         examine anyUnified stuck
         & elseImplied
   where
+    marker tag = liftIO . traceMarkerIO $ concat ["check-implication:", tag, ":"]
+
     ClaimPattern{right, left, existentials} = claimPattern
     leftTerm = Pattern.term left
     sort = termLikeSort leftTerm
@@ -649,7 +655,11 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     didUnify :: MonadState AnyUnified state => state ()
     didUnify = State.put (AnyUnified True)
 
-    elseImplied acts = Logic.ifte acts pure (pure $ Implied claimPattern)
+    elseImplied acts =
+        Logic.ifte
+            acts
+            (\result -> marker "NotImplied" *> pure result)
+            (marker "Implied" >> pure (Implied claimPattern))
 
     examine ::
         AnyUnified ->

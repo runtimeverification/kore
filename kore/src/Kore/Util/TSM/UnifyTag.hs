@@ -46,6 +46,7 @@ Rules -> Rule
 -}
 module Kore.Util.TSM.UnifyTag (
     UnifyTag,
+    CheckImplTag,
 ) where
 
 import Data.Map.Strict qualified as Map
@@ -104,5 +105,56 @@ instance TimingStateMachine UnifyTag where
             , Success     --> Rule        $ "Success"
             , Success     --> EndRules    $ "Success"
             , EndRules    --> Rules       $ Text.empty -- technical edge, filtered out
+            ]
+{- ORMOLU_ENABLE -}
+
+{-
+State machine definition for tracing @'Kore.Reachability.Claim.checkImplicationWorker'@.
+
+StartCheck -----> Implied
+     |              A
+     V              |
+ CouldUnify -------/|
+     |              |
+     V              /
+ ReadyToRefute ----/
+     |
+     V
+ CouldNotRefute --> NotImplied
+-}
+
+data CheckImplTag
+    = -- | Starting to check an implication
+      StartCheck
+    | -- | Terms were unified
+      CouldUnify
+    | -- | (Part of) term to refute simplified and ready
+      ReadyToRefute
+    | -- | The SMT solver could not refute some of the terms
+      CouldNotRefute
+    | -- | Implication check failed
+      NotImplied
+    | -- | Check successful (no unification, or all conditions refuted)
+      Implied
+    deriving stock (Eq, Ord, Enum, Bounded, Show)
+
+{- ORMOLU_DISABLE -}
+-- since it destroys the alignment of transitionLabels
+instance TimingStateMachine CheckImplTag where
+    readTag t
+        | "check-implication" : tag : _rest <- Text.splitOn ":" t =
+            Map.lookup tag tagMap
+        | otherwise =
+            Nothing
+
+    transitionLabels =
+        Map.fromList
+            [ StartCheck     --> Implied        $ "Success (unifier)"
+            , StartCheck     --> CouldUnify     $ "Unifier found"
+            , CouldUnify     --> Implied        $ "Success (simplifier)"
+            , CouldUnify     --> ReadyToRefute  $ "Condition simplified"
+            , ReadyToRefute  --> Implied        $ "Success (SMT solver)"
+            , ReadyToRefute  --> CouldNotRefute $ "SMT: counterexample"
+            , CouldNotRefute --> NotImplied     $ "Examined"
             ]
 {- ORMOLU_ENABLE -}

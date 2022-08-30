@@ -3,7 +3,7 @@ module Main (main) where
 import Data.Proxy
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Kore.Util.TSM qualified as TSM
-import Kore.Util.TSM.UnifyTag (UnifyTag)
+import Kore.Util.TSM.UnifyTag (UnifyTag, CheckImplTag)
 import Options.Applicative as Options
 import Prelude.Kore
 import Speedscope.Main qualified as Speedscope
@@ -84,6 +84,7 @@ parseTSMMode =
 components :: [(String, FilePath -> IO String)]
 components =
     [ ("Unify", TSM.graphOf (Proxy @UnifyTag))
+    , ("CheckImplication", TSM.graphOf (Proxy @CheckImplTag))
     ]
 
 runTsm :: TSMOptions -> IO ()
