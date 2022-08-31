@@ -170,6 +170,7 @@ import Kore.Unification.UnifierT as UnifierT
 import Kore.Unparser (
     Unparse (..),
  )
+import Kore.Util.TSM.UnifyTag qualified as Tag (CheckImplTag(..))
 import Kore.Verified qualified as Verified
 import Logic qualified
 import Prelude.Kore
@@ -587,9 +588,9 @@ checkImplicationWorker ::
     m (CheckImplicationResult ClaimPattern)
 checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     do
-        marker "StartCheck"
+        marker Tag.StartCheck
         (anyUnified, removal) <- getNegativeConjuncts
-        marker "CouldUnify"
+        marker Tag.CouldUnify
         let definedConfig =
                 Pattern.andCondition left $
                     from $ makeCeilPredicate leftTerm
@@ -597,14 +598,14 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
         stuck <-
             Logic.scatter configs'
                 >>= Pattern.simplify
-                >>= (marker "ReadyToRefute" *>) .
+                >>= (marker Tag.ReadyToRefute *>) .
                     liftSimplifier . SMT.Evaluator.filterMultiOr
                 >>= Logic.scatter
-        marker "CouldNotRefute"
+        marker Tag.CouldNotRefute
         examine anyUnified stuck
         & elseImplied
   where
-    marker tag = liftIO . traceMarkerIO $ concat ["check-implication:", tag, ":"]
+    marker tag = liftIO . traceMarkerIO $ concat ["check-implication:", show tag, ":"]
 
     ClaimPattern{right, left, existentials} = claimPattern
     leftTerm = Pattern.term left
@@ -658,8 +659,8 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     elseImplied acts =
         Logic.ifte
             acts
-            (\result -> marker "NotImplied" *> pure result)
-            (marker "Implied" >> pure (Implied claimPattern))
+            (\result -> marker Tag.NotImplied *> pure result)
+            (marker Tag.Implied >> pure (Implied claimPattern))
 
     examine ::
         AnyUnified ->
