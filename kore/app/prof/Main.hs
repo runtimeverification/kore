@@ -3,7 +3,7 @@ module Main (main) where
 import Data.Proxy
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Kore.Util.TSM qualified as TSM
-import Kore.Util.TSM.UnifyTag (UnifyTag, CheckImplTag)
+import Kore.Util.TSM.UnifyTag (CheckImplTag, UnifyTag)
 import Options.Applicative as Options
 import Prelude.Kore
 import Speedscope.Main qualified as Speedscope

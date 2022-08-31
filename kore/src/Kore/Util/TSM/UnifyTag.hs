@@ -45,8 +45,8 @@ Rules -> Rule
     ---Success --> EndRules
 -}
 module Kore.Util.TSM.UnifyTag (
-    UnifyTag(..),
-    CheckImplTag(..),
+    UnifyTag (..),
+    CheckImplTag (..),
 ) where
 
 import Data.Map.Strict qualified as Map

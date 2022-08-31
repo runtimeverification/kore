@@ -170,7 +170,7 @@ import Kore.Unification.UnifierT as UnifierT
 import Kore.Unparser (
     Unparse (..),
  )
-import Kore.Util.TSM.UnifyTag qualified as Tag (CheckImplTag(..))
+import Kore.Util.TSM.UnifyTag qualified as Tag (CheckImplTag (..))
 import Kore.Verified qualified as Verified
 import Logic qualified
 import Prelude.Kore
@@ -587,39 +587,41 @@ checkImplicationWorker ::
     ClaimPattern ->
     m (CheckImplicationResult ClaimPattern)
 checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) = do
-      marker Tag.StartCheck
-      definedConfig <-
-            Pattern.simplify $
-                Pattern.fromCondition sort $
-                    leftCondition <> from (makeCeilPredicate leftTerm)
-      isTrivial <-
-            fmap isBottom $ (liftSimplifier . SMT.Evaluator.filterMultiOr) definedConfig
-      if isTrivial
-      then do
-       marker Tag.Implied
-       pure (Implied claimPattern)
-      else do
-       marker Tag.AttemptUnify
-       (anyUnified, removal) <- getNegativeConjuncts
-       -- since we have already checked definedConfig, abort if nothing was unified
-       if (not $ didAnyUnify anyUnified)
-       then do
-        marker Tag.NotImplied
-        if (isBottom right)
-        then warnClaimRHSIsBottom claimPattern >> pure (NotImpliedStuck claimPattern)
-        else pure (NotImplied claimPattern)
-       else do
-        marker Tag.BuiltToRefute
-        let configs' = MultiOr.map (OrPattern.toPattern sort definedConfig <*) removal
-        stuck <-
-            Logic.scatter configs'
-                >>= Pattern.simplify
-                >>= (marker Tag.ReadyToRefute *>) .
-                    liftSimplifier . SMT.Evaluator.filterMultiOr
-                >>= Logic.scatter
-        marker Tag.CouldNotRefute
-        examine anyUnified stuck
-        & elseImplied
+    marker Tag.StartCheck
+    definedConfig <-
+        Pattern.simplify $
+            Pattern.fromCondition sort $
+                leftCondition <> from (makeCeilPredicate leftTerm)
+    isTrivial <-
+        fmap isBottom $ (liftSimplifier . SMT.Evaluator.filterMultiOr) definedConfig
+    if isTrivial
+        then do
+            marker Tag.Implied
+            pure (Implied claimPattern)
+        else do
+            marker Tag.AttemptUnify
+            (anyUnified, removal) <- getNegativeConjuncts
+            -- since we have already checked definedConfig, abort if nothing was unified
+            if (not $ didAnyUnify anyUnified)
+                then do
+                    marker Tag.NotImplied
+                    if (isBottom right)
+                        then warnClaimRHSIsBottom claimPattern >> pure (NotImpliedStuck claimPattern)
+                        else pure (NotImplied claimPattern)
+                else
+                    do
+                        marker Tag.BuiltToRefute
+                        let configs' = MultiOr.map (OrPattern.toPattern sort definedConfig <*) removal
+                        stuck <-
+                            Logic.scatter configs'
+                                >>= Pattern.simplify
+                                >>= (marker Tag.ReadyToRefute *>)
+                                    . liftSimplifier
+                                    . SMT.Evaluator.filterMultiOr
+                                >>= Logic.scatter
+                        marker Tag.CouldNotRefute
+                        examine anyUnified stuck
+                        & elseImplied
   where
     marker tag = liftIO . traceMarkerIO $ concat ["check-implication:", show tag, ":"]
 
