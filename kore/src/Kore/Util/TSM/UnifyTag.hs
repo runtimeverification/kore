@@ -126,8 +126,12 @@ StartCheck -----> Implied
 data CheckImplTag
     = -- | Starting to check an implication
       StartCheck
+    | -- | Attempt to unify
+      AttemptUnify
     | -- | Terms were unified
       CouldUnify
+    | -- | The negated conjuncts were constructed
+      BuiltToRefute
     | -- | (Part of) term to refute simplified and ready
       ReadyToRefute
     | -- | The SMT solver could not refute some of the terms
@@ -149,12 +153,16 @@ instance TimingStateMachine CheckImplTag where
 
     transitionLabels =
         Map.fromList
-            [ StartCheck     --> Implied        $ "Success (unifier)"
-            , StartCheck     --> CouldUnify     $ "Unifier found"
+            [ StartCheck     --> AttemptUnify   $ "Starting"
+            , AttemptUnify   --> Implied        $ "Success (unifier)"
+            , AttemptUnify   --> CouldUnify     $ "Unifier found"
             , CouldUnify     --> Implied        $ "Success (simplifier)"
-            , CouldUnify     --> ReadyToRefute  $ "Condition simplified"
+            , CouldUnify     --> BuiltToRefute  $ "Negated conjunct built"
+            , BuiltToRefute  --> ReadyToRefute  $ "Conjunct simplified"
             , ReadyToRefute  --> Implied        $ "Success (SMT solver)"
             , ReadyToRefute  --> CouldNotRefute $ "SMT: counterexample"
             , CouldNotRefute --> NotImplied     $ "Examined"
+            , Implied        --> StartCheck     $ Text.empty -- starting over
+            , NotImplied     --> StartCheck     $ Text.empty -- starting over
             ]
 {- ORMOLU_ENABLE -}

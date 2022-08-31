@@ -590,7 +590,7 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     do
         marker Tag.StartCheck
         (anyUnified, removal) <- getNegativeConjuncts
-        marker Tag.CouldUnify
+        marker Tag.BuiltToRefute
         let definedConfig =
                 Pattern.andCondition left $
                     from $ makeCeilPredicate leftTerm
@@ -628,6 +628,7 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     getNegativeConjuncts :: m (AnyUnified, OrPattern RewritingVariableName)
     getNegativeConjuncts =
         do
+            marker Tag.AttemptUnify
             assertFunctionLikeConfiguration claimPattern
             right' <- Logic.scatter right
             let (rightTerm, rightCondition) = Pattern.splitTerm right'
@@ -637,6 +638,7 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
                     & Pattern.simplify
                     & (>>= Logic.scatter)
             didUnify
+            marker Tag.CouldUnify
             removed <-
                 Pattern.andCondition unified rightCondition
                     & Pattern.simplify
