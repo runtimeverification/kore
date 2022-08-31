@@ -114,7 +114,13 @@ State machine definition for tracing @'Kore.Reachability.Claim.checkImplicationW
 StartCheck -----> Implied
      |              A
      V              |
+ AttemptUnify -----/|
+     |              |
+     V              |
  CouldUnify -------/|
+     |              |
+     V              |
+ BuiltToRefute ----/|
      |              |
      V              /
  ReadyToRefute ----/
@@ -153,8 +159,10 @@ instance TimingStateMachine CheckImplTag where
 
     transitionLabels =
         Map.fromList
-            [ StartCheck     --> AttemptUnify   $ "Starting"
+            [ StartCheck     --> AttemptUnify   $ "Non-trivial"
+            , StartCheck     --> Implied        $ "Success (trivial)"
             , AttemptUnify   --> Implied        $ "Success (unifier)"
+            , AttemptUnify   --> NotImplied     $ "No unifier found"
             , AttemptUnify   --> CouldUnify     $ "Unifier found"
             , CouldUnify     --> Implied        $ "Success (simplifier)"
             , CouldUnify     --> BuiltToRefute  $ "Negated conjunct built"

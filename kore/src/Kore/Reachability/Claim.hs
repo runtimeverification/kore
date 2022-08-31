@@ -586,15 +586,31 @@ checkImplicationWorker ::
     (MonadIO m, MonadLogic m, MonadSimplify m) =>
     ClaimPattern ->
     m (CheckImplicationResult ClaimPattern)
-checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
-    do
-        marker Tag.StartCheck
-        (anyUnified, removal) <- getNegativeConjuncts
+checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) = do
+      marker Tag.StartCheck
+      definedConfig <-
+            Pattern.simplify $
+                Pattern.fromCondition sort $
+                    leftCondition <> from (makeCeilPredicate leftTerm)
+      isTrivial <-
+            fmap isBottom $ (liftSimplifier . SMT.Evaluator.filterMultiOr) definedConfig
+      if isTrivial
+      then do
+       marker Tag.Implied
+       pure (Implied claimPattern)
+      else do
+       marker Tag.AttemptUnify
+       (anyUnified, removal) <- getNegativeConjuncts
+       -- since we have already checked definedConfig, abort if nothing was unified
+       if (not $ didAnyUnify anyUnified)
+       then do
+        marker Tag.NotImplied
+        if (isBottom right)
+        then warnClaimRHSIsBottom claimPattern >> pure (NotImpliedStuck claimPattern)
+        else pure (NotImplied claimPattern)
+       else do
         marker Tag.BuiltToRefute
-        let definedConfig =
-                Pattern.andCondition left $
-                    from $ makeCeilPredicate leftTerm
-        let configs' = MultiOr.map (definedConfig <*) removal
+        let configs' = MultiOr.map (OrPattern.toPattern sort definedConfig <*) removal
         stuck <-
             Logic.scatter configs'
                 >>= Pattern.simplify
@@ -628,7 +644,6 @@ checkImplicationWorker (ClaimPattern.refreshExistentials -> claimPattern) =
     getNegativeConjuncts :: m (AnyUnified, OrPattern RewritingVariableName)
     getNegativeConjuncts =
         do
-            marker Tag.AttemptUnify
             assertFunctionLikeConfiguration claimPattern
             right' <- Logic.scatter right
             let (rightTerm, rightCondition) = Pattern.splitTerm right'
