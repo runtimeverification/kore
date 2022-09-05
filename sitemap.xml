@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://kframework.github.io/kore/</loc>
+    <priority>1.0</priority>
+    <lastmod>2022-09-05</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://kframework.github.io/kore/index.html</loc>
+    <priority>1.0</priority>
+    <lastmod>2022-09-05</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://kframework.github.io/kore/docs/manual/DEVELOPER_MANUAL/</loc>
+    <priority>1.0</priority>
+    <lastmod>2022-09-05</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+</urlset>
