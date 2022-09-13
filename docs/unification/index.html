@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="unification-(new)">Unification (new)</h1>
+<p>This document attempts to describe the proposed new unification algorithm. This
+is divided into two sections: the algorithm itself, and an appendix how to
+unify various types of terms.</p>
+<p>The algorithm is fairly straightforward: we construct a priority queue of pairs
+of terms representing subterms to be unified. The queue is initialized with the
+two top-level terms. We then repeatedly pop pairs of terms from the priority
+queue and process them. Each pair can result in one of five actions:</p>
+<ol>
+<li><em>Discharge</em> the pair if unification of these two terms succeeds
+unconditionally.</li>
+<li><em>Fail</em> the entire unification procedure if these two terms do not unify.</li>
+<li><em>Bind</em> a variable to a term.</li>
+<li><em>Decompose</em> the terms into one or more new pairs, adding them to the
+priority queue.</li>
+<li><em>Add a constraint</em> in the event that unification can only be solved
+partially.</li>
+<li><em>Add an AC equation</em> in the event that AC unification is required.</li>
+<li><em>Fork</em> the unification procedure if multiple distinct cases ought to be
+examined in parallel.</li>
+</ol>
+<p>Obviously because of <em>bind</em> and <em>constraint</em> operations, we must maintain a map
+binding variable names to terms and a list of constraints. The unifier also
+operates within a LogicT monad transformer in order to handle the <em>fork</em> case.</p>
+<p>After the priority queue is empty, we still need to solve the AC subproblems.
+This process is described in the Map section below. We solve each subproblem
+individually, which yields a disjunction of substitutions. However, when we
+have a solution for the free theory (i.e., the subproblem which consists of
+non-AC symbols), and a solution for each subproblem, we still need to combine
+them into a solution to the problem as a whole. We then use the theory
+combination algorithm (described below) to combine the AC solutions with the
+solutions for the free theory. This combination algorithm may introduce new
+equalities that need to be added to the priority queue, so we return to the
+previous step.</p>
+<p>Once we have no equalities in the priority queue and no AC subproblems to
+solve, if we did not fail anywhere, we are left with a final substitution,
+which contains both variables from the original terms being unified, and
+variables generated by AC unification. We substitute the bindings for the AC
+variables into the rest of the substitution, and return the bindings that were
+part of the original problem. This substitution then gets normalized, and the
+resulting normal substitution is the solution to unification. Note that we
+discuss this in the context of a single solution because disjunctions and
+multiple solutions are handled implicitly by the monad transformer. Each
+solution can succeed or fail on its own, and if no solutions succeed,
+unification fails entirely and returns \bottom.</p>
+<p>One detail not yet discussed concerns the ordering of pairs within the priority
+queue. Currently our implementation merely uses a stack. Eventually, we will
+want to order the processing of unificands so that the algorithm fails as
+quickly as possible on problems where it ought to fail.</p>
+<p>Below is the appendix dealing with how to process each type of pattern, as well
+as the details of theory combination.</p>
+<h2 id="aliases">Aliases</h2>
+<p>If either pattern is an alias, expand that alias and decompose with the
+expanded terms.</p>
+<h2 id="top-and-bottom">Top and Bottom</h2>
+<p>There are two cases; unifying an \and and unifying an \equals. In the case of
+an \and, if either term is \bottom, fail. Otherwise, if either term is \top,
+discharge. In the case of an \equals, if both terms are \bottom, or both terms
+are \top, discharge. If one term is \top and the other is \bottom, fail.
+Otherwise if one term is \bottom, attempt to simplify the \ceil of the other
+term. If it simplifies to \top, fail. If it simplifies to \bottom, discharge.
+Otherwise, constrain the solution with the negation of the simplified
+constraint.</p>
+<p>Other cases involving unifying \equals are handled as constraints by the
+fallback case.</p>
+<h2 id="and-and-or">And and Or</h2>
+<p>Here we only apply this case when unifying an \and. When unifying an \equals,
+the following simplification is not sound, so we should not apply it.</p>
+<p>However, when unifying <code>\and(p, q)</code> and <code>r</code> as an \and, decompose with two
+pairs: <code>p, r</code> and <code>q, r</code>. When unifying <code>\or(p, q)</code> and <code>r</code> as an \and, fork
+with two cases: decomposing with <code>p, r</code> and decomposing with <code>q, r</code>. This can
+be seen to be sound via distributivity.</p>
+<h2 id="constants">Constants</h2>
+<p>If both terms are \dv, and are equal, discharge.
+If they are unequal, fail</p>
+<h2 id="variables">Variables</h2>
+<p>If both terms are variables, consider the following cases:</p>
+<ul>
+<li>If both terms are the same variable A, discharge.</li>
+<li>Otherwise if one or both terms are bound variables bound to another variable,
+decompose with the binding of the bound variable and the other variable.</li>
+<li>Otherwise, both terms are either free variables or variables bound to
+non-variable patterns. If both terms are free variables, bind the lesser free
+variable to the greater free variable according to the normal order of
+variables.</li>
+<li>If one term is a free variable and the other is bound to a non-variable
+pattern, bind the free variable to the constructor.</li>
+<li>If both terms are variables bound to non-variable patterns, decompose with
+those patterns.</li>
+</ul>
+<p>If one term is a variable and the other is a function-like pattern (but not a
+variable), consider the following cases:</p>
+<ul>
+<li>If the variable is free, bind it to the pattern.</li>
+<li>If the variable is bound to a variable, bind the variable it is bound to to
+the pattern.</li>
+<li>If the variable is bound to a constructor, decompose with the constructor and
+the pattern.</li>
+</ul>
+<h2 id="constructors">Constructors</h2>
+<p>If the first term is an injective application and the second is the same
+symbol, decompose with each pair of children of each pattern.  If both terms
+are different constructors or overloaded symbols, fail.</p>
+<h2 id="injections">Injections</h2>
+<p>If both terms are <code>inj</code>, and you are unifying <code>inj{s1, s}(p1)</code> and
+<code>inj{s2, s}(p2)</code>:</p>
+<ul>
+<li>If s1 == s2, decompose with <code>p1</code> and <code>p2</code>.</li>
+<li>If s1 &lt; s2, decompose with <code>inj{s1, s2}(p1)</code> and <code>p2</code>.</li>
+<li>If s2 &lt; s1, symmetric of above</li>
+<li>otherwise, fail</li>
+</ul>
+<p>If one term is <code>inj</code> and the other is a constructor, fail.</p>
+<h2 id="overloading">Overloading</h2>
+<p>If one term is <code>inj{s1, s2}(p1)</code> where p1 is an overloaded application, and the
+other is <code>p2</code>, an overload of <code>p1</code>, or if both terms are injections applied
+to overloaded constructors, or if one term is an overloaded symbol and the
+other is an injection applied to a variable, or if one term is an injection
+applied to an overloaded symbol and the other is an injection applied to a
+variable, we handle these cases via the overload simplifier, which returns one
+of three cases:</p>
+<ul>
+<li>Clash: unification fails</li>
+<li>Simple resolution: decompose the two terms returned by the simplifier.</li>
+<li>Narrowing resolution: constrain the solution with the constraint returned by
+the simplifier and decompose the terms returned.</li>
+</ul>
+<p>If the preceding section does not apply, but one pattern is an injection and
+the other is an overloaded symbol, fail.</p>
+<h2 id="map">Map</h2>
+<p>If both patterns are of a map sort, we first normalize each map by categorizing
+each subterm according to one of three categories:</p>
+<ol>
+<li>Elements (symbolic and concrete)</li>
+<li>Variables (of map sort)</li>
+<li>Functions (of map sort other than <code>.Map</code>, <code>_Map_</code>, and <code>|-&gt;</code>)</li>
+</ol>
+<p>This process may yield the value \bottom for either map, in which case, fail.</p>
+<p>First, we remove all subterms present in both maps from each map.</p>
+<p>We then consider 2 cases:</p>
+<ol>
+<li>Either map still contains functions of map sort. In this case, constrain
+with an equality between the two maps.</li>
+<li>Both maps consist only of elements and variables. In this case, apply AC
+unification to the two maps.</li>
+</ol>
+<h3 id="ac-unification">AC Unification</h3>
+<p>First, we consider the following special cases:</p>
+<ul>
+<li>If both maps are empty, discharge.</li>
+<li>If one map has 0 elements and 1 variable, treat it as a variable pattern
+instead, and perform variable abstraction on the other pattern, then follow
+the procedure for AC binding.</li>
+<li>If both maps have 1 element and 0 variables, decompose with the keys and
+values.</li>
+<li>Otherwise, if one map is empty and the other has 0 elements, bind each
+variable of the other map to the empty map.</li>
+<li>Otherwise, if one map is empty (and the other has elements), fail.</li>
+<li>Otherwise, perform variable abstraction on the elements of both maps and
+decompose with the AC equation and free equations that result.</li>
+</ul>
+<h3 id="variable-abstraction">Variable Abstraction</h3>
+<p>Variable abstraction replaces each element in one or both map patterns with
+a new fresh variable and generates a free equality equating that variable with
+the element it corresponds to. After replacing all the elements in both map
+patterns, what is left is an equality that consists purely of map concatenation
+and variables, which is added to the AC equations to solve.</p>
+<h3 id="ac-binding">AC Binding</h3>
+<p>If one term is a variable X and the other is <code>_Map_(s1, ..., sn)</code> where si is a
+variable, we consider the following cases:</p>
+<ul>
+<li>If X is free, bind X to the other term.</li>
+<li>If X is bound to a variable, bind the variable it is bound to to the other
+term.</li>
+<li>Otherwise, add the AC equation between the binding of X and the other term to
+the AC equations to solve.</li>
+</ul>
+<h3 id="ac-subproblems">AC Subproblems</h3>
+<p>After the priority queue is empty, we are left with one AC subproblem per map
+or set sort. We then solve each one according to the following algorithm, which
+returns a list of disjunct solutions:</p>
+<p>First, we replace each variable with its binding in the substitution until this
+can no longer occur.</p>
+<p>We are left with a system of equations P == s1 = s1&apos; /\ ... /\ sp = sp&apos; where
+each si and si&apos; is of the form <code>_Map_(t1, ..., tk)</code> for some k &gt; 1 where each
+ti is a variable. We define u1, ..., un to be the unique variables in the
+system of equations, and associate each ui an integer variable xi. We say a
+variable xi is <em>constrained</em> if it came from a variable abstraction of a map
+element, and <em>unconstrained</em> otherwise. We then convert P into the following
+system of linear Diophantine equations:</p>
+<p>d(u1, t1=t1&apos;)x1 + ... + d(un, t1=t1&apos;)xn = 0
+.
+.
+.
+d(u1, tp = tp&apos;)x1 + ... + d(un, tp=tp&apos;)xn = 0</p>
+<p>Where d(ui, ti = ti&apos;) is the number of occurrences of ui in ti minus the number
+of occurrences of ui in ti&apos;.</p>
+<p>We then compute the set of positive, non-null, minimal solutions of this system
+of equations, called S, using an algorithm defined in
+&quot;Competing for the AC-Unification Race&quot; by Alexandre Boudet. Each solution Sj
+in S is one element of what we choose to call the <em>diophantine basis</em> of P.
+It is called a basis because, in a mathematical sense, each solution to P
+consists of some algebraic combination of the elements of the basis. For each
+solution <code>Sj = (d1, ..., dn)</code> in this set, we associate a new (existentially
+quantified) term variable Vj.  Each subset <code>{s1, ..., sq}</code> of S is a
+<em>potential solution</em> of P. The potential solution is <em>suitable</em> if:</p>
+<ul>
+<li>It is maximal; i.e., there is not another potential solution which is a
+superset of this one which is also suitable.</li>
+<li>It is <em>legal</em>; a potential solution is legal if, for each constrained
+variable xi, the sum from j = 1 to q of sj(i) is equal to 1.</li>
+</ul>
+<p>We then compute the set of all suitable potential solutions of P. The details
+of how this is done are based on a Binary Decision Diagram and in particular
+are adapted with slight details specific to K from Maude code for ACU
+unification found in the <code>src/ACU_Theory/ACU_UnificationSubproblem2.cc</code> file in
+the Maude repository in the <code>solve</code> function.</p>
+<p>Each suitable potential solution becomes a solution of P in the following way:</p>
+<p>{ui = <em>Map</em>(V1^s1(i), ..., Vq^sq(i) | i from 1 to n}</p>
+<h3 id="theory-combination">Theory combination</h3>
+<p>Theory combination takes a list of list of substitutions (in particular, one
+list of substitutions per AC sort and one substitution per solution to the AC
+subproblem) and the substitution from the free theory, and combines the
+solutions for each AC subproblem back into the solution for the free theory.</p>
+<p>First, for each substitution in the list of list of substitutions, we take each
+binding of a variable ui to a variable Vj, and substitute every occurrence of
+Vj with ui. We then compute all the combinations of the resulting list of list
+of substitutions; each possible combination of one solution from each list of
+solutions becomes one solution of the combined theory. We then perform
+<em>variable replacement</em> on the resulting solution.</p>
+<h3 id="variable-replacement">Variable Replacement</h3>
+<p>Variable replacement takes a solution consisting of a conjunction of solutions
+for each AC sort and a solution for the free theory, and returns a list of free
+equalities to decompose with, and a new free-theory substitution. It does this
+by repeatedly removing <em>improper bindings</em> from the solution and processing
+them, collecting free equations along the way, collecting the improper
+bindings, and then creating a new free-theory substitution from combining the
+improper bindings with the remaining processed solution, which is unioned
+together.</p>
+<p>An improper binding is a binding of a variable to another variable. For each
+improper binding x = y, we substitute y for x everywhere in the solution and
+add <code>x = y</code> to the list of improper bindings. When substituting, if we
+substitute in a manner such that we are left with an equality that is between
+two non-variables, we remove it from the solution and add it to the list of
+free equations to decompose.</p>
+<p>Note that there are two ways to consider an equation <code>x = y</code>, since equalities
+are commutative. We could replace <code>x</code> with <code>y</code> or <code>y</code> with <code>x</code>. In practice, we
+always replace <code>x</code> with <code>y</code> because we orient the bindings generated by
+variable abstraction such that <code>x</code> would always correspond to the fresh
+variable generated by variable abstraction, which is always considered an
+acceptable orientation.</p>
+<h2 id="set">Set</h2>
+<p>Set unification proceeds identical to map unification except that we treat each
+set element as a map element from its value to ().</p>
+<h2 id="list">List</h2>
+<p>If both terms are function symbols of list sort, we conside 5 cases:</p>
+<ol>
+<li>If one list is <code>_List_(l1, Var1)</code> and the other list is <code>_List_(l2, Var2)</code>, where l1 and l2 have no opaque terms, and len(l1) &lt;= len(l2), for i = 1 to len(l1), decompose with the ith element of l1 and l2. Then, remove len(l1) elements from the start of l2 and decompose with Var1 and <code>_List_(l2, Var2)</code></li>
+<li>If one list is <code>_List_(Var1, l1)</code> and the other list is <code>_List_(Var2, l2)</code>, where l1 and l2 have no opaque terms, and len(l1) &lt;= len(l2), for i = 1 to len(l1), decompose with the ith element of l1 and the len(l2) - len(l1) + ith element of l2. Then, remove len(l1) elements from the end of l2 and decompose with Var1 and <code>_List_(Var2, l2)</code></li>
+<li>If both lists have no opaque terms, and they have the same length, unify each element in sequence. If they have different lengths, fail.</li>
+<li>If one list l1 has no opaque terms and the other is <code>_List_(l2, Var)</code>, and len(l2) &lt;= len(l1), then for i = 1 to len(
+l2), decompose with the ith element of l1 and l2. Then, remove len(l2) elements from the start of l1 and decompose with Var and l1. If len(l2) &gt; len(l1), fail.</li>
+<li>If one list l1 has no opaque terms and the other is <code>_List_(Var, l2)</code>, and len(l2) &lt;= len(l1), then for i = 1 to len(l2), decompose with the ith element of l2 and the len(l1) - len(l2) + ith element of l1. Then, remove len(l2) elements from the end of l1 and decompose with Var and l1. If len(l2) &gt; len(l1), fail.</li>
+<li>Otherwise, add the constraint that the two lists are equal.</li>
+</ol>
+<h2 id="%23if-%23then-%23else-%23fi">#if #then #else #fi</h2>
+<p>This is a case that properly speaking, probably ought to be expressed as a
+simplification rule, but historically, it was made to be part of the
+unification algorithm and writing it as a rule in K is impossible due to the
+current restrictions on parametric productions in K. It is quite
+straightforward, however:</p>
+<p>If one term is <code>#if B #then T #else F #fi</code> for patterns B, T, F, and the other
+term is <code>P</code>, then we fork with two cases:</p>
+<ol>
+<li>Decompose with T and P and constrain with <code>\ceil(\and(B, true))</code></li>
+<li>Decompose with F and P and constrain with <code>\ceil(\and(B, false))</code></li>
+</ol>
+<h2 id="fallback">Fallback</h2>
+<p>If no other cases apply to patterns p1 and p2, first we try to substitute the
+current substitution into p1 and p2 and simplify under the current
+constraints. If the resulting patterns are different from before, we decompose
+with the new patterns and constrain with the constraints added by the
+simplifier, if any.</p>
+<p>If they are the same as before, unification is unable to decompose further, and
+falls back on a default case by constraining with the equality of the two
+terms.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unification-(new)" class="bd-toc-link">Unification (new)</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#aliases"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Aliases
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#top-and-bottom"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Top and Bottom
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#and-and-or"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                And and Or
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constants"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Constants
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#variables"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Variables
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constructors"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Constructors
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#injections"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Injections
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#overloading"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Overloading
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#map" class="bd-toc-link">Map</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#ac-unification"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                AC Unification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#variable-abstraction"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Variable Abstraction
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#ac-binding"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                AC Binding
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#ac-subproblems"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                AC Subproblems
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#theory-combination"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Theory combination
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#variable-replacement"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Variable Replacement
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#set"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Set
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#list"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                List
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%23if-%23then-%23else-%23fi"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                #if #then #else #fi
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fallback"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Fallback
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
