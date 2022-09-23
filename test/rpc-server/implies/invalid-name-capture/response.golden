@@ -1,1 +1,0 @@
-{"error":{"data":{"context":["LHS: /* Fl Fn D Sfa */ ConfigX:SortK{}","RHS: /* Fl Fn D Sfa */ ConfigX:SortK{}","existentials: [ConfigX]"],"error":"Existentials capture free variables of the antecedent: ConfigX"},"code":-32003,"message":"Implication check error"},"jsonrpc":"2.0","id":1}
