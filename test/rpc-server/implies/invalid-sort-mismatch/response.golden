@@ -1,1 +1,0 @@
-{"error":{"data":{"context":["LHS sort: S1","RHS sort: SortK"],"error":"Antecedent and consequent must have the same sort."},"code":-32003,"message":"Implication check error"},"jsonrpc":"2.0","id":1}
