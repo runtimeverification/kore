@@ -20,7 +20,7 @@ jobs:
       ( contains(github.event.comment.body, '.tar.gz') || contains(github.event.issue.body, '.tar.gz') )
     runs-on: [Linux, performance]
     env:
-      GH_TOKEN: ${{ secrets.ORG_PAT }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Clean _work Folder
         run: |
