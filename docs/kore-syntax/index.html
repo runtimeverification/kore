@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="syntax-of-the-kore-language">Syntax of the Kore language</h1>
+<p>This documents describes the syntax of Kore, as admitted by the Haskell Backend.</p>
+<h2 id="lexical-structure">Lexical structure</h2>
+<h3 id="comments">Comments</h3>
+<p>Kore allows C-style comments:</p>
+<ul>
+<li><code>//</code> line comment</li>
+<li><code>/*</code> block comment (non-nested) <code>*/</code></li>
+</ul>
+<p>Comments are considered whitespace.
+The only lexical function of whitespace is to break the source text into tokens.</p>
+<h3 id="string-literals">String literals</h3>
+<pre class="language-text"><code>&lt;string-literal&gt;
+  ::= [&apos;&quot;&apos;] &lt;char&gt;* [&apos;&quot;&apos;]
+
+&lt;char&gt;
+  ::= &lt;escape-sequence&gt;
+    | &lt;printable-ascii-char&gt; except [&apos;&quot;&apos;, &apos;\&apos;]
+
+&lt;printable-ascii-char&gt;
+  ::= U+0020 through U+007E
+</code></pre>
+<p>The following table summarizes the escape sequences allowed in string literals.
+<code>h</code> stands for a single hexadecimal digit.
+The surrogate code points in the range <code>[U+D800, U+DFFF]</code> are illegal in the Unicode escape sequences.
+The UTF-32 code point must not exceed <code>U+10FFFF</code>.</p>
+<table class="table">
+<tbody><tr>
+  <td>Escape sequence</td>
+  <td>Decoding</td>
+</tr>
+<tr>
+  <td><code>\t</code></td>
+  <td>Horizontal tab (ASCII <code>HT</code>, Unicode <code>U+0009</code>)</td>
+</tr>
+<tr>
+  <td><code>\n</code></td>
+  <td>Line feed (ASCII <code>LF</code>, Unicode <code>U+000A</code>)</td>
+</tr>
+<tr>
+  <td><code>\f</code></td>
+  <td>Form feed (ASCII <code>FF</code>, Unicode <code>U+000C</code>)</td>
+</tr>
+<tr>
+  <td><code>\r</code></td>
+  <td>Carriage return (ASCII <code>CR</code>, Unicode <code>U+000D</code>)</td>
+</tr>
+<tr>
+  <td><code>\&quot;</code></td>
+  <td>Double quote (ASCII <code>&quot;</code>, Unicode <code>U+0022</code>)</td>
+</tr>
+<tr>
+  <td><code>\\</code></td>
+  <td>Backslash (ASCII <code>\</code>, Unicode <code>U+005C</code>)</td>
+</tr>
+<tr>
+  <td><code>\xhh</code></td>
+  <td>8-bit character (Unicode <code>U+00hh</code>)</td>
+</tr>
+<tr>
+  <td><code>\uhhhh</code></td>
+  <td>UTF-16 code point (Unicode <code>U+hhhh</code>)</td>
+</tr>
+<tr>
+  <td><code>\Uhhhhhhhh</code></td>
+  <td>UTF-32 code point (Unicode <code>U+hhhhhhhh</code>)</td>
+</tr>
+</tbody></table>
+<h3 id="keywords">Keywords</h3>
+<pre class="language-text"><code>&lt;keyword&gt;
+  ::= &quot;module&quot;  | &quot;endmodule&quot;
+    | &quot;import&quot;
+    | &quot;sort&quot;    | &quot;hooked-sort&quot;
+    | &quot;symbol&quot;  | &quot;hooked-symbol&quot;
+    | &quot;axiom&quot;   | &quot;claim&quot;
+    | &quot;alias&quot;   | &quot;where&quot;
+</code></pre>
+<h3 id="identifiers">Identifiers</h3>
+<pre class="language-text"><code>&lt;identifier&gt;
+  ::= &lt;identifier-first-char&gt; &lt;identifier-char&gt;*
+
+&lt;identifier-char&gt;
+  ::= &lt;identifier-first-char&gt;
+    | &lt;identifier-other-char&gt;
+
+&lt;identifier-first-char&gt;
+  ::= [&apos;A&apos;..&apos;Z&apos;, &apos;a&apos;..&apos;z&apos;]
+
+&lt;identifier-other-char&gt;
+  ::= [&apos;0&apos;..&apos;9&apos;, &apos;\&apos;&apos;, &apos;-&apos;]
+
+&lt;symbol-identifier&gt;
+  ::= [&apos;\&apos;]? &lt;identifier&gt;
+
+&lt;element-variable-identifier&gt;
+  ::= &lt;identifier&gt;
+
+&lt;set-variable-identifier&gt;
+  ::= [&apos;@&apos;] &lt;identifier&gt;
+
+&lt;sort-identifier&gt;
+  ::= &lt;identifier&gt;
+
+&lt;module-name&gt;
+  ::= &lt;identifier&gt;
+</code></pre>
+<p>Identifiers must not be <code>&lt;keyword&gt;</code>s.</p>
+<h2 id="syntax">Syntax</h2>
+<p>The syntax of Kore is defined here in <a href="https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form" target="_blank" rel="noopener">Backus-Naur form</a>,
+augmented with the following meta-syntactic notations for brevity:</p>
+<pre class="language-text"><code>&lt;[$item]-sep-by-[$separator]&gt;
+  ::= &quot;&quot;
+    | &lt;[$item]-sep-by-1-[$separator]&gt;
+
+&lt;[$item]-sep-by-1-[$separator]&gt;
+  ::= $item
+    | $item $separator &lt;[$item]-sep-by-1-[$separator]&gt;
+</code></pre>
+<h3 id="sorts">Sorts</h3>
+<p>A sort is either a <em>sort variable</em> or a <em>sort constructor</em> applied to a list of <em>sort parameters</em>.</p>
+<pre class="language-text"><code>&lt;sort&gt;
+  ::= &lt;sort-variable&gt;
+    | &lt;sort-identifier&gt; &quot;{&quot; &lt;sorts&gt; &quot;}&quot;
+
+&lt;sorts&gt;
+  ::= &lt;[sort]-sep-by-[&quot;,&quot;]&gt;
+
+&lt;sort-variable&gt;
+  ::= &lt;sort-identifier&gt;
+
+&lt;sort-variables&gt;
+  ::= &lt;[sort-variable]-sep-by-[&quot;,&quot;]&gt;
+</code></pre>
+<h3 id="patterns">Patterns</h3>
+<pre class="language-text"><code>&lt;pattern&gt;
+  ::= &lt;variable-pattern&gt;
+    | &lt;matching-logic-pattern&gt;
+    | &lt;application-pattern&gt;
+    | &lt;string-literal&gt;
+
+&lt;patterns&gt;
+  ::= &lt;[pattern]-sep-by-[&quot;,&quot;]&gt;
+
+&lt;variable-pattern&gt;
+  ::= &lt;element-variable&gt;
+    | &lt;set-variable&gt;
+
+&lt;element-variable&gt;
+  ::= &lt;element-variable-identifier&gt; &quot;:&quot; &lt;sort&gt;
+
+&lt;set-variable&gt;
+  ::= &lt;set-variable-identifier&gt; &quot;:&quot; &lt;sort&gt;
+
+&lt;application-pattern&gt; ::=
+    &lt;symbol-identifier&gt; &quot;{&quot; &lt;sorts&gt; &quot;}&quot; &quot;(&quot; &lt;patterns&gt; &quot;)&quot;
+
+&lt;multi-or&gt; ::=
+    &quot;\or&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;patterns&gt; &quot;)&quot;
+
+&lt;matching-logic-pattern&gt;
+  ::=
+    // Connectives
+      &quot;\top&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &quot;)&quot;
+    | &quot;\bottom&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &quot;)&quot;
+    | &quot;\not&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\and&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\or&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\implies&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\iff&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Quantifiers
+    | &quot;\exists&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;element-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\forall&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot;
+        &quot;(&quot; &lt;element-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Fixpoints
+    | &quot;\mu&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;set-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\nu&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;set-variable&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Predicates
+    | &quot;\ceil&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\floor&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\equals&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\in&quot; &quot;{&quot; &lt;sort&gt; &quot;,&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Rewriting
+    | &quot;\next&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;)&quot;
+    | &quot;\rewrites&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;pattern&gt; &quot;,&quot; &lt;pattern&gt; &quot;)&quot;
+    // Domain values
+    | &quot;\dv&quot; &quot;{&quot; &lt;sort&gt; &quot;}&quot; &quot;(&quot; &lt;string-literal&gt; &quot;)&quot;
+    // Syntax sugar
+    | &quot;\left-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;application-pattern&gt; &quot;)&quot;
+    | &quot;\left-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;multi-or&gt; &quot;)&quot;
+    | &quot;\right-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;application-pattern&gt; &quot;)&quot;
+    | &quot;\right-assoc&quot; &quot;{&quot; &quot;}&quot; &quot;(&quot; &lt;multi-or&gt; &quot;)&quot;
+</code></pre>
+<h3 id="attributes">Attributes</h3>
+<p>Attributes are hints to the backend, often collected by the frontend.
+Some attributes express syntactic information,
+while others express semantic information.
+All semantic information contained in attributes should correspond to axioms declared explicitly.
+The hints indicate when the backend may use faster algorithms, more efficent data structures, and so on.
+The meaning of particular attributes is implementation-defined.
+The order of attributes is <em>never</em> significant.</p>
+<pre class="language-text"><code>&lt;attribute&gt;
+  ::= &lt;application-pattern&gt;
+
+&lt;attributes&gt;
+  ::= &lt;[attribute]-sep-by-[&quot;,&quot;]&gt;
+</code></pre>
+<h3 id="sentences">Sentences</h3>
+<p>A sentence is a single declaration.
+Sentences always appear inside modules, defined below.</p>
+<pre class="language-text"><code>&lt;sentence&gt;
+  ::= &lt;sentence-import&gt;
+    | &lt;sentence-sort&gt;
+    | &lt;sentence-hooked-sort&gt;
+    | &lt;sentence-symbol&gt;
+    | &lt;sentence-hooked-symbol&gt;
+    | &lt;sentence-alias&gt;
+    | &lt;sentence-axiom&gt;
+    | &lt;sentence-claim&gt;
+
+&lt;sentence-import&gt;
+  ::= &quot;import&quot; &lt;module-name&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-sort&gt;
+  ::= &quot;sort&quot; &lt;sort-identifier&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-hooked-sort&gt;
+  ::= &quot;hooked-sort&quot; &lt;sort-identifier&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-symbol&gt;
+  ::= &quot;symbol&quot; &lt;symbol&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-hooked-symbol&gt;
+  ::= &quot;hooked-symbol&quot; &lt;symbol&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-alias&gt;
+  ::= &quot;alias&quot; &lt;alias&gt; &quot;(&quot; &lt;sorts&gt; &quot;)&quot; &quot;:&quot; &lt;sort&gt; &quot;where&quot; &lt;application-pattern&gt; &quot;:=&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-axiom&gt;
+  ::= &quot;axiom&quot; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;sentence-claim&gt;
+  ::= &quot;claim&quot; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot; &lt;pattern&gt; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;alias&gt; ::= &lt;symbol-or-alias&gt;
+&lt;symbol&gt; ::= &lt;symbol-or-alias&gt;
+&lt;symbol-or-alias&gt; ::= &lt;symbol-identifier&gt; &quot;{&quot; &lt;sort-variables&gt; &quot;}&quot;
+</code></pre>
+<h3 id="definition%2C-modules">Definition, modules</h3>
+<p>A definition is a non-empty sequence of modules.</p>
+<pre class="language-text"><code>&lt;definition&gt;
+  ::= &quot;[&quot; &lt;attributes&gt; &quot;]&quot; &lt;modules&gt;
+
+&lt;module&gt;
+  ::= &quot;module&quot; &lt;module-name&gt; &lt;sentences&gt; &quot;endmodule&quot; &quot;[&quot; &lt;attributes&gt; &quot;]&quot;
+
+&lt;modules&gt;
+  :: &lt;[module]-sep-by-1-[whitespace]&gt;
+</code></pre>
+<h2 id="validity">Validity</h2>
+<p>A valid Kore definition conforms to the grammar of <code>&lt;definition&gt;</code> described above and the following conditions:</p>
+<ol>
+<li>In any sentence,
+a. every sort variable used in the sentence appears in the sort variable list;
+b. the sort variable list contains only distinct sort variable names (without duplicates).</li>
+<li>In any symbol or alias sentence,
+a. the sort parameters of the declared symbol or alias are distinct sort variables;
+b. the argument and result sorts have declarations in scope.</li>
+<li>Every sort, symbol, and alias must have a unique (in the definition) name. No sort, symbol, or alias may be declared more than once. Names may not be shared between categories; i.e. the same name may not be used for a sort and a symbol.</li>
+<li>In any alias sentence,
+a. the variables on the left-hand side are distinct, and
+b. their number and sorts agrees with the declaration of the alias;
+c. the pattern is valid and its sort agrees with the declared result sort;
+d. the pattern contains no free variables other than the declared variables.</li>
+<li>Module names are unique.</li>
+<li>In any import sentence,
+a. the imported module appears earlier in the definition, i.e. the modules in the definition are topologically sorted;
+b. the sentence appears before any non-import declarations in the module.</li>
+</ol>
+<p>A declaration is in scope in a particular module if it appears in the module or if it is in scope (transitively) in any module imported by the module.
+Within a module, the order of non-import sentences is not significant.</p>
+<p>A valid Kore pattern conforms to the grammar of <code>&lt;pattern&gt;</code> described above and the following conditions:</p>
+<ol>
+<li>In any application pattern,
+a. the number of sort parameters to the symbol or alias agrees with its declaration;
+b. the number and sort of pattern arguments to the symbol or alias agrees with its declaration.</li>
+<li>In any occurrence of a sort, the number of sort parameters agrees with the declaration.</li>
+<li>All sorts, symbols, and aliases are declared before being used.</li>
+<li>In any matching logic pattern, the sort of pattern arguments agrees with the specified argument sort parameter.</li>
+<li>In any binder (quantifier or fixpoint), the sort of the variable argument agrees with its free occurrences in the pattern argument.</li>
+</ol>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#syntax-of-the-kore-language" class="bd-toc-link">Syntax of the Kore language</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#lexical-structure" class="bd-toc-link">Lexical structure</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#comments"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Comments
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#string-literals"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                String literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#keywords"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Keywords
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#identifiers"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Identifiers
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#syntax" class="bd-toc-link">Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#sorts"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Sorts
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#patterns"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Patterns
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#attributes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Attributes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#sentences"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Sentences
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#definition%2C-modules"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Definition, modules
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#validity"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Validity
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
