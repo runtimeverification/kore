@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="The symbolic execution engine powering the K Framework"
+/>
+<meta name="keywords" content="runtime, verification, rv, k, kore" />
+<meta
+  name="author"
+  content="Kore | Runtime Verification Inc"
+/>
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Kore | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html">
+    Kore
+  </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/algorand-sc-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../docs/manual/DEVELOPER_MANUAL">Developer Manual</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="profiling-and-debugging">Profiling and debugging</h1>
+<p>There are two main ways we may want to profile the Haskell binaries in this repo. One is to do with how much time our program is spending on various stages of execution and the other is to do with how much memory it uses to do so. The first question may help us answer how to make our algorithms more efficient, whilst the second is more to do with Haskell&apos;s laziness, which often results in memory leaks. However, analyzing the memory usage can be beneficial not just for detecting memory leaks, but may point to inefficiencies such as preforming unnecessary re-computations, etc.</p>
+<p>In order to perform most of the profiling mentioned in this document, all the profiled binaries have to be compiled with profiling enabled. There are several options to do this via Cabal, Stack or Nix</p>
+<h2 id="compile-options">Compile options</h2>
+<p>There are two main options we have to set when profiling. Firstly we have to pass cabal/stack a <code>profiling: True</code> / <code>--profiling</code> flag, which builds the <code>kore</code> library and all it&apos;s dependencies with profiling information (passes the <code>-prof</code> flag to GHC). We can also pass profiling detail options corresponding to GHCs <code>-fprof-auto</code>/<code>-fprof-auto-top</code>/<code>-fprof-auto-exported</code> options <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/profiling.html" target="_blank" rel="noopener">documented here</a>, which insert <code>SCC</code> (Set Cost Centre) annotations, used for the time and (some) memory based profiles. Other flags for specific profiling options, found in the tables below, should be passed in via <code>ghc-options</code> to the compiler.</p>
+<h3 id="cabal">Cabal</h3>
+<p>Profiling options for Cabal can be set via the <code>cabal.project</code>/<code>cabal.project.local</code> file. The relevant options that need to be added are:</p>
+<pre class="language-text"><code>package *
+  profiling: True
+</code></pre>
+<p>to enable profiling in all packages including the libraries, as well as adding a <a href="https://cabal.readthedocs.io/en/3.4/cabal-project.html#cfg-flag---profiling-detail" target="_blank" rel="noopener"><code>profiling-detail</code></a> to the <code>kore</code> package</p>
+<pre class="language-text"><code>package kore
+  profiling-detail: toplevel-functions
+</code></pre>
+<p><em>Note: By default, cabal applies <code>exported-functions</code> for libraries and <code>toplevel-functions</code> for executables.</em></p>
+<h3 id="stack">Stack</h3>
+<p>This command will build <code>kore</code> with profiling enabled:</p>
+<pre class="language-text"><code>stack --profile build
+</code></pre>
+<p>we can then run individual binaries with supplied RTS runtime options using</p>
+<pre class="language-text"><code>stack --profile exec -- kore-exec +RTS &lt;profiling_flags_here&gt;
+</code></pre>
+<p><em>Note: Stack doesn&apos;t seem to have as much level of control over profiling options as cabal, e.g. there doesn&apos;t seem to be a way of setting the <code>profiling-detail</code> in the same way Cabal does, see https://github.com/hasura/graphql-engine/issues/3280 and https://github.com/commercialhaskell/stack/issues/2853.</em></p>
+<h3 id="nix-(preferred)">Nix (preferred)</h3>
+<p>With nix flakes, we have a nice convenience <code>nix shell</code> command, which builds a flake derivation and adds the bin folder of the result to the <code>PATH</code> of our current shell. Our <a href="https://github.com/runtimeverification/haskell-backend/tree/master/flake.nix"><code>flake.nix</code></a> contains several such expressions for the <code>kore-exec</code> binary, which gets compiled with the correct build flags and also gets passed the correct runtime flags for whichever analysis we are currently attempting to perform. Currently, we have the following versions of <code>kore-exec-prof</code>:</p>
+<pre class="language-text"><code>nix shell .#kore-exec-prof
+nix shell .#kore-exec-prof-infotable
+</code></pre>
+<p>Running any of the commands above will build a profiled version of <code>kore-exec</code> using GHC &gt;=9.2.3 with the requisite GHC compile arguments. Once compiled, run <code>kore-exec</code> with RTS arguments corresponding to kind of profile you are interested in running (see tables below). Any other useful profiling pre-sets should be added to the flake for ease of use as well as documentation purposes.</p>
+<h2 id="runtime-options">Runtime options</h2>
+<h3 id="time-profiles">Time Profiles</h3>
+<table class="table">
+<thead>
+<tr>
+<th>RTS Flag</th>
+<th>GHC Compile flag</th>
+<th>Description</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-p</code></td>
+<td><code>-prof -fprof-auto</code>/<br><code>-prof -fprof-auto-top</code>/<br><code>-prof -fprof-auto-exported</code></td>
+<td>Produces a standard time profile report. Can be visualized via <a href="https://github.com/fpco/ghc-prof-flamegraph/" target="_blank" rel="noopener"><code>ghc-prof-flamegraph</code></a>, <a href="https://github.com/jaspervdj/profiteur" target="_blank" rel="noopener"><code>profiteur</code></a> or <a href="https://github.com/ndmitchell/profiterole" target="_blank" rel="noopener"><code>profiterole</code></a></td>
+<td><code>&#x27E8;program&#x27E9;.prof</code></td>
+</tr>
+<tr>
+<td><code>-p</code></td>
+<td><code>-prof -fprof-callers=&#x27E8;name&#x27E9;</code></td>
+<td>Automatically enclose all occurrences of the named function in an <code>SCC</code>. Note that these cost-centres are added late in compilation (after simplification) and consequently the names may be slightly different than they appear in the source program.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>-l</code></td>
+<td><code>-prof -eventlog</code><br>(corresponds to <code>.#kore-exec-prof</code>)</td>
+<td>Log events in binary format. This logs a default set of events, use <a href="https://github.com/mpickering/hs-speedscope" target="_blank" rel="noopener"><code>hs-speedscope</code></a> with <a href="https://www.speedscope.app/" target="_blank" rel="noopener"><code>speedscope</code></a> to view.</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l-au</code></td>
+<td><code>-prof -eventlog</code></td>
+<td>Disable all log event classes except for user events. These are events emitted from Haskell code using functions such as <br><code>Debug.Trace.traceEvent</code>. For other options, see https://ghc.gitlab.haskell.org/ghc/doc/users_guide/runtime_control.html#rts-eventlog</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>-l-aus</code></td>
+<td></td>
+<td>Log only kore related events. This logging can be performed on <code>kore-exec</code> even without <code>-profiling</code> enabled during compilation and uses the <code>traceProf</code> function (defined via <a href="https://hackage.haskell.org/package/base/docs/Debug-Trace.html#v:traceEventIO" target="_blank" rel="noopener"><code>traceEventIO</code></a>). To view the events, <code>kore-prof</code> must be used along with <a href="https://www.speedscope.app/" target="_blank" rel="noopener"><code>speedscope</code></a>.</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="heap-profiles">Heap profiles</h3>
+<p>The table below lists compile and runtime options in (roughly) increasing level of granularity. See the <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/profiling.html#rts-options-heap-prof" target="_blank" rel="noopener">RTS options for heap profiling</a> section of the GHCdocs for further details.</p>
+<table class="table">
+<thead>
+<tr>
+<th>RTS Flag</th>
+<th>GHC Compile flag</th>
+<th>Description</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-hT</code></td>
+<td></td>
+<td>Generates a basic heap profile, in the file. Breaks down the graph by heap <a href="https://hackage.haskell.org/package/ghc-heap-9.0.1/docs/GHC-Exts-Heap-ClosureTypes.html" target="_blank" rel="noopener">closure type</a>. To produce the heap profile graph, use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/profiling.html#hp2ps" target="_blank" rel="noopener"><code>hp2ps</code></a> or <a href="https://mpickering.github.io/eventlog2html/" target="_blank" rel="noopener"><code>eventlog2html</code></a>.<br><em>It seems .hp profiles are being phased out and you should probably just use the eventlog based heap profiling instead.</em></td>
+<td><code>&#x27E8;program&#x27E9;.hp</code></td>
+</tr>
+<tr>
+<td><code>-l -hT</code></td>
+<td><code>-prof -eventlog</code></td>
+<td>Breaks down the graph by <a href="https://hackage.haskell.org/package/ghc-heap-9.0.1/docs/GHC-Exts-Heap-ClosureTypes.html" target="_blank" rel="noopener">closure type</a>. Use <a href="https://mpickering.github.io/eventlog2html/" target="_blank" rel="noopener"><code>eventlog2html</code></a> to visualize.</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l -hy</code></td>
+<td><code>-prof -eventlog</code><br>(corresponds to <code>.#kore-exec-prof</code>)</td>
+<td>Breaks down the graph by (approximate) type (e.g. <code>Int</code>, <code>Maybe String</code>, <code>(-&gt;)</code>).</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l -hd</code></td>
+<td><code>-prof -eventlog</code></td>
+<td>Breaks down the graph by closure description (e.g. <code>Just</code>, <code>THUNK</code>).</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l -hc</code></td>
+<td><code>-prof -eventlog</code></td>
+<td>Breaks down the graph by lexical scope (known as &quot;cost-centres&quot;).</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+<tr>
+<td><code>-l -hi</code></td>
+<td><code>(-prof optional) -eventlog -fdistinct-constructor-tables -finfo-table-map</code> <br>(corresponds to <code>.#kore-exec-prof-infotable</code>)</td>
+<td><code>-hi</code> collates heap allocations by their info table identity<br><code>-fdistinct-constructor-tables</code> tells the code generator to produce a distinct info table for each constructor allocation (new in GHC 9.2)<br><code>-finfo-table-map</code> tells the code generator to produce an auxiliary data structure which allows distinct info tables to be mapped back to source locations</td>
+<td><code>&#x27E8;program&#x27E9;.eventlog</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="debugging">Debugging</h3>
+<p>The profiling information can also be useful when hunting for other bugs, such as runtime exceptions, which can be difficult to find, since Haskell does not print a stack trace (by default) when such an exception occurs.</p>
+<table class="table">
+<thead>
+<tr>
+<th>RTS Flag</th>
+<th>GHC Compile flag</th>
+<th>Description</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-xc</code></td>
+<td><code>-prof -fprof-auto</code></td>
+<td>Causes the runtime to print out the current cost-centre stack whenever an exception is raised. Useful for debugging the location of exceptions, such as <code>Prelude.head: empty list</code> error.</td>
+<td>stderr</td>
+</tr>
+</tbody>
+</table>
+<h2 id="costs-and-disadvantages-of-profiling">Costs and disadvantages of profiling</h2>
+<p>There are two main issues with profiling:</p>
+<ol>
+<li>Profiling adds an overhead to the overall runtime, so it is only useful if we want to measure the relative runtime of different components of our programs</li>
+<li>The addition of cost centers introduced by <code>-fprof-auto</code> (<code>profiling-detail: all-functions</code>)/<code>-fprof-auto-top</code>/<code>-fprof-auto-exported</code> can impede certain optimizations such as fusion, which can skew the profile, since we are now profiling code which would otherwise have been optimized, so the % of time spent in the code region will not reflect the un-profiled runtime. There is a potential workaround to this issue in <a href="https://discourse.haskell.org/t/profiling-using-late-cost-centres-after-optimization/4664" target="_blank" rel="noopener">GHC 9.2</a> with a new <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/profiling.html" target="_blank" rel="noopener"><code>-fprof-late-ccs</code> flag in GHC 9.4.1</a> which inserts top-level const centers at a late stage of the optimization pipeline</li>
+</ol>
+<h2 id="additional-resources">Additional resources</h2>
+<ul>
+<li>
+<p>Tutorial on debugging memory usage from Zurihac 2021
+Video: https://www.youtube.com/watch?v=6Ljv5FHGXDM&amp;list=PLiU7KJ5_df6YhHefoPfUP1VSd1AbOC02R&amp;index=2
+Github repo containing written up summary: https://github.com/well-typed/memory-usage-zurihac-2021</p>
+</li>
+<li>
+<p><a href="https://well-typed.com/blog/2021/01/first-look-at-hi-profiling-mode/" target="_blank" rel="noopener">A First Look at Info Table Profiling</a> - an intro to the new <code>-hi</code> profiling mode in GHC 9.2</p>
+</li>
+<li>
+<p><a href="https://well-typed.com/blog/2021/01/fragmentation-deeper-look/" target="_blank" rel="noopener">Memory Fragmentation: A Deeper Look With ghc-debug</a> - a demo of the <code>ghc-debug</code> tool</p>
+</li>
+<li>
+<p><a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/debugging/ticky-ticky" target="_blank" rel="noopener">Ticky-ticky profiling</a> - low level cost center like profiling which doesn&#x2019;t interfere with core optimizations, but is not a stable feature. The <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/profiling.html" target="_blank" rel="noopener"><code>-fprof-late-ccs</code> flag in GHC 9.4.1</a> seems like a proper alternative.</p>
+</li>
+<li>
+<p><a href="https://well-typed.com/blog/2020/04/dwarf-1/" target="_blank" rel="noopener">DWARF support in GHC</a> and <a href="https://well-typed.com/blog/2021/07/ghc-sp-profiling/" target="_blank" rel="noopener">Towards system profiler support for GHC</a> discuss the possibility of using native profiling tools like Linux&apos;s <code>perf</code> to get meaningful data on Haskell programs. The second article discusses the possibility of recording Haskell call stacks via <code>perf</code>, but this is currently not possible and unlikely in the near future</p>
+</li>
+<li>
+<p><a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/storage/heap-objects" target="_blank" rel="noopener">The Layout of Heap Objects</a> - potentially useful information when interacting with <code>ghc_debug</code></p>
+</li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#profiling-and-debugging" class="bd-toc-link">Profiling and debugging</a>
+              </summary>
+            <div>
+              <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#compile-options" class="bd-toc-link">Compile options</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#cabal"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Cabal
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#stack"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Stack
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#nix-(preferred)"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Nix (preferred)
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#runtime-options" class="bd-toc-link">Runtime options</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#time-profiles"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Time Profiles
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#heap-profiles"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Heap profiles
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#debugging"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Debugging
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#costs-and-disadvantages-of-profiling"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Costs and disadvantages of profiling
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#additional-resources"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Additional resources
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
