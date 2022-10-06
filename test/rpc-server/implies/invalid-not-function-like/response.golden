@@ -1,1 +1,0 @@
-{"error":{"data":{"context":["/* Sfa */ \\mu{}( Config@A:SortK{}, /* Sfa */ Config@A:SortK{} )"],"error":"The check implication step expects the antecedent term to be function-like."},"code":-32003,"message":"Implication check error"},"jsonrpc":"2.0","id":1}
