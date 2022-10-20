@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":1,"error":{"data":{"consequent":"This is not json","antecedent":{"format":"KORE","version":1,"term":{"tag":"EVar","name":"X","sort":{"tag":"SortVar","name":"S"}}}},"code":-32602,"message":"Invalid params"}}
