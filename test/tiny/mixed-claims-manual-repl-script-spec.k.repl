@@ -1,9 +1,0 @@
-tryf B2C
-tryf C2D
-step
-prove 1
-tryf A2B
-// tryf c0 should not work instead of tryf B2C
-tryf B2C
-tryf C2D
-step
