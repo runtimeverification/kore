@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":1,"result":{"state":{"format":"KORE","version":1,"term":{"tag":"EVar","name":"X","sort":{"tag":"SortApp","name":"SortK","args":[]}}}}}

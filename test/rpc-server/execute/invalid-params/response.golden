@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":1,"error":{"data":{"state":"aaaa","max-depth":1},"code":-32602,"message":"Invalid params"}}
