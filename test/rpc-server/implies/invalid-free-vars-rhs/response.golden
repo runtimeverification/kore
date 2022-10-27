@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":1,"error":{"data":{"context":["LHS: /* Fl Fn D Sfa */ ConfigX:SortK{}","RHS: /* Fl Fn D Sfa */ ConfigZ:SortK{}","existentials: [ConfigZ]"],"error":"The RHS must not have free variables not present in the LHS: ConfigY"},"code":-32003,"message":"Implication check error"}}
