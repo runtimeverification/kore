@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":1,"error":{"data":{"state":{"format":"KORE","version":1,"term":{"invalid":"format"}}},"code":-32602,"message":"Invalid params"}}
