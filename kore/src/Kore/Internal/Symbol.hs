@@ -40,6 +40,8 @@ import Data.Generics.Product
 import Data.Text (
     Text,
  )
+import Data.Text qualified as Text
+import Data.Map qualified as Map
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.AST.AstWithLocation
@@ -85,12 +87,79 @@ instance Hashable Symbol where
     hashWithSalt salt Symbol{symbolConstructor, symbolParams} =
         salt `hashWithSalt` symbolConstructor `hashWithSalt` symbolParams
 
-instance Unparse Symbol where
-    unparse Symbol{symbolConstructor, symbolParams} =
-        unparse symbolConstructor <> parameters symbolParams
 
-    unparse2 Symbol{symbolConstructor} =
-        unparse2 symbolConstructor
+
+decodeLabel :: Text -> Either String Text
+decodeLabel str
+    | Text.null str = Right str
+    | "'" `Text.isPrefixOf` str =
+        let (encoded, rest) = Text.span (/= '\'') (Text.tail str)
+         in (<>) <$> decode encoded <*> decodeLabel (Text.drop 1 rest)
+    | otherwise =
+        let (notEncoded, rest) = Text.span (/= '\'') str
+         in (notEncoded <>) <$> decodeLabel rest
+  where
+    decode :: Text -> Either String Text
+    decode s
+        | Text.null s = Right s
+        | Text.length code < 4 = Left $ "Bad character code  " <> show code
+        | otherwise =
+            maybe
+                (Left $ "Unknown character code  " <> show code)
+                (\c -> (c <>) <$> decode rest)
+                (Map.lookup code decodeMap)
+      where
+        (code, rest) = Text.splitAt 4 s
+
+decodeMap :: Map.Map Text Text
+decodeMap =
+    Map.fromList
+        [ ("Spce", " ")
+        , ("Bang", "!")
+        , ("Quot", "\"")
+        , ("Hash", "#")
+        , ("Dolr", "$")
+        , ("Perc", "%")
+        , ("And-", "&")
+        , ("Apos", "'")
+        , ("LPar", "(")
+        , ("RPar", ")")
+        , ("Star", "*")
+        , ("Plus", "+")
+        , ("Comm", ",")
+        , ("Hyph", "-")
+        , ("Stop", ".")
+        , ("Slsh", "/")
+        , ("Coln", ":")
+        , ("SCln", ";")
+        , ("-LT-", "<")
+        , ("Eqls", "=")
+        , ("-GT-", ">")
+        , ("Ques", "?")
+        , ("-AT-", "@")
+        , ("LSqB", "[")
+        , ("RSqB", "]")
+        , ("Bash", "\\")
+        , ("Xor-", "^")
+        , ("Unds", "_")
+        , ("BQuo", "`")
+        , ("LBra", "{")
+        , ("Pipe", "|")
+        , ("RBra", "}")
+        , ("Tild", "~")
+        ]
+
+decodeLabel' :: Text -> Text
+decodeLabel' orig =
+    fromRight orig (decodeLabel orig)
+
+
+instance Unparse Symbol where
+    unparse Symbol{symbolConstructor = Id symb loc, symbolParams} =
+        unparse (Id (decodeLabel' $ Text.replace "Lbl" "" symb) loc) <> parameters symbolParams
+
+    unparse2 Symbol{symbolConstructor = Id symb loc} =
+        unparse2 (Id (decodeLabel'  $ Text.replace "Lbl" "" symb) loc)
 
 instance From Symbol SymbolOrAlias where
     from = toSymbolOrAlias

@@ -82,7 +82,7 @@ import Kore.Attribute.Pattern.FreeVariables qualified as FreeVariables
 import Kore.Attribute.Pattern.Function qualified as Attribute
 import Kore.Attribute.Pattern.Functional qualified as Attribute
 import Kore.Attribute.Pattern.Simplified qualified as Attribute
-import Kore.Attribute.Pattern.Simplified qualified as Attribute.Simplified
+-- import Kore.Attribute.Pattern.Simplified qualified as Attribute.Simplified
 import Kore.Attribute.Synthetic
 import Kore.Builtin.Encoding qualified as Encoding
 import Kore.Builtin.Endianness.Endianness (
@@ -548,12 +548,6 @@ attributeSimplifiedAttribute ::
 attributeSimplifiedAttribute patt@TermAttributes{termSimplified} =
     assertSimplifiedConsistency patt termSimplified
 
-constructorLikeAttribute ::
-    TermAttributes variable ->
-    Attribute.ConstructorLike
-constructorLikeAttribute TermAttributes{termConstructorLike} =
-    termConstructorLike
-
 {- Checks whether the pattern is simplified relative to the given side
 condition.
 -}
@@ -712,58 +706,7 @@ instance NFData variable => NFData (TermLike variable) where
 instance (Unparse variable, Ord variable) => Unparse (TermLike variable) where
     unparse term =
         case Recursive.project term of
-            (attrs :< termLikeF)
-                | Attribute.hasKnownCreator termCreated ->
-                    Pretty.sep
-                        [ Pretty.pretty termCreated
-                        , attributeRepresentation
-                        , unparse termLikeF
-                        ]
-                | otherwise ->
-                    Pretty.sep [attributeRepresentation, unparse termLikeF]
-              where
-                TermAttributes{termCreated} = attrs
-
-                attributeRepresentation = case attrs of
-                    (TermAttributes _ _ _ _ _ _ _ _) ->
-                        Pretty.surround
-                            (Pretty.hsep $ map Pretty.pretty representation)
-                            "/* "
-                            " */"
-                  where
-                    representation =
-                        addFunctionalRepresentation $
-                            addFunctionRepresentation $
-                                addDefinedRepresentation $
-                                    addSimplifiedRepresentation $
-                                        addConstructorLikeRepresentation []
-                addFunctionalRepresentation
-                    | Attribute.isFunctional $ termFunctional attrs = ("Fl" :)
-                    | otherwise = id
-                addFunctionRepresentation
-                    | Attribute.isFunction $ termFunction attrs = ("Fn" :)
-                    | otherwise = id
-                addDefinedRepresentation
-                    | Attribute.isDefined $ termDefined attrs = ("D" :)
-                    | otherwise = id
-                addSimplifiedRepresentation =
-                    case simplifiedTag of
-                        Just result -> (result :)
-                        Nothing -> id
-                  where
-                    simplifiedTag =
-                        Attribute.Simplified.unparseTag
-                            (attributeSimplifiedAttribute attrs)
-                addConstructorLikeRepresentation =
-                    case constructorLike of
-                        Just Attribute.ConstructorLikeHead -> ("Cl" :)
-                        Just Attribute.SortInjectionHead -> ("Cli" :)
-                        Nothing -> id
-                  where
-                    constructorLike =
-                        Attribute.getConstructorLike
-                            (constructorLikeAttribute attrs)
-
+            (_ :< termLikeF) -> unparse termLikeF
     unparse2 term =
         case Recursive.project term of
             (_ :< pat) -> unparse2 pat
