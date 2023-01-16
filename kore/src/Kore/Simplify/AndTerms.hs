@@ -34,6 +34,7 @@ import Kore.Builtin.InternalBytes (
     unifyBytes,
  )
 import Kore.Builtin.KEqual qualified as Builtin.KEqual
+
 -- import Kore.Builtin.List qualified as Builtin.List
 -- import Kore.Builtin.Map qualified as Builtin.Map
 -- import Kore.Builtin.Set qualified as Builtin.Set

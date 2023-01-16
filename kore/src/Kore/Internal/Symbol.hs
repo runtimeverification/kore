@@ -37,11 +37,11 @@ import Control.DeepSeq (
  )
 import Control.Lens qualified as Lens
 import Data.Generics.Product
+import Data.Map qualified as Map
 import Data.Text (
     Text,
  )
 import Data.Text qualified as Text
-import Data.Map qualified as Map
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.AST.AstWithLocation
@@ -86,8 +86,6 @@ instance Ord Symbol where
 instance Hashable Symbol where
     hashWithSalt salt Symbol{symbolConstructor, symbolParams} =
         salt `hashWithSalt` symbolConstructor `hashWithSalt` symbolParams
-
-
 
 decodeLabel :: Text -> Either String Text
 decodeLabel str
@@ -153,13 +151,12 @@ decodeLabel' :: Text -> Text
 decodeLabel' orig =
     fromRight orig (decodeLabel orig)
 
-
 instance Unparse Symbol where
     unparse Symbol{symbolConstructor = Id symb loc, symbolParams} =
         unparse (Id (decodeLabel' $ Text.replace "Lbl" "" symb) loc) <> parameters symbolParams
 
     unparse2 Symbol{symbolConstructor = Id symb loc} =
-        unparse2 (Id (decodeLabel'  $ Text.replace "Lbl" "" symb) loc)
+        unparse2 (Id (decodeLabel' $ Text.replace "Lbl" "" symb) loc)
 
 instance From Symbol SymbolOrAlias where
     from = toSymbolOrAlias

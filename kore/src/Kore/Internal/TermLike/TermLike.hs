@@ -82,6 +82,7 @@ import Kore.Attribute.Pattern.FreeVariables qualified as FreeVariables
 import Kore.Attribute.Pattern.Function qualified as Attribute
 import Kore.Attribute.Pattern.Functional qualified as Attribute
 import Kore.Attribute.Pattern.Simplified qualified as Attribute
+
 -- import Kore.Attribute.Pattern.Simplified qualified as Attribute.Simplified
 import Kore.Attribute.Synthetic
 import Kore.Builtin.Encoding qualified as Encoding
