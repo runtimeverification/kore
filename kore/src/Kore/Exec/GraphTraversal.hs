@@ -39,6 +39,7 @@ import Kore.Rewrite.Transition (
 import Kore.Simplify.Simplify (Simplifier)
 import Prelude.Kore
 import Pretty
+import System.TimeIt (timeIt)
 
 data TransitionResult a
     = -- | straight-line execution
@@ -241,7 +242,7 @@ graphTraversal
                 (TraversalResult (TState instr config))
         worker Seq.Empty = Ended . reverse <$> gets (mapMaybe extractState)
         worker (a :<| as) = do
-            result <- lift $ step a as
+            result <- lift $ timeIt $ step a as
             case result of
                 Continue nextQ -> worker nextQ
                 Output oneResult nextQ -> do

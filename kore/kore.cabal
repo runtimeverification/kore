@@ -124,6 +124,7 @@ common library
   -- Dependencies of the library, shared in common with the tests
   build-depends: adjunctions >=4.4
   build-depends: aeson >=1.4
+  build-depends: timeit
   build-depends: aeson-pretty == 0.8.9
   build-depends: array
   build-depends: async >=2.2
