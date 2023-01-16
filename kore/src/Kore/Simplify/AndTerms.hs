@@ -34,9 +34,9 @@ import Kore.Builtin.InternalBytes (
     unifyBytes,
  )
 import Kore.Builtin.KEqual qualified as Builtin.KEqual
-import Kore.Builtin.List qualified as Builtin.List
-import Kore.Builtin.Map qualified as Builtin.Map
-import Kore.Builtin.Set qualified as Builtin.Set
+-- import Kore.Builtin.List qualified as Builtin.List
+-- import Kore.Builtin.Map qualified as Builtin.Map
+-- import Kore.Builtin.Set qualified as Builtin.Set
 import Kore.Builtin.Signedness qualified as Builtin.Signedness
 import Kore.Builtin.String qualified as Builtin.String
 import Kore.Internal.Condition as Condition
@@ -146,10 +146,10 @@ maybeTermEquals ::
 maybeTermEquals childTransformers first second = do
     injSimplifier <- Simplifier.askInjSimplifier
     overloadSimplifier <- Simplifier.askOverloadSimplifier
-    tools <- Simplifier.askMetadataTools
-    worker injSimplifier overloadSimplifier tools
+    -- tools <- Simplifier.askMetadataTools
+    worker injSimplifier overloadSimplifier --tools
   where
-    worker injSimplifier overloadSimplifier tools
+    worker injSimplifier overloadSimplifier --tools
         | Just unifyData <- Builtin.Int.matchInt first second =
             lift $ Builtin.Int.unifyInt unifyData
         | Just unifyData <- Builtin.Bool.matchBools first second =
@@ -198,22 +198,6 @@ maybeTermEquals childTransformers first second = do
             lift $ Builtin.Endianness.unifyEquals unifyData
         | Just unifyData <- Builtin.Signedness.matchUnifyEqualsSignedness first second =
             lift $ Builtin.Signedness.unifyEquals unifyData
-        | Just unifyData <- Builtin.Map.matchUnifyEquals tools first second =
-            lift $ Builtin.Map.unifyEquals childTransformers tools unifyData
-        | Just unifyData <- Builtin.Map.matchUnifyNotInKeys first second =
-            lift $
-                Builtin.Map.unifyNotInKeys
-                    (sameSort (termLikeSort first) (termLikeSort second))
-                    childTransformers
-                    unifyData
-        | Just unifyData <- Builtin.Set.matchUnifyEquals tools first second =
-            lift $ Builtin.Set.unifyEquals childTransformers tools unifyData
-        | Just unifyData <- Builtin.List.matchUnifyEqualsList tools first second =
-            lift $
-                Builtin.List.unifyEquals
-                    childTransformers
-                    tools
-                    unifyData
         | Just unifyData <- matchDomainValueAndConstructorErrors first second =
             lift $ domainValueAndConstructorErrors unifyData
         | otherwise = empty
@@ -230,10 +214,10 @@ maybeTermAnd ::
 maybeTermAnd childTransformers first second = do
     injSimplifier <- Simplifier.askInjSimplifier
     overloadSimplifier <- Simplifier.askOverloadSimplifier
-    tools <- Simplifier.askMetadataTools
-    worker injSimplifier overloadSimplifier tools
+    -- tools <- Simplifier.askMetadataTools
+    worker injSimplifier overloadSimplifier --tools
   where
-    worker injSimplifier overloadSimplifier tools
+    worker injSimplifier overloadSimplifier --tools
         | Just unifyData <- matchExpandAlias first second =
             let UnifyExpandAlias{term1, term2} = unifyData
              in maybeTermAnd
@@ -288,16 +272,6 @@ maybeTermAnd childTransformers first second = do
             lift $ Builtin.Endianness.unifyEquals unifyData
         | Just unifyData <- Builtin.Signedness.matchUnifyEqualsSignedness first second =
             lift $ Builtin.Signedness.unifyEquals unifyData
-        | Just unifyData <- Builtin.Map.matchUnifyEquals tools first second =
-            lift $ Builtin.Map.unifyEquals childTransformers tools unifyData
-        | Just unifyData <- Builtin.Set.matchUnifyEquals tools first second =
-            lift $ Builtin.Set.unifyEquals childTransformers tools unifyData
-        | Just unifyData <- Builtin.List.matchUnifyEqualsList tools first second =
-            lift $
-                Builtin.List.unifyEquals
-                    childTransformers
-                    tools
-                    unifyData
         | Just unifyData <- matchDomainValueAndConstructorErrors first second =
             lift $ domainValueAndConstructorErrors unifyData
         | Just unifyData <- matchFunctionAnd first second =
