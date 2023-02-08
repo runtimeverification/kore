@@ -131,6 +131,7 @@
                 pkgs'.haskellPackages.eventlog2html
                 pkgs'.haskellPackages.ghc-prof-flamegraph
                 pkgs'.haskellPackages.hs-speedscope
+                pkgs'.zlib
               ] ++ (if system == "aarch64-darwin" then
                 [ pkgs'.llvm_12 ]
               else
