@@ -518,11 +518,11 @@ unparse2WithSort ::
     Pretty.Doc ann
 unparse2WithSort sort = unparse2 . fromPredicate sort
 
--- |'PredicateFalse' is a pattern for matching 'bottom' predicates.
+-- | 'PredicateFalse' is a pattern for matching 'bottom' predicates.
 pattern PredicateFalse :: Predicate variable
 pattern PredicateFalse <- (Recursive.project -> _ :< BottomF _)
 
--- |'PredicateTrue' is a pattern for matching 'top' predicates.
+-- | 'PredicateTrue' is a pattern for matching 'top' predicates.
 pattern PredicateTrue :: Predicate variable
 pattern PredicateTrue <- (Recursive.project -> _ :< TopF _)
 
@@ -1271,7 +1271,7 @@ mapVariables adj predicate =
             , Pretty.pretty termPredicate
             ]
 
--- |Is the predicate free of the given variables?
+-- | Is the predicate free of the given variables?
 isFreeOf ::
     Ord variable =>
     Predicate variable ->

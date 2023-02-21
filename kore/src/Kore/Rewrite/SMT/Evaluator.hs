@@ -16,6 +16,7 @@ module Kore.Rewrite.SMT.Evaluator (
 
 import Control.Error (
     MaybeT,
+    hoistMaybe,
     runMaybeT,
  )
 import Control.Lens qualified as Lens
@@ -72,10 +73,13 @@ import Kore.Log.DecidePredicateUnknown (
  )
 import Kore.Rewrite.SMT.Translate
 import Kore.Simplify.Simplify as Simplifier
+import Kore.Substitute (substitute)
 import Kore.TopBottom (
     TopBottom,
  )
 import Log
+import Logic (LogicT)
+import Logic qualified
 import Prelude.Kore
 import Pretty (
     Pretty,
@@ -163,11 +167,27 @@ decidePredicate ::
 decidePredicate onUnknown sideCondition predicates =
     whileDebugEvaluateCondition predicates $
         do
-            result <- query >>= whenUnknown retry
+            result <- query predicates >>= whenUnknown retry
             debugEvaluateConditionResult result
             case result of
-                Unsat -> return False
-                Sat -> empty
+                Unsat -> do
+                    return False
+                Sat -> do
+                    heuristicResult <- queryWithHeuristic predicates
+                    case heuristicResult of
+                        Unsat -> return False
+                        Sat -> empty
+                        Unknown -> do
+                            limit <- SMT.withSolver SMT.askRetryLimit
+                            -- depending on the value of `onUnknown`, this call will either log a warning
+                            -- or throw an error
+                            throwDecidePredicateUnknown onUnknown limit predicates
+                            case onUnknown of
+                                WarnDecidePredicateUnknown _ _ ->
+                                    -- the solver may be in an inconsistent state, so we re-initialize
+                                    SMT.reinit
+                                _ -> pure ()
+                            empty
                 Unknown -> do
                     limit <- SMT.withSolver SMT.askRetryLimit
                     -- depending on the value of `onUnknown`, this call will either log a warning
@@ -184,17 +204,39 @@ decidePredicate onUnknown sideCondition predicates =
     whenUnknown f Unknown = f
     whenUnknown _ result = return result
 
-    query :: MaybeT Simplifier Result
-    query =
+    query :: NonEmpty (Predicate variable) -> MaybeT Simplifier Result
+    query preds =
         SMT.withSolver . evalTranslator $ do
             tools <- Simplifier.askMetadataTools
             Morph.hoist SMT.liftSMT $ do
                 predicates' <-
                     traverse
                         (translatePredicate sideCondition tools)
-                        predicates
+                        preds
                 traverse_ SMT.assert predicates'
                 SMT.check
+
+    queryWithHeuristic :: NonEmpty (Predicate variable) -> MaybeT Simplifier Result
+    queryWithHeuristic preds = do
+        results <-
+            SMT.withSolver . evalTranslator $ do
+                tools <- Simplifier.askMetadataTools
+                Morph.hoist SMT.liftSMT . Logic.observeAllT $ do
+                    preds' <- traverse applyHeuristic preds
+                    predicates' <-
+                        traverse
+                            (lift . translatePredicate sideCondition tools)
+                            preds'
+                    traverse_ SMT.assert predicates'
+                    SMT.check
+        hoistMaybe (find SimpleSMT.isUnSat results)
+
+    applyHeuristic :: Predicate variable -> LogicT m (Predicate variable)
+    applyHeuristic (Predicate.PredicateNot (Predicate.PredicateExists var child)) = do
+        freeVar <- Logic.scatter $ Predicate.freeElementVariables child
+        let subst = Map.singleton (inject $ variableName freeVar) (TermLike.mkElemVar var)
+        return (substitute subst child)
+    applyHeuristic _ = empty
 
     retry :: MaybeT Simplifier Result
     retry = do
@@ -215,7 +257,7 @@ decidePredicate onUnknown sideCondition predicates =
     retryOnceWithScaledTimeout scale =
         -- scale the timeout _inside_ 'retryOnce' so that we override the
         -- call to 'SMT.reinit'.
-        retryOnce $ SMT.localTimeOut (scaleTimeOut scale) query
+        retryOnce $ SMT.localTimeOut (scaleTimeOut scale) (query predicates)
 
     scaleTimeOut _ (SMT.TimeOut Unlimited) = SMT.TimeOut Unlimited
     scaleTimeOut n (SMT.TimeOut (Limit r)) = SMT.TimeOut (Limit (n * r))
