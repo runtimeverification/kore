@@ -113,6 +113,7 @@ evalPredicate onUnknown predicate sideConditionM = case predicate of
  condition using an external SMT solver.
 -}
 evalConditional ::
+    HasCallStack =>
     InternalVariable variable =>
     OnDecidePredicateUnknown ->
     Conditional variable term ->
@@ -132,6 +133,7 @@ filterMultiOr ::
     ( Ord term
     , TopBottom term
     , InternalVariable variable
+    , HasCallStack
     ) =>
     Loc ->
     MultiOr (Conditional variable term) ->
@@ -141,6 +143,7 @@ filterMultiOr hsLoc multiOr = do
     return (MultiOr.make (catMaybes elements))
   where
     refute ::
+        HasCallStack =>
         Conditional variable term ->
         Simplifier (Maybe (Conditional variable term))
     refute p =

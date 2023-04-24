@@ -22,6 +22,7 @@ import Control.Error (
 import Control.Monad (
     (>=>),
  )
+import Data.List (delete)
 import Data.Map.Strict (
     Map,
  )
@@ -89,6 +90,7 @@ import Kore.Log.DecidePredicateUnknown (
     OnDecidePredicateUnknown (..),
     srcLoc,
  )
+import Kore.Rewrite.Axiom.Identifier (matchAxiomIdentifier)
 import Kore.Rewrite.Axiom.Matcher (
     MatchResult,
     patternMatch,
@@ -142,7 +144,7 @@ attemptEquation sideCondition termLike equation = do
                 onDecidePredicateUnknown = case simplification of
                     Attribute.NotSimplification -> ErrorDecidePredicateUnknown $srcLoc eqSrc
                     Attribute.IsSimplification _ -> WarnDecidePredicateUnknown $srcLoc eqSrc
-            checkRequires onDecidePredicateUnknown sideCondition predicate requires
+            checkRequires equation onDecidePredicateUnknown sideCondition predicate requires
                 & whileCheckRequires
             return $ Pattern.withCondition right $ from @(Predicate _) ensures
 
@@ -344,6 +346,8 @@ Throws 'RequiresNotMet' if the 'Predicate's do not hold under the
 'SideCondition'.
 -}
 checkRequires ::
+    -- | Original equation
+    Equation RewritingVariableName ->
     OnDecidePredicateUnknown ->
     SideCondition RewritingVariableName ->
     -- | requires from matching
@@ -351,19 +355,16 @@ checkRequires ::
     -- | requires from 'Equation'
     Predicate RewritingVariableName ->
     ExceptT (CheckRequiresError RewritingVariableName) Simplifier ()
-checkRequires onUnknown sideCondition predicate requires =
+checkRequires equation onUnknown sideCondition predicate requires =
     do
         let requires' = makeAndPredicate predicate requires
             -- The condition to refute:
             condition :: Condition RewritingVariableName
             condition = from @(Predicate _) (makeNotPredicate requires')
         return condition
-            -- First try to refute 'condition' without user-defined axioms:
-            >>= withoutAxioms . simplifyCondition
-            -- Next try to refute 'condition' including user-defined axioms:
-            >>= withAxioms . simplifyCondition
-            -- Finally, try to refute the simplified 'condition' using the
-            -- external solver:
+            >>= Simplifier.localAxiomEquations (removeAxiom equation) . simplifyCondition
+            >>= filterBranch
+            >>= simplifyCondition . Condition.forgetSimplified
             >>= filterBranch
 
         -- Collect the simplified results. If they are \bottom, then \and(predicate,
@@ -397,10 +398,9 @@ checkRequires onUnknown sideCondition predicate requires =
                 , negatedImplication
                 }
 
-    withoutAxioms =
-        fmap Condition.forgetSimplified
-            . Simplifier.localAxiomEquations (const mempty)
-    withAxioms = id
+    removeAxiom a m =
+        let iden = matchAxiomIdentifier . left $ a
+         in Map.adjust (delete a) iden m
 
 refreshVariables ::
     SideCondition RewritingVariableName ->
