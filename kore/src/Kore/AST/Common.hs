@@ -19,6 +19,7 @@ module Kore.AST.Common (
     patternString,
 ) where
 
+import Data.Binary (Binary)
 import Data.String (
     fromString,
  )
@@ -49,6 +50,7 @@ data MLPatternType
     | RewritesPatternType
     | TopPatternType
     deriving stock (Show, Generic, Eq)
+    deriving anyclass (Binary)
 
 instance Hashable MLPatternType
 

@@ -9,6 +9,7 @@ module Kore.Attribute.Sort.Element (
     elementAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import Kore.Attribute.Parser
 import Prelude.Kore
@@ -16,6 +17,7 @@ import Prelude.Kore
 -- | @Element@ represents the @element@ attribute for sorts.
 newtype Element = Element {getElement :: Maybe SymbolOrAlias}
     deriving stock (Generic, Eq, Ord, Show)
+    deriving anyclass (Binary)
 
 instance Semigroup Element where
     (<>) a@(Element (Just _)) _ = a

@@ -10,6 +10,7 @@ module Kore.Internal.SideCondition.SideCondition (
     mkRepresentation,
 ) where
 
+import Data.Binary (Binary (..), Get)
 import Data.Hashable (
     Hashed,
     hashed,
@@ -35,10 +36,22 @@ import Type.Reflection (
 
 data Representation where
     Representation ::
-        (Ord a, Pretty a) =>
+        (Ord a, Pretty a, Binary a, Typeable a) =>
         !(TypeRep a) ->
         Hashed a ->
         Representation
+
+instance Binary Representation where
+    put (Representation typeRep1 x) = do
+        put @String "Representation"
+        put typeRep1
+        put $ unhashed x
+    get = do
+        check <- get @String
+        unless (check == "Representation") $ error "urk"
+        Representation
+            <$> get
+            <*> (error "unknown type a here" :: Get (Hashed ())) -- fmap hashed get
 
 instance Eq Representation where
     (==) (Representation typeRep1 hashed1) (Representation typeRep2 hashed2) =
@@ -77,7 +90,7 @@ instance Pretty Representation where
 {- | Creates a 'Representation'. Should not be used directly.
  See 'Kore.Internal.SideCondition.toRepresentation'.
 -}
-mkRepresentation :: (Ord a, Hashable a, Typeable a, Pretty a) => a -> Representation
+mkRepresentation :: (Ord a, Hashable a, Typeable a, Pretty a, Binary a) => a -> Representation
 mkRepresentation = Representation typeRep . hashed
 
 instance Debug Representation where

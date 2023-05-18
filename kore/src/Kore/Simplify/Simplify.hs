@@ -74,6 +74,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
@@ -412,6 +413,7 @@ data EvaluationAttempt = EvaluationAttempt
     }
     deriving stock (Eq, Ord)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
 
 -- | Initialize with an empty cache.
@@ -578,6 +580,7 @@ data AttemptedAxiomResults variable = AttemptedAxiomResults
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -624,6 +627,7 @@ data AttemptedAxiom variable
     | Applied !(AttemptedAxiomResults variable)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

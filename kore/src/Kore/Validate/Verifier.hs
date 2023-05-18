@@ -25,6 +25,7 @@ import Control.Monad.RWS.Strict (
  )
 import Control.Monad.Reader qualified as Reader
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Generics.Product
 import Data.Map.Strict (
     Map,
@@ -66,6 +67,7 @@ newtype VerifierState = VerifierState
     { verifiedModules :: Map ModuleName VerifiedModule'
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 newtype Verifier a = Verifier
     { getVerifier ::

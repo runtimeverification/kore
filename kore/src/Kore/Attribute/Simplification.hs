@@ -20,6 +20,7 @@ module Kore.Attribute.Simplification (
     defaultSimplificationPriority,
 ) where
 
+import Data.Binary (Binary)
 import Data.Maybe (
     maybeToList,
  )
@@ -40,6 +41,7 @@ data Simplification
     | NotSimplification
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

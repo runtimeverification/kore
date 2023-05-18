@@ -6,6 +6,7 @@ module Kore.Syntax.StringLiteral (
     StringLiteral (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Text (
     Text,
@@ -27,6 +28,7 @@ import Pretty qualified
 newtype StringLiteral = StringLiteral {getStringLiteral :: Text}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

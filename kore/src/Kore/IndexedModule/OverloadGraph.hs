@@ -14,6 +14,7 @@ module Kore.IndexedModule.OverloadGraph (
     fromOverloads,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict (
     Map,
  )
@@ -42,6 +43,7 @@ data OverloadGraph = OverloadGraph
     -- ^ maps a symbol to the symbols overloaded by it
     }
     deriving stock (GHC.Generic, Typeable)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

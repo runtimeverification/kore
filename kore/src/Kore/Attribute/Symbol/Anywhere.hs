@@ -9,6 +9,7 @@ module Kore.Attribute.Symbol.Anywhere (
     anywhereAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Monoid qualified as Monoid
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -20,6 +21,7 @@ import Prelude.Kore
 newtype Anywhere = Anywhere {isAnywhere :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

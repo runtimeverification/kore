@@ -6,6 +6,7 @@ module Kore.Internal.InternalString (
     InternalString (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Text (
     Text,
@@ -33,6 +34,7 @@ data InternalString = InternalString
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

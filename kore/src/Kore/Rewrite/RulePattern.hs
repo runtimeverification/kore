@@ -39,6 +39,7 @@ import Control.Monad.State.Strict (
     evalState,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Coerce (
     Coercible,
     coerce,
@@ -141,6 +142,7 @@ data RHS variable = RHS
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -202,6 +204,7 @@ data RulePattern variable = RulePattern
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -460,6 +463,7 @@ instance HasAttributes RulePattern where
 newtype RewriteRule variable = RewriteRule {getRewriteRule :: RulePattern variable}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -502,6 +506,7 @@ instance TopBottom (RewriteRule variable) where
 newtype ImplicationRule variable = ImplicationRule {getImplicationRule :: RulePattern variable}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

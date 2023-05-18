@@ -28,6 +28,7 @@ import Control.Error (
     ExceptT,
     withExceptT,
  )
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -87,6 +88,7 @@ data AttemptEquationError variable
     | WhileCheckRequires !(CheckRequiresError variable)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -124,6 +126,7 @@ data MatchError variable = MatchError
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -142,6 +145,7 @@ data ApplyMatchResultErrors variable = ApplyMatchResultErrors
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -167,6 +171,7 @@ data ApplyMatchResultError variable
       NonMatchingSubstitution (SomeVariableName variable)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -201,6 +206,7 @@ data CheckRequiresError variable = CheckRequiresError
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -238,6 +244,7 @@ data DebugAttemptEquation
         (AttemptEquationResult RewritingVariableName)
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 instance Pretty DebugAttemptEquation where
     pretty (DebugAttemptEquation equation termLike) =
@@ -302,6 +309,7 @@ data DebugApplyEquation
         (Pattern RewritingVariableName)
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 instance Pretty DebugApplyEquation where
     pretty (DebugApplyEquation equation result) =

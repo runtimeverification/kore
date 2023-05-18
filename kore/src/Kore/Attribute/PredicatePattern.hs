@@ -21,6 +21,7 @@ module Kore.Attribute.PredicatePattern (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Generics.Product
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -54,6 +55,7 @@ data PredicatePattern variable = PredicatePattern
     , simplified :: !Simplified
     }
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
 
 instance NFData variable => NFData (PredicatePattern variable)
 

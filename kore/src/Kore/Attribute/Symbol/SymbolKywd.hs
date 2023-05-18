@@ -9,6 +9,7 @@ module Kore.Attribute.Symbol.SymbolKywd (
     symbolKywdAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Monoid (
     Any (..),
  )
@@ -22,6 +23,7 @@ import Prelude.Kore
 newtype SymbolKywd = SymbolKywd {isSymbolKywd :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

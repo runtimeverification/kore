@@ -12,6 +12,7 @@ module Data.Graph.TopologicalSort (
     TopologicalSortCycles (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Graph (
     SCC (..),
     stronglyConnComp,
@@ -24,6 +25,7 @@ import Prelude.Kore
 
 newtype TopologicalSortCycles node = TopologicalSortCycles [node]
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
 
 instance SOP.Generic (TopologicalSortCycles node)
 

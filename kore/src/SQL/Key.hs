@@ -8,6 +8,7 @@ module SQL.Key (
     Key (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Int (
     Int64,
  )
@@ -21,5 +22,6 @@ newtype Key a = Key {getKey :: Int64}
     deriving stock (Eq, Ord, Read, Show)
     deriving stock (Functor, Foldable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

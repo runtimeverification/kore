@@ -66,6 +66,7 @@ module Kore.Internal.Predicate (
 
 import Control.Comonad.Trans.Env qualified as Env
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary (..))
 import Data.Either qualified as Either
 import Data.Foldable qualified as Foldable
 import Data.Functor.Compose (
@@ -170,6 +171,7 @@ data PredicateF variable child
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -264,6 +266,12 @@ newtype Predicate variable = Predicate
         Cofree (PredicateF variable) (PredicatePattern variable)
     }
     deriving stock (GHC.Generic, Show)
+
+instance Binary variable => Binary (Predicate variable) where
+    put (Recursive.project -> attrs :< predF) =
+        put attrs >> put predF
+    get =
+        fmap Recursive.embed $ (:<) <$> get <*> get
 
 instance SOP.Generic (Predicate variable)
 
@@ -942,6 +950,7 @@ getMultiOrPredicate = \case
 newtype NotPredicate variable
     = NotPredicate (TermLikeF variable (Predicate variable))
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

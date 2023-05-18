@@ -28,6 +28,7 @@ import Control.Exception.Lifted (uninterruptibleMask_)
 import Control.Monad (foldM)
 import Control.Monad.Extra (whenJust)
 import Control.Monad.Trans.State
+import Data.Binary (Binary)
 import Data.Limit
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe (fromJust)
@@ -410,6 +411,7 @@ data TraversalResult a
       TimedOut a [a]
     deriving stock (Eq, Show)
     deriving stock (GHC.Generics.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 
 instance Debug a => Debug (TraversalResult a)

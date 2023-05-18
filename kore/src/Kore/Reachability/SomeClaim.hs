@@ -20,6 +20,7 @@ module Kore.Reachability.SomeClaim (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Coerce (
     coerce,
  )
@@ -77,6 +78,7 @@ data SomeClaim
     | AllPath !AllPathClaim
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -193,6 +195,7 @@ instance Claim SomeClaim where
         {unReachabilityRewriteRule :: RewriteRule RewritingVariableName}
         deriving stock (Eq, Ord, Show)
         deriving stock (GHC.Generic)
+        deriving anyclass (Binary)
         deriving anyclass (NFData)
         deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
         deriving anyclass (Debug, Diff)

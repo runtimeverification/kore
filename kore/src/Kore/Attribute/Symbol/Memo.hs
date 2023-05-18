@@ -9,6 +9,7 @@ module Kore.Attribute.Symbol.Memo (
     memoAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Monoid (
     Any (..),
  )
@@ -22,6 +23,7 @@ import Prelude.Kore
 newtype Memo = Memo {isMemo :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -17,6 +17,7 @@ module SQL.ColumnDef (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Generics.Product.Fields
 import Data.Set (
     Set,
@@ -27,6 +28,7 @@ import Prelude.Kore
 
 newtype TypeName = TypeName {getTypeName :: String}
     deriving stock (Eq, Ord, Read, Show)
+    deriving newtype (Binary)
 
 typeInteger :: TypeName
 typeInteger = TypeName "INTEGER"
@@ -36,6 +38,7 @@ typeText = TypeName "TEXT"
 
 newtype ColumnConstraint = ColumnConstraint {getColumnConstraint :: String}
     deriving stock (Eq, Ord, Read, Show)
+    deriving newtype (Binary)
 
 notNull :: Set ColumnConstraint
 notNull = Set.singleton (ColumnConstraint "NOT NULL")
@@ -48,6 +51,7 @@ data ColumnDef = ColumnDef
     , columnConstraints :: !(Set ColumnConstraint)
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 columnDef :: TypeName -> ColumnDef
 columnDef columnType = ColumnDef{columnType, columnConstraints = mempty}

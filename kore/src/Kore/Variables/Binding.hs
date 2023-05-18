@@ -20,6 +20,7 @@ import Control.Lens (
     (%~),
  )
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Generics.Product (
     field,
  )
@@ -115,6 +116,7 @@ data Binder variable child = Binder
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 {- | A 'Lens.Lens' to view a 'Mu' as a 'Binder'.
 

@@ -12,6 +12,7 @@ module Kore.Attribute.Comm (
     commAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -23,6 +24,7 @@ import Prelude.Kore
 newtype Comm = Comm {isComm :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

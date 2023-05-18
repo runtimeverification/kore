@@ -12,6 +12,7 @@ module Kore.Reachability.AllPathClaim (
 import Control.Monad (
     foldM,
  )
+import Data.Binary (Binary)
 import Data.Generics.Wrapped (
     _Unwrapped,
  )
@@ -67,6 +68,7 @@ import Prelude.Kore
 newtype AllPathClaim = AllPathClaim {getAllPathClaim :: ClaimPattern}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -137,6 +139,7 @@ instance Claim AllPathClaim where
         {unRuleAllPath :: RewriteRule RewritingVariableName}
         deriving stock (Eq, Ord, Show)
         deriving stock (GHC.Generic)
+        deriving anyclass (Binary)
         deriving anyclass (NFData)
         deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
         deriving anyclass (Debug, Diff)

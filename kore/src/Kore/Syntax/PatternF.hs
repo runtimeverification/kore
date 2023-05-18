@@ -16,6 +16,7 @@ module Kore.Syntax.PatternF (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Functor.Identity (
     Identity (..),
@@ -82,9 +83,12 @@ data PatternF variable child
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
+
+instance Binary a => Binary (Const a b)
 
 instance (Unparse variable, Unparse child) => Unparse (PatternF variable child) where
     unparse = unparseGeneric

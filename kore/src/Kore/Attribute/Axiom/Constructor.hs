@@ -12,6 +12,7 @@ module Kore.Attribute.Axiom.Constructor (
     constructorAttribute,
 ) where
 
+import Data.Binary (Binary)
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Attribute.Parser as Parser
@@ -21,6 +22,7 @@ import Prelude.Kore
 -- | @Constructor@ represents the @constructor@ attribute for axioms.
 newtype Constructor = Constructor {isConstructor :: Bool}
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
     deriving anyclass (NFData)

@@ -8,6 +8,7 @@ module Kore.Attribute.RuleIndex (
     RuleIndexCase (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -19,6 +20,7 @@ data RuleIndexCase
     | ClaimIndex !Int
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -29,6 +31,7 @@ data RuleIndexCase
 newtype RuleIndex = RuleIndex {getRuleIndex :: Maybe RuleIndexCase}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

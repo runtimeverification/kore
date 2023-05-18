@@ -7,6 +7,7 @@ module Kore.Attribute.Pattern.Total (
     alwaysTotal,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Monoid
 import GHC.Generics qualified as GHC
@@ -25,6 +26,7 @@ import Prelude.Kore
 -- | A pattern is 'Total' if it matches exactly one element.
 newtype Total = Total {isTotal :: Bool}
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

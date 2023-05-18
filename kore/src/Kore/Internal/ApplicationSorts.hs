@@ -8,6 +8,7 @@ module Kore.Internal.ApplicationSorts (
     symbolOrAliasSorts,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict (
     Map,
  )
@@ -28,6 +29,7 @@ data ApplicationSorts = ApplicationSorts
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

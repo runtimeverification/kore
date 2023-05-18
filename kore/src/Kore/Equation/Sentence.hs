@@ -9,6 +9,7 @@ module Kore.Equation.Sentence (
 ) where
 
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary)
 import Debug
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -62,6 +63,7 @@ data MatchEquationError variable
     | SubsortAxiom
     | UnsupportedLHS !(TermLike variable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
 

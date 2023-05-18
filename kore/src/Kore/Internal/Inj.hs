@@ -16,6 +16,7 @@ import Control.Exception (
     Exception (..),
     throw,
  )
+import Data.Binary (Binary)
 import Debug
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -49,6 +50,7 @@ data Inj a = Inj
     deriving stock (Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

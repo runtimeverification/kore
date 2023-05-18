@@ -38,6 +38,7 @@ import Control.Lens qualified as Lens
 import Control.Monad qualified as Monad
 import Control.Monad.Reader qualified as Reader
 import Data.Bifunctor (first)
+import Data.Binary (Binary)
 import Data.ByteString.Short qualified as ByteString
 import Data.Functor.Const (
     Const (..),
@@ -197,6 +198,7 @@ data TermLikeF variable child
     deriving stock (Eq, Ord, Show)
     deriving stock (Foldable, Functor, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -494,6 +496,7 @@ data TermAttributes variable = TermAttributes
     }
     deriving stock (Eq, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 
@@ -668,6 +671,7 @@ data TermLike variable = TermLike__
     -- to the need to patch metadata, and keeping them up to date can be
     -- a bit of a challenge.
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
 

@@ -37,6 +37,7 @@ module Kore.Rewrite.SMT.AST (
     symbolSmtFromSortArgs,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict (
     Map,
  )
@@ -81,6 +82,7 @@ data Sort sort symbol name = Sort
     -- dependencies on other sorts and symbols.
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -105,6 +107,7 @@ data SortSExprSpec
     | ApplyToArgs AST.SExpr
     | ConstSExpr AST.SExpr
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
@@ -128,6 +131,7 @@ data Symbol sort name = Symbol
     -- dependencies on other sorts and symbols.
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -158,6 +162,7 @@ data KoreSortDeclaration sort symbol name
       SortDeclaredIndirectly !name
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -180,6 +185,7 @@ data KoreSymbolDeclaration sort name
       SymbolConstructor !(IndirectSymbolDeclaration sort name)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -191,6 +197,7 @@ data IndirectSymbolDeclaration sort name = IndirectSymbolDeclaration
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 
@@ -214,6 +221,7 @@ data Declarations sort symbol name = Declarations
     }
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -222,6 +230,7 @@ data Declarations sort symbol name = Declarations
 newtype SortReference = SortReference {getSortReference :: Kore.Sort}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -229,6 +238,7 @@ newtype SortReference = SortReference {getSortReference :: Kore.Sort}
 newtype SymbolReference = SymbolReference {getSymbolReference :: Kore.Id}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -242,6 +252,7 @@ data Encodable
     | Encodable !SExpr
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

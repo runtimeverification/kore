@@ -12,6 +12,7 @@ module Kore.IndexedModule.SortGraph (
     Subsort (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Graph.Inductive.Graph qualified as Graph
 import Data.Graph.Inductive.PatriciaTree (
     Gr,
@@ -42,6 +43,7 @@ import Prelude.Kore
 -- | 'SortGraph' represents the partial order on sorts.
 newtype SortGraph = SortGraph {unSortGraph :: Map Sort (Set Sort)}
     deriving stock (GHC.Generic, Typeable)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

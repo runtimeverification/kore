@@ -38,6 +38,7 @@ import Control.Monad.State.Strict (
  )
 import Control.Monad.State.Strict qualified as State
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary (..))
 import Data.Functor.Foldable qualified as Recursive
 import Data.Generics.Product (
     field,
@@ -172,9 +173,18 @@ data SideCondition variable = SideCondition
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
+
+instance (Hashable e, Binary e) => Binary (HashSet e) where
+    put = put . HashSet.toList
+    get = fmap HashSet.fromList get
+
+instance (Binary k, Hashable k, Binary v) => Binary (HashMap k v) where
+    put = put . HashMap.toList
+    get = fmap HashMap.fromList get
 
 instance InternalVariable variable => SQL.Column (SideCondition variable) where
     defineColumn = SQL.defineTextColumn
@@ -465,6 +475,7 @@ fromDefinedTerms definedTerms =
 -}
 toRepresentation ::
     InternalVariable variable =>
+    Binary variable =>
     SideCondition variable ->
     SideCondition.Representation
 toRepresentation sideCondition =
@@ -517,6 +528,7 @@ data Assumptions variable = Assumptions
     , predicateMap :: HashMap (Predicate variable) (Predicate variable)
     }
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
 
 {- | Simplify the conjunction of 'Predicate' clauses by assuming each is true.
 The conjunction is simplified by the identity:

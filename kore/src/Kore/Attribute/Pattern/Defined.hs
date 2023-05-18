@@ -7,6 +7,7 @@ module Kore.Attribute.Pattern.Defined (
     alwaysDefined,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Monoid
 import GHC.Generics qualified as GHC
@@ -26,6 +27,7 @@ import Prelude.Kore
 newtype Defined = Defined {isDefined :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

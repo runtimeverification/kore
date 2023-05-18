@@ -25,6 +25,7 @@ import Control.Monad.State.Strict (
     evalState,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Default qualified as Default
 import Data.Foldable qualified as Foldable
 import Data.Map.Strict (
@@ -106,6 +107,7 @@ data Implication modality = Implication
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -6,6 +6,7 @@ module Kore.Syntax.DomainValue (
     DomainValue (..),
 ) where
 
+import Data.Binary (Binary)
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Attribute.Pattern.FreeVariables
@@ -32,6 +33,7 @@ data DomainValue sort child = DomainValue
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

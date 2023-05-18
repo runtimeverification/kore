@@ -42,6 +42,7 @@ import Control.Exception (
     throw,
  )
 import Data.Align
+import Data.Binary (Binary)
 import Data.Map.Strict qualified as Map
 import Data.These
 import GHC.Generics qualified as GHC
@@ -60,6 +61,7 @@ newtype SortVariable = SortVariable
     {getSortVariable :: Id}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -77,6 +79,7 @@ data SortActual = SortActual
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -102,6 +105,7 @@ data Sort
     | SortActualSort !SortActual
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -172,6 +176,7 @@ representation instead.
 data MetaSortType
     = StringSort
     deriving stock (GHC.Generic, Eq)
+    deriving anyclass (Binary)
 
 instance Hashable MetaSortType
 

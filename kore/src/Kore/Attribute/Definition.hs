@@ -8,6 +8,7 @@ module Kore.Attribute.Definition (
 ) where
 
 import Control.Monad.Catch (MonadThrow)
+import Data.Binary (Binary)
 import Data.Default qualified as Default
 import Data.Generics.Product (typed)
 import GHC.Generics qualified as GHC
@@ -25,6 +26,7 @@ newtype KFileLocations = KFileLocations
     {locations :: [SourceLocation]}
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
 
 parseKFileAttributes :: MonadThrow m => Attributes -> m SourceLocation

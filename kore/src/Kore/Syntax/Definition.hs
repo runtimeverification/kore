@@ -13,6 +13,7 @@ module Kore.Syntax.Definition (
     module Kore.Syntax.Sentence,
 ) where
 
+import Data.Binary (Binary)
 import Data.Kind (
     Type,
  )
@@ -42,6 +43,7 @@ data Definition (sentence :: Type) = Definition
     deriving stock (Eq, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -14,6 +14,7 @@ module Kore.Attribute.Attributes (
     attributeVariable,
 ) where
 
+import Data.Binary (Binary)
 import Data.Default (
     Default (..),
  )
@@ -78,6 +79,7 @@ It is parameterized by the types of Patterns, @pat@.
 newtype Attributes = Attributes {getAttributes :: [AttributePattern]}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

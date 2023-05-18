@@ -10,6 +10,7 @@ module Kore.Attribute.Location (
     LineColumn (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Text qualified as Text
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -32,6 +33,7 @@ data LineColumn = LineColumn
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -42,6 +44,7 @@ data Location = Location
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

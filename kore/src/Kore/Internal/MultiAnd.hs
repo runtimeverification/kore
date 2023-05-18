@@ -24,6 +24,7 @@ module Kore.Internal.MultiAnd (
     size,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.List (genericLength)
 import Data.Set (Set)
@@ -79,6 +80,7 @@ data MultiAnd child
     | MultiAnd (Set child)
     deriving stock (Eq, Ord, Show, Foldable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

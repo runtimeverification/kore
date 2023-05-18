@@ -12,6 +12,7 @@ module Kore.Attribute.Sort.Concat (
     concatAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import Kore.Attribute.Parser
 import Prelude.Kore
@@ -19,6 +20,7 @@ import Prelude.Kore
 -- | @Concat@ represents the @concat@ attribute for sorts.
 newtype Concat = Concat {getConcat :: Maybe SymbolOrAlias}
     deriving stock (Generic, Eq, Ord, Show)
+    deriving anyclass (Binary)
 
 instance Semigroup Concat where
     (<>) a@(Concat (Just _)) _ = a

@@ -14,6 +14,7 @@ module Kore.Attribute.Hook (
     getHookAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -27,6 +28,7 @@ import Prelude.Kore
 newtype Hook = Hook {getHook :: Maybe Text}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

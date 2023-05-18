@@ -26,6 +26,7 @@ import Control.Monad.Except (
     MonadError (..),
  )
 import Data.Aeson.Types (ToJSON)
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -51,6 +52,7 @@ data Error a = Error
     , errorError :: !String
     }
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

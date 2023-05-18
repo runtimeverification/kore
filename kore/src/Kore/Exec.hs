@@ -43,6 +43,7 @@ import Control.Monad (
 import Control.Monad.Catch (throwM)
 import Control.Monad.Trans.Maybe (runMaybeT)
 import Control.Monad.Validate
+import Data.Binary (Binary)
 import Data.Coerce (
     coerce,
  )
@@ -235,6 +236,7 @@ type Equality = Equation VariableName
 -- | A collection of rules and simplifiers used during execution.
 newtype Initialized = Initialized {rewriteRules :: [Rewrite]}
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
 
 data SerializedModule = SerializedModule
@@ -246,6 +248,7 @@ data SerializedModule = SerializedModule
     , equations :: Map AxiomIdentifier [Equation VariableName]
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
 
 makeSerializedModule ::

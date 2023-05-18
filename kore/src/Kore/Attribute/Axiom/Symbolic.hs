@@ -15,6 +15,7 @@ module Kore.Attribute.Axiom.Symbolic (
     FreeVariables,
 ) where
 
+import Data.Binary (Binary)
 import Data.Set (
     Set,
  )
@@ -38,6 +39,7 @@ import Prelude.Kore
 newtype Symbolic variable = Symbolic {unSymbolic :: FreeVariables variable}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

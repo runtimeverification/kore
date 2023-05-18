@@ -16,6 +16,7 @@ module Kore.Internal.InternalSet (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Attribute.Pattern.ConstructorLike
@@ -48,6 +49,7 @@ type SetElement = Element NormalizedSet
 newtype NormalizedSet key child = NormalizedSet {getNormalizedSet :: NormalizedAc NormalizedSet key child}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving stock (Traversable)
     deriving newtype (Foldable, Functor)
     deriving anyclass (Hashable, NFData)
@@ -59,6 +61,7 @@ instance AcWrapper NormalizedSet where
         deriving stock (Eq, Ord, Show)
         deriving stock (Foldable, Functor, Traversable)
         deriving stock (GHC.Generic)
+        deriving anyclass (Binary)
         deriving anyclass (Hashable, NFData)
         deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
         deriving anyclass (Debug, Diff)
@@ -67,6 +70,7 @@ instance AcWrapper NormalizedSet where
         deriving stock (Eq, Ord, Show)
         deriving stock (Foldable, Functor, Traversable)
         deriving stock (GHC.Generic)
+        deriving anyclass (Binary)
         deriving anyclass (Hashable, NFData)
         deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
         deriving anyclass (Debug, Diff)

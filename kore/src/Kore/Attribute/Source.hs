@@ -9,6 +9,7 @@ module Kore.Attribute.Source (
     Source (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import Data.Text qualified as Text
 import GHC.Generics qualified as GHC
@@ -27,6 +28,7 @@ import Text.Megaparsec.Char
 newtype Source = Source {unSource :: Maybe String}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

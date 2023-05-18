@@ -41,6 +41,7 @@ import Control.Monad.State.Strict (
     MonadState,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Default
 import Data.Functor.Const
 import Data.Functor.Foldable qualified as Recursive
@@ -377,6 +378,7 @@ data SMTDependentAtom variable = SMTDependentAtom
     , boundVars :: ![ElementVariable variable]
     }
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
 
 {- | Instantiates an 'SMTDependentAtom' with the current encodings for the
 variables it depends on.
@@ -409,6 +411,7 @@ data TranslatorState variable = TranslatorState
         !(Map (ElementVariable variable) (SMTDependentAtom variable))
     }
     deriving stock (Eq, GHC.Generic, Show)
+    deriving anyclass (Binary)
 
 instance Default (TranslatorState variable) where
     def = TranslatorState def def def def

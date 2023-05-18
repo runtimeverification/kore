@@ -15,6 +15,7 @@ import Control.Monad.State.Strict (
  )
 import Control.Monad.State.Strict qualified as State
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary)
 import Data.Generics.Product (
     field,
  )
@@ -169,6 +170,7 @@ instance ExpandSingleConstructors SomeClaim where
 
 newtype Expansion variable = Expansion {stale :: Set (ElementVariableName variable)}
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 type Expander variable = State (Expansion variable)
 

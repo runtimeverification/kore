@@ -11,6 +11,7 @@ module Kore.Internal.Key (
     KeyAttributes (..),
 ) where
 
+import Data.Binary (Binary (..))
 import Data.Functor.Const (
     Const (..),
  )
@@ -62,6 +63,7 @@ newtype KeyAttributes = KeyAttributes
     }
     deriving stock (Eq, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -85,6 +87,11 @@ newtype Key = Key {getKey :: CofreeF KeyF KeyAttributes Key}
     deriving stock (GHC.Generic)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
+
+instance Binary Key where
+    put (Recursive.project -> attrs :< keyF) =
+        put attrs >> put keyF
+    get = fmap Recursive.embed $ (:<) <$> get <*> get
 
 type instance Base Key = CofreeF KeyF KeyAttributes
 
@@ -172,6 +179,7 @@ data KeyF child
     deriving stock (Eq, Ord, Show)
     deriving stock (Foldable, Functor, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

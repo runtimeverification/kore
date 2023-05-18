@@ -6,6 +6,7 @@ module Kore.Internal.InternalList (
     InternalList (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Sequence (
     Seq,
  )
@@ -40,6 +41,7 @@ data InternalList child = InternalList
     deriving stock (Eq, Ord, Show)
     deriving stock (Foldable, Functor, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

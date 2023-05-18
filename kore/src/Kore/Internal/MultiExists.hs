@@ -10,6 +10,7 @@ module Kore.Internal.MultiExists (
     filterRelevant,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict qualified as Map
 import Data.Sequence (
     Seq,
@@ -64,6 +65,7 @@ data MultiExists variable child = MultiExists
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

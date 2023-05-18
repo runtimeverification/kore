@@ -31,6 +31,7 @@ module SMT.AST (
     SmtFunctionDeclaration,
 ) where
 
+import Data.Binary (Binary)
 import Data.Char (
     isSpace,
  )
@@ -70,6 +71,7 @@ data SExpr
     = Atom !Text
     | List ![SExpr]
     deriving stock (GHC.Generic, Eq, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -91,6 +93,7 @@ data ConstructorArgument sort name = ConstructorArgument
     , argType :: !sort
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -103,6 +106,7 @@ data Constructor sort symbol name = Constructor
     , arguments :: ![ConstructorArgument sort name]
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -118,6 +122,7 @@ data DataTypeDeclaration sort symbol name = DataTypeDeclaration
     , constructors :: ![Constructor sort symbol name]
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 
@@ -135,6 +140,7 @@ data SortDeclaration name = SortDeclaration
     , arity :: Int
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -146,6 +152,7 @@ data FunctionDeclaration sort name = FunctionDeclaration
     , resultSort :: !sort
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

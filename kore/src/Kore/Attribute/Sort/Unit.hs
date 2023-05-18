@@ -12,6 +12,7 @@ module Kore.Attribute.Sort.Unit (
     unitAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import Kore.Attribute.Parser
 import Prelude.Kore
@@ -19,6 +20,7 @@ import Prelude.Kore
 -- | @Unit@ represents the @unit@ attribute for sorts.
 newtype Unit = Unit {getUnit :: Maybe SymbolOrAlias}
     deriving stock (Generic, Eq, Ord, Show)
+    deriving anyclass (Binary)
 
 instance Semigroup Unit where
     (<>) a@(Unit (Just _)) _ = a

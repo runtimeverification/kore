@@ -40,6 +40,7 @@ module Kore.Rewrite.RewritingVariable (
     getRewritingTerm,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Debug
@@ -74,6 +75,7 @@ data RewritingVariableName
     | RuleVariableName !VariableName
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

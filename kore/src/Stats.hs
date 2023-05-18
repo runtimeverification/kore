@@ -14,6 +14,7 @@ import Data.Aeson (
     ToJSON,
  )
 import Data.Aeson qualified as Aeson
+import Data.Binary (Binary)
 import Data.Word
 import Debug
 import GHC.Generics qualified as GHC
@@ -31,6 +32,7 @@ data Stats = Stats
     }
     deriving stock (Eq, Read, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (FromJSON, ToJSON)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

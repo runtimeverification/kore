@@ -25,6 +25,7 @@ import Control.Monad.Catch (
     handleAll,
  )
 import Control.Monad.Extra qualified as Monad
+import Data.Binary (Binary)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Debug
 import GHC.Generics qualified as GHC
@@ -65,6 +66,7 @@ import System.IO.Temp (
 newtype BugReport = BugReport {toReport :: FilePath}
     deriving stock (Eq, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
 
@@ -77,6 +79,7 @@ data BugReportOption
       BugReportOnError
     deriving stock (Eq, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
 

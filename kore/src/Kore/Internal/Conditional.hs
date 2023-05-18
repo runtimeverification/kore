@@ -25,6 +25,7 @@ module Kore.Internal.Conditional (
     setPredicateSimplified,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict (
     Map,
  )
@@ -97,6 +98,7 @@ data Conditional variable child = Conditional
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)

@@ -20,6 +20,7 @@ module Kore.Rewrite.Result (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Generics.Product (
     field,
  )
@@ -54,6 +55,7 @@ data Result rule config = Result
     , result :: !(MultiOr config)
     }
     deriving stock (Eq, Foldable, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
 
 -- | Apply a function to the 'appliedRule' of a 'Result'.
 mapRule :: (rule1 -> rule2) -> Result rule1 config -> Result rule2 config
@@ -87,6 +89,7 @@ data Results rule config = Results
     , remainders :: !(MultiOr config)
     }
     deriving stock (Eq, GHC.Generic, Ord, Show)
+    deriving anyclass (Binary)
 
 instance (Ord config, TopBottom config) => Semigroup (Results rule config) where
     (<>) results1 results2 =

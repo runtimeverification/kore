@@ -9,6 +9,7 @@ module Kore.Syntax.Forall (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.Binary (Binary)
 import Data.Set (Set)
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -38,6 +39,7 @@ data Forall sort variable child = Forall
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

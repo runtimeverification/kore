@@ -21,6 +21,7 @@ module Kore.Rewrite.Axiom.Identifier (
     matchAxiomIdentifier,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const (
     Const (..),
  )
@@ -83,6 +84,7 @@ data AxiomIdentifier
       Other
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

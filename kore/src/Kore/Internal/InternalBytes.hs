@@ -6,6 +6,7 @@ module Kore.Internal.InternalBytes (
     InternalBytes (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.ByteString.Short (
     ShortByteString,
  )
@@ -29,6 +30,7 @@ data InternalBytes = InternalBytes
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

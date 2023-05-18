@@ -20,6 +20,7 @@ import Control.Monad.State.Strict (
     StateT,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -90,6 +91,7 @@ data ProofState patt
     | -- | State which can't be rewritten anymore.
       GoalRemLHS !patt
     deriving stock (Show, Eq, Ord, Generic, Functor)
+    deriving anyclass (Binary)
 
 instance TopBottom (ProofState patt) where
     isTop _ = False

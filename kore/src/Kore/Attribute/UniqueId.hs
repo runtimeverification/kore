@@ -15,6 +15,7 @@ module Kore.Attribute.UniqueId (
     uniqueIdAttribute,
 ) where
 
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -28,6 +29,7 @@ import Prelude.Kore
 newtype UniqueId = UniqueId {getUniqueId :: Maybe Text}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

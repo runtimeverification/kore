@@ -25,6 +25,7 @@ import Control.Monad (
     foldM,
  )
 import Control.Monad.State (get, modify)
+import Data.Binary (Binary)
 import Data.Limit (
     Limit (..),
  )
@@ -92,6 +93,7 @@ data ProgramState a
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

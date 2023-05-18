@@ -20,6 +20,7 @@ module Kore.IndexedModule.MetadataTools (
     symbolAttributes,
 ) where
 
+import Data.Binary (Binary (..))
 import Data.Map.Strict (
     Map,
  )
@@ -61,6 +62,14 @@ data MetadataSyntaxData attributes
         ) =>
       MetadataSyntaxDataExtension (syntaxData attributes)
 
+instance
+    Binary (VerifiedModuleSyntax attributes) =>
+    Binary (MetadataSyntaxData attributes)
+    where
+    put (MetadataSyntaxData vms) = put vms
+    put MetadataSyntaxDataExtension{} = error "urk"
+    get = error "ork"
+
 instance NFData (MetadataSyntaxData attributes) where
     rnf (MetadataSyntaxData sdata) = sdata `seq` ()
     rnf (MetadataSyntaxDataExtension sdata) = sdata `seq` ()
@@ -84,6 +93,7 @@ data MetadataTools sortConstructors smt attributes = MetadataTools
     -- ^ The constructors for each sort.
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
 
 type SmtMetadataTools attributes =

@@ -40,6 +40,7 @@ import Control.Error (
     MaybeT,
  )
 import Control.Monad qualified as Monad
+import Data.Binary (Binary)
 import Data.HashMap.Strict (
     HashMap,
  )
@@ -320,6 +321,10 @@ data NormalizedOrBottom collection variable
     = Normalized (TermNormalizedAc collection variable)
     | Bottom
     deriving stock (GHC.Generic)
+
+deriving anyclass instance
+    Binary (TermNormalizedAc collection variable) =>
+    Binary (NormalizedOrBottom collection variable)
 
 deriving stock instance
     Eq (TermNormalizedAc collection variable) =>

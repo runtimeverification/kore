@@ -22,6 +22,7 @@ module Kore.Attribute.Pattern.FreeVariables (
     freeVariableNames,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Map.Strict (
     Map,
@@ -46,6 +47,7 @@ newtype FreeVariables variable = FreeVariables
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -56,6 +58,7 @@ data FreeVariableInfo = FreeVariableInfo
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

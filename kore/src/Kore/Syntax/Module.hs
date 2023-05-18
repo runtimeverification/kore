@@ -12,6 +12,7 @@ import Data.Aeson (
     FromJSON,
     ToJSON,
  )
+import Data.Binary (Binary)
 import Data.Kind (
     Type,
  )
@@ -34,6 +35,7 @@ import Pretty qualified
 newtype ModuleName = ModuleName {getModuleName :: Text}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving newtype (IsString, FromJSON, ToJSON)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
@@ -60,6 +62,7 @@ data Module (sentence :: Type) = Module
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor, Foldable, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

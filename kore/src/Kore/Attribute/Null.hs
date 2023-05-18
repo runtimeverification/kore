@@ -16,6 +16,7 @@ module Kore.Attribute.Null (
     Null (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Default
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -25,6 +26,7 @@ import Prelude.Kore
 data Null = Null
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

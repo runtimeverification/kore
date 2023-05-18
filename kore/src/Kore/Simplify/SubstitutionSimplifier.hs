@@ -26,6 +26,7 @@ import Control.Monad.State.Strict (
     StateT,
     runStateT,
  )
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.Generics.Product
 import Data.List.NonEmpty qualified as NonEmpty
@@ -414,6 +415,7 @@ data Private variable = Private
     -- ^ The current number of denormalized substitutions.
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 {- | The 'Impl'ementation of the generic 'SubstitutionSimplifier'.
 

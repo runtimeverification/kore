@@ -63,6 +63,7 @@ import Control.Monad.State.Strict (
     execState,
  )
 import Control.Monad.State.Strict qualified as Monad.State
+import Data.Binary (Binary)
 import Data.Default as Default
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
@@ -134,6 +135,7 @@ data IndexedModuleSyntax pat declAtts = IndexedModuleSyntax
     -- ^ set of hooked identifiers
     }
     deriving stock (Generic, Show, Functor, Foldable, Traversable)
+    deriving anyclass (Binary)
 
 -- TODO (thomas.tuegel): Consider splitting IndexedModule into separate sort,
 -- symbol, and axiom indices.
@@ -158,6 +160,7 @@ data IndexedModule pat declAtts axiomAtts = IndexedModule
     -- identifiers
     }
     deriving stock (Generic, Show, Functor, Foldable, Traversable)
+    deriving anyclass (Binary)
 
 recursiveIndexedModuleSortDescriptions ::
     forall pat declAtts axiomAtts.
@@ -464,6 +467,8 @@ things that are implicitly defined.
 newtype ImplicitIndexedModule pat declAtts axiomAtts
     = ImplicitIndexedModule (IndexedModule pat declAtts axiomAtts)
     deriving stock (Show)
+    deriving newtype (Generic)
+    deriving newtype (Binary)
 
 type KoreImplicitIndexedModule = ImplicitIndexedModule ParsedPattern
 

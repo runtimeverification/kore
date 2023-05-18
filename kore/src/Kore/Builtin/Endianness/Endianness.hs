@@ -7,6 +7,7 @@ module Kore.Builtin.Endianness.Endianness (
     toApplication,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import Data.Void (
     Void,
@@ -35,6 +36,7 @@ data Endianness
     | LittleEndian !Symbol
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 instance Hashable Endianness
 

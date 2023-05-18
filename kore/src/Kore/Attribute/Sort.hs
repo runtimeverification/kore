@@ -10,6 +10,7 @@ module Kore.Attribute.Sort (
 ) where
 
 import Control.Monad qualified as Monad
+import Data.Binary (Binary)
 import Data.Generics.Product
 import Kore.Attribute.Hook
 import Kore.Attribute.Parser hiding (
@@ -41,6 +42,7 @@ data Sort = Sort
     -- ^ whether the sort has domain values
     }
     deriving stock (Eq, Generic, Ord, Show)
+    deriving anyclass (Binary)
 
 instance NFData Sort
 

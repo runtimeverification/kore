@@ -408,6 +408,7 @@ only requires some instances to be derived:
 
 > data DataType = ...
 >     deriving stock (GHC.Generics.Generic)
+     deriving anyclass (Binary)
 >     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 >     deriving anyclass (Debug, Diff)
 -}

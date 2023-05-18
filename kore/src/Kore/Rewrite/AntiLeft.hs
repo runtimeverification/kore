@@ -11,6 +11,7 @@ module Kore.Rewrite.AntiLeft (
     toTermLike,
 ) where
 
+import Data.Binary (Binary)
 import Data.Map.Strict (
     Map,
  )
@@ -105,6 +106,7 @@ data AntiLeftLhs variable = AntiLeftLhs
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -155,6 +157,7 @@ data AntiLeft variable = AntiLeft
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

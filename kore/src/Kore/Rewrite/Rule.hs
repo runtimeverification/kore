@@ -23,6 +23,7 @@ module Kore.Rewrite.Rule (
 ) where
 
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.List.Extra (
     groupSortOn,
@@ -95,6 +96,7 @@ import Pretty qualified
 -- | Error encountered when parsing patterns
 newtype AxiomPatternError = AxiomPatternError ()
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 instance NFData AxiomPatternError
 
@@ -112,6 +114,7 @@ data QualifiedAxiomPattern variable
     | ImplicationAxiomPattern (ImplicationRule variable)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

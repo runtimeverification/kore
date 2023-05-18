@@ -54,6 +54,7 @@ module Kore.Internal.Substitution (
     pattern UnorderedAssignment,
 ) where
 
+import Data.Binary (Binary)
 import Data.List qualified as List
 import Data.Map.Strict (
     Map,
@@ -115,6 +116,7 @@ data Assignment variable = Assignment_
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -248,6 +250,7 @@ data Substitution variable
         !(Map (SomeVariable variable) (TermLike variable))
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
@@ -861,6 +864,7 @@ data Normalization variable = Normalization
     {normalized, denormalized :: !(UnwrappedSubstitution variable)}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

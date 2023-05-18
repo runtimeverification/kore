@@ -39,6 +39,7 @@ import Control.Monad.State.Strict (
     runStateT,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Graph.Inductive.Graph qualified as Graph
 import Data.Limit (
     Limit,
@@ -182,6 +183,7 @@ newtype AlreadyProven = AlreadyProven {getAlreadyProven :: [Text]}
 newtype StuckClaim = StuckClaim {getStuckClaim :: SomeClaim}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 

@@ -9,6 +9,7 @@ module Data.Sup (
     Sup (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Data (
     Data,
  )
@@ -31,6 +32,7 @@ data Sup a
     deriving stock (Data, Typeable)
     deriving stock (Functor)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

@@ -11,6 +11,7 @@ import Control.Monad.Reader (
  )
 import Control.Monad.Reader qualified as Reader
 import Control.Monad.State.Class qualified as State
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.Generics.Product
 import Data.Map.Strict (
@@ -70,6 +71,7 @@ data AliasContext = AliasContext
     , verifying :: !(Set Id)
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 type VerifiedAlias = (Attribute.Symbol, SentenceAlias Verified.Pattern)
 

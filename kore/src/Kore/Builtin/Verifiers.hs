@@ -44,6 +44,7 @@ import Control.Monad (
     zipWithM_,
  )
 import Control.Monad qualified as Monad
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.HashMap.Strict (
     HashMap,
@@ -160,6 +161,7 @@ data SymbolKey
       KlabelSymbolKey !Text
     deriving stock (Eq, Ord)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
 
 instance Hashable SymbolKey
 

@@ -18,6 +18,7 @@ module Kore.Attribute.Axiom.Concrete (
 
 import Control.Error qualified as Safe
 import Control.Monad qualified as Monad
+import Data.Binary (Binary)
 import Data.List qualified as List
 import Data.Set (
     Set,
@@ -43,6 +44,7 @@ import Prelude.Kore
 newtype Concrete variable = Concrete {unConcrete :: FreeVariables variable}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

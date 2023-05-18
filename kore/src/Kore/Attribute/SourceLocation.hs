@@ -15,6 +15,7 @@ module Kore.Attribute.SourceLocation (
 import Control.Monad (
     (>=>),
  )
+import Data.Binary (Binary)
 import Data.Default
 import Data.Generics.Product
 import GHC.Generics qualified as GHC
@@ -46,6 +47,7 @@ data SourceLocation = SourceLocation
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -25,6 +25,7 @@ import Control.Monad.Trans.Except (
     ExceptT,
     throwE,
  )
+import Data.Binary (Binary)
 import Data.Text (
     Text,
  )
@@ -68,6 +69,7 @@ data Narrowing variable = Narrowing
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -79,6 +81,7 @@ data OverloadingResolution variable
       WithNarrowing !(Narrowing variable)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -87,6 +90,7 @@ data MatchResult
     | Resolution !(OverloadingResolution RewritingVariableName)
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
@@ -108,6 +112,7 @@ data UnifyOverloadingError
       Clash !String
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

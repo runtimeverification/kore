@@ -6,6 +6,7 @@ module Kore.Internal.InternalBool (
     InternalBool (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Const
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -29,6 +30,7 @@ data InternalBool = InternalBool
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

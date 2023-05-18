@@ -10,6 +10,7 @@ module Kore.Reachability.OnePathClaim (
 ) where
 
 import Control.Monad ((>=>))
+import Data.Binary (Binary)
 import Data.Generics.Wrapped (
     _Unwrapped,
  )
@@ -65,6 +66,7 @@ import Prelude.Kore
 newtype OnePathClaim = OnePathClaim {getOnePathClaim :: ClaimPattern}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -160,6 +162,7 @@ instance Claim OnePathClaim where
         {unRuleOnePath :: RewriteRule RewritingVariableName}
         deriving stock (Eq, Ord, Show)
         deriving stock (GHC.Generic)
+        deriving anyclass (Binary)
         deriving anyclass (NFData)
         deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
         deriving anyclass (Debug, Diff)

@@ -23,10 +23,12 @@ module Kore.Syntax.Pattern (
 
 import Control.Comonad
 import Control.Comonad.Trans.Cofree (
+    CofreeT (..),
     ComonadCofree (..),
  )
 import Control.Comonad.Trans.Env qualified as Env
 import Data.Bifunctor qualified as Bifunctor
+import Data.Binary (Binary (..))
 import Data.Functor.Compose (
     Compose (..),
  )
@@ -104,6 +106,15 @@ newtype
     deriving newtype (Functor, Foldable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
+
+instance
+    (Binary variable, Binary annotation) =>
+    Binary (Pattern variable annotation)
+    where
+    put (Recursive.project -> ann :< patF) =
+        put ann >> put patF
+    get =
+        fmap Recursive.embed $ (:<) <$> get <*> get
 
 instance Eq variable => Eq (Pattern variable annotation) where
     (==) = eqWorker

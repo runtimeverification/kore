@@ -31,6 +31,7 @@ module Kore.Internal.MultiOr (
     Alternative (..),
 ) where
 
+import Data.Binary (Binary)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Traversable qualified as Traversable
@@ -74,6 +75,7 @@ data MultiOr child
     | MultiOr (Set child)
     deriving stock (Eq, Ord, Show, Foldable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

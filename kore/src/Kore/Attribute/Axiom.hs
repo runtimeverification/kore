@@ -36,6 +36,7 @@ module Kore.Attribute.Axiom (
 
 import Control.Lens qualified as Lens
 import Control.Monad qualified as Monad
+import Data.Binary (Binary)
 import Data.Default (
     Default (..),
  )
@@ -131,6 +132,7 @@ data Axiom symbol variable = Axiom
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -23,6 +23,7 @@ module Data.InternedText (
     globalInternedTextCache,
 ) where
 
+import Data.Binary (Binary (..))
 import Data.HashMap.Strict as HashMap
 import Data.IORef
 import Data.Text (
@@ -54,6 +55,7 @@ data InternedText = UnsafeMkInternedText
     , internedId :: {-# UNPACK #-} !Word
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 

@@ -15,6 +15,7 @@ import Data.Aeson (
     FromJSON,
  )
 import Data.Aeson qualified as Aeson
+import Data.Binary (Binary)
 import Data.List qualified as List
 import Development.GitRev qualified as GitRev
 import GHC.Generics qualified as GHC
@@ -45,6 +46,7 @@ data VersionInfo = VersionInfo
     , gitDirty :: !Bool
     }
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving stock (Lift)
 
 instance FromJSON VersionInfo

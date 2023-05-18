@@ -42,6 +42,7 @@ import Control.Monad.Reader (
 import Control.Monad.Reader qualified as Reader
 import Control.Monad.Trans.Class qualified as Trans
 import Control.Monad.Trans.Maybe
+import Data.Binary (Binary)
 import Data.Map.Strict qualified as Map
 import Data.Set (
     Set,
@@ -74,6 +75,7 @@ newtype DeclaredVariables = DeclaredVariables
             (SomeVariable VariableName)
     }
     deriving newtype (Monoid, Semigroup)
+    deriving newtype (Binary)
 
 emptyDeclaredVariables :: DeclaredVariables
 emptyDeclaredVariables = mempty

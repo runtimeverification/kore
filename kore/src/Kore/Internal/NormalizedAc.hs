@@ -38,6 +38,7 @@ import Control.Lens qualified as Lens
 import Control.Lens.Iso (
     Iso',
  )
+import Data.Binary (Binary (..))
 import Data.HashMap.Strict (
     HashMap,
  )
@@ -325,6 +326,22 @@ deriving stock instance
     Traversable (NormalizedAc collection key)
 
 instance
+    ( Binary key
+    , Hashable key
+    , Binary child
+    , Binary (Element collection child)
+    , Binary (Value collection child)
+    ) =>
+    Binary (NormalizedAc collection key child)
+    where
+    put NormalizedAc{elementsWithVariables, concreteElements, opaque} = do
+        put elementsWithVariables
+        put $ HashMap.toList concreteElements
+        put opaque
+    get =
+        NormalizedAc <$> get <*> fmap HashMap.fromList get <*> get
+
+instance
     ( Hashable key
     , Hashable child
     , Hashable (Element collection child)
@@ -416,6 +433,7 @@ data InternalAc key (normalized :: Type -> Type -> Type) child = InternalAc
     deriving stock (Eq, Ord, Show)
     deriving stock (Foldable, Functor, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
 
 instance
@@ -538,6 +556,7 @@ exposing accessors @pattern AcPair@ and @acPairToPair@.
 data AcPair a = AcPair_ a a
     deriving stock (Eq)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
 
 pattern AcPair :: a -> a -> AcPair a

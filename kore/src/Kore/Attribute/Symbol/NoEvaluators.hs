@@ -9,6 +9,7 @@ module Kore.Attribute.Symbol.NoEvaluators (
     noEvaluatorsAttribute,
 ) where
 
+import Data.Binary (Binary)
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Attribute.Parser as Parser
@@ -18,6 +19,7 @@ import Prelude.Kore
 newtype NoEvaluators = NoEvaluators {hasNoEvaluators :: Bool}
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

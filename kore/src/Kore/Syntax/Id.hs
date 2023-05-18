@@ -21,6 +21,7 @@ module Kore.Syntax.Id (
     prettyPrintAstLocation,
 ) where
 
+import Data.Binary (Binary)
 import Data.InternedText
 import Data.String (
     IsString (..),
@@ -46,6 +47,7 @@ data Id = InternedId
     }
     deriving stock (Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug)
@@ -132,6 +134,7 @@ data AstLocation
       AstLocationUnknown
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -168,6 +171,7 @@ data FileLocation = FileLocation
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

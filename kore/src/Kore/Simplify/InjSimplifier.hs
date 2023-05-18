@@ -10,6 +10,7 @@ module Kore.Simplify.InjSimplifier (
     normalize,
 ) where
 
+import Data.Binary (Binary)
 import Data.Functor.Foldable qualified as Recursive
 import Data.Set qualified as Set
 import GHC.Generics qualified as GHC
@@ -38,6 +39,7 @@ Otherwise, 'unifyInj' may return 'Unknown'.
 data Distinct = Distinct | Unknown
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
@@ -57,6 +59,7 @@ data UnifyInj a
     deriving stock (Eq, Ord, Show)
     deriving stock (Functor)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)

@@ -63,6 +63,7 @@ import Control.Monad.State.Strict (
     runStateT,
  )
 import Control.Monad.State.Strict qualified as State
+import Data.Binary (Binary)
 import Data.Functor.Compose
 import Data.Generics.Product (
     field,
@@ -475,6 +476,7 @@ data CheckImplicationResult a
     deriving stock (Eq, Ord, Show)
     deriving stock (Foldable, Functor, Traversable)
     deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
     deriving anyclass (Hashable)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
