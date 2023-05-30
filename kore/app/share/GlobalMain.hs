@@ -606,6 +606,7 @@ data SerializedDefinition = SerializedDefinition
     }
     deriving stock (GHC.Generic)
     deriving anyclass (NFData)
+    deriving anyclass (Binary.Binary)
 
 {- | Read a definition from disk, detect if it is a serialized compact region or not,
 and either deserialize it, or else treat it as a text KORE definition and manually

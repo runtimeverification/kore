@@ -45,6 +45,11 @@ data InternedTextCache = InternedTextCache
     deriving stock (Generic)
     deriving anyclass (NFData)
 
+instance Binary InternedTextCache where
+    put InternedTextCache{internedTexts, counter} =
+        put (HashMap.toList internedTexts) >> put counter
+    get = InternedTextCache <$> fmap HashMap.fromList get <*> get
+
 {- | An interned `Text`.
 
  The constructor `UnsafeMkInternedText` should not be used directly - it's exported for testing only.
