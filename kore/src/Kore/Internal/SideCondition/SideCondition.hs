@@ -10,7 +10,7 @@ module Kore.Internal.SideCondition.SideCondition (
     mkRepresentation,
 ) where
 
-import Data.Binary (Binary (..), Get)
+import Data.Binary (Binary (..))
 import Data.Hashable (
     Hashed,
     hashed,
@@ -43,15 +43,12 @@ data Representation where
 
 instance Binary Representation where
     put (Representation typeRep1 x) = do
-        put @String "Representation"
         put typeRep1
         put $ unhashed x
     get = do
-        check <- get @String
-        unless (check == "Representation") $ error "urk"
-        Representation
-            <$> get
-            <*> (error "unknown type a here" :: Get (Hashed ())) -- fmap hashed get
+        rep <- get @(TypeRep ()) -- FIXME bogus type in type representation
+        h <- fmap hashed get -- but at which type?
+        pure $ Representation rep h
 
 instance Eq Representation where
     (==) (Representation typeRep1 hashed1) (Representation typeRep2 hashed2) =

@@ -38,7 +38,7 @@ import Control.Monad.State.Strict (
  )
 import Control.Monad.State.Strict qualified as State
 import Data.Bifunctor qualified as Bifunctor
-import Data.Binary (Binary (..))
+import Data.Binary (Binary (..), Get, Put)
 import Data.Functor.Foldable qualified as Recursive
 import Data.Generics.Product (
     field,
@@ -173,18 +173,38 @@ data SideCondition variable = SideCondition
     }
     deriving stock (Eq, Ord, Show)
     deriving stock (GHC.Generic)
-    deriving anyclass (Binary)
     deriving anyclass (Hashable, NFData)
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
-instance (Hashable e, Binary e) => Binary (HashSet e) where
-    put = put . HashSet.toList
-    get = fmap HashSet.fromList get
+instance (Eq variable, Hashable variable, Binary variable) =>
+    Binary (SideCondition variable) where
+    put SideCondition
+            { assumedTrue
+            , replacementsTermLike
+            , replacementsPredicate
+            , definedTerms
+            , simplifiedFunctions
+            } = put assumedTrue >>
+                putMap replacementsTermLike >>
+                putMap replacementsPredicate >>
+                putSet definedTerms >>
+                putSet simplifiedFunctions
+    get =
+        SideCondition
+            <$> get <*> getMap  <*> getMap  <*> getSet  <*> getSet
 
-instance (Binary k, Hashable k, Binary v) => Binary (HashMap k v) where
-    put = put . HashMap.toList
-    get = fmap HashMap.fromList get
+putSet :: (Hashable e, Binary e) => HashSet e -> Put
+putSet = put . HashSet.toList
+
+getSet :: (Hashable e, Binary e) => Get (HashSet e)
+getSet = fmap HashSet.fromList get
+
+putMap :: (Binary k, Hashable k, Binary v) => HashMap k v -> Put
+putMap = put . HashMap.toList
+
+getMap :: (Binary k, Hashable k, Binary v) => Get (HashMap k v)
+getMap = fmap HashMap.fromList get
 
 instance InternalVariable variable => SQL.Column (SideCondition variable) where
     defineColumn = SQL.defineTextColumn
@@ -528,7 +548,6 @@ data Assumptions variable = Assumptions
     , predicateMap :: HashMap (Predicate variable) (Predicate variable)
     }
     deriving stock (Eq, GHC.Generic, Show)
-    deriving anyclass (Binary)
 
 {- | Simplify the conjunction of 'Predicate' clauses by assuming each is true.
 The conjunction is simplified by the identity:
