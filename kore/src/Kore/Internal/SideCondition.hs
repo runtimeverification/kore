@@ -177,22 +177,30 @@ data SideCondition variable = SideCondition
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
-instance (Eq variable, Hashable variable, Binary variable) =>
-    Binary (SideCondition variable) where
-    put SideCondition
+instance
+    (Eq variable, Hashable variable, Binary variable) =>
+    Binary (SideCondition variable)
+    where
+    put
+        SideCondition
             { assumedTrue
             , replacementsTermLike
             , replacementsPredicate
             , definedTerms
             , simplifiedFunctions
-            } = put assumedTrue >>
-                putMap replacementsTermLike >>
-                putMap replacementsPredicate >>
-                putSet definedTerms >>
-                putSet simplifiedFunctions
+            } =
+            put assumedTrue
+                >> putMap replacementsTermLike
+                >> putMap replacementsPredicate
+                >> putSet definedTerms
+                >> putSet simplifiedFunctions
     get =
         SideCondition
-            <$> get <*> getMap  <*> getMap  <*> getSet  <*> getSet
+            <$> get
+            <*> getMap
+            <*> getMap
+            <*> getSet
+            <*> getSet
 
 putSet :: (Hashable e, Binary e) => HashSet e -> Put
 putSet = put . HashSet.toList
