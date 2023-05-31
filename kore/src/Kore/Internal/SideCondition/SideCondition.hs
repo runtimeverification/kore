@@ -32,23 +32,31 @@ import Type.Reflection (
     SomeTypeRep (..),
     TypeRep,
     typeRep,
+    withTypeable,
  )
+
+-- import Data.Constraint -- constraints package
 
 data Representation where
     Representation ::
         (Ord a, Pretty a, Binary a, Typeable a) =>
         !(TypeRep a) ->
+        -- FIXME should store a Dict ((Ord a, Pretty a, Binary a, Typeable a)) instead.
+        -- This can be Shown and Read for the Binary instance, and then brought
+        -- into scope with withDict to get the Hashed a and construct the result.
         Hashed a ->
         Representation
 
 instance Binary Representation where
     put (Representation typeRep1 x) = do
-        put typeRep1
+        put $ SomeTypeRep typeRep1 -- FIXME write Dict here
         put $ unhashed x
     get = do
-        rep <- get @(TypeRep ()) -- FIXME bogus type in type representation
-        h <- fmap hashed get -- but at which type?
-        pure $ Representation rep h
+        SomeTypeRep rep <- get @SomeTypeRep -- FIXME read Dict here
+        withTypeable rep $ do -- FIXME use withDict here
+            h <- get @() -- wrong type
+            -- type check fails below
+            pure $ Representation rep (hashed h)
 
 instance Eq Representation where
     (==) (Representation typeRep1 hashed1) (Representation typeRep2 hashed2) =
