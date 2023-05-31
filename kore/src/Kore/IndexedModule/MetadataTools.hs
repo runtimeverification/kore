@@ -9,9 +9,9 @@ Stability   : experimental
 Portability : portable
 -}
 module Kore.IndexedModule.MetadataTools (
-    ExtractSyntax (..),
     MetadataTools (..),
     MetadataSyntaxData (..),
+    MetadataTables (..),
     SmtMetadataTools,
     extractMetadataTools,
     findSortConstructors,
@@ -20,6 +20,7 @@ module Kore.IndexedModule.MetadataTools (
     symbolAttributes,
 ) where
 
+import Data.Bifunctor (first)
 import Data.Binary (Binary (..))
 import Data.Map.Strict (
     Map,
@@ -44,35 +45,21 @@ import Kore.Syntax.Application (
  )
 import Prelude.Kore
 
-class ExtractSyntax a where
-    extractSortAttributes :: a attributes -> Sort -> Attribute.Sort
-    extractApplicationSorts :: a attributes -> SymbolOrAlias -> ApplicationSorts
-    extractSymbolAttributes :: a attributes -> Id -> attributes
-
-instance ExtractSyntax VerifiedModuleSyntax where
-    extractSortAttributes = getSortAttributes
-    extractApplicationSorts = getHeadApplicationSorts
-    extractSymbolAttributes = getSymbolAttributes
-
 data MetadataSyntaxData attributes
     = MetadataSyntaxData (VerifiedModuleSyntax attributes)
-    | forall syntaxData.
-        ( ExtractSyntax syntaxData
-        , NFData (syntaxData attributes)
-        ) =>
-      MetadataSyntaxDataExtension (syntaxData attributes)
+    | MetadataSyntaxDataTable (MetadataTables attributes)
+    deriving stock (GHC.Generic)
+    deriving anyclass (Binary)
+    deriving anyclass (NFData)
 
-instance
-    Binary (VerifiedModuleSyntax attributes) =>
-    Binary (MetadataSyntaxData attributes)
-    where
-    put (MetadataSyntaxData vms) = put vms
-    put MetadataSyntaxDataExtension{} = error "urk"
-    get = error "ork"
-
-instance NFData (MetadataSyntaxData attributes) where
-    rnf (MetadataSyntaxData sdata) = sdata `seq` ()
-    rnf (MetadataSyntaxDataExtension sdata) = sdata `seq` ()
+data MetadataTables attributes = MetadataTables
+    { sortAttributeTable :: [(Sort, Attribute.Sort)]
+    , applicationSortTable :: [(SymbolOrAlias, ApplicationSorts)]
+    , symbolAttributeTable :: [(SymbolOrAlias, attributes)]
+    }
+    deriving stock (Eq, Show, GHC.Generic)
+    deriving anyclass (Binary)
+    deriving anyclass (NFData)
 
 {- | 'MetadataTools' defines a dictionary of functions which can be used to
  access the metadata needed during the unification process.
@@ -137,25 +124,30 @@ sortAttributes ::
     MetadataTools sortConstructors smt attributes ->
     Sort ->
     Attribute.Sort
-sortAttributes MetadataTools{syntax = MetadataSyntaxData sdata} s =
-    extractSortAttributes sdata s
-sortAttributes MetadataTools{syntax = MetadataSyntaxDataExtension sdata} s =
-    extractSortAttributes sdata s
+sortAttributes MetadataTools{syntax = MetadataSyntaxData sdata} =
+    getSortAttributes sdata
+sortAttributes MetadataTools{syntax = MetadataSyntaxDataTable sdata} =
+    either error id . lookupThingIn (sortAttributeTable sdata)
 
 applicationSorts ::
     MetadataTools sortConstructors smt attributes ->
     SymbolOrAlias ->
     ApplicationSorts
-applicationSorts MetadataTools{syntax = MetadataSyntaxData sdata} s =
-    extractApplicationSorts sdata s
-applicationSorts MetadataTools{syntax = MetadataSyntaxDataExtension sdata} s =
-    extractApplicationSorts sdata s
+applicationSorts MetadataTools{syntax = MetadataSyntaxData sdata} =
+    getHeadApplicationSorts sdata
+applicationSorts MetadataTools{syntax = MetadataSyntaxDataTable sdata} =
+    either error id . lookupThingIn (applicationSortTable sdata)
 
 symbolAttributes ::
     MetadataTools sortConstructors smt attributes ->
     Id ->
     attributes
-symbolAttributes MetadataTools{syntax = MetadataSyntaxData sdata} s =
-    extractSymbolAttributes sdata s
-symbolAttributes MetadataTools{syntax = MetadataSyntaxDataExtension sdata} s =
-    extractSymbolAttributes sdata s
+symbolAttributes MetadataTools{syntax = MetadataSyntaxData sdata} =
+    getSymbolAttributes sdata
+symbolAttributes MetadataTools{syntax = MetadataSyntaxDataTable sdata} =
+    let table = map (first symbolOrAliasConstructor) $ symbolAttributeTable sdata
+     in either error id . lookupThingIn table
+
+lookupThingIn :: (Show a, Eq a) => [(a, b)] -> a -> Either String b
+lookupThingIn table k =
+    maybe (Left $ show k <> " not found") Right $ lookup k table

@@ -10,7 +10,6 @@ module Test.Kore.IndexedModule.MockMetadataTools (
 ) where
 
 import Data.Map.Strict qualified as Map
-import GHC.Generics qualified as GHC
 import Kore.Attribute.Constructor
 import Kore.Attribute.Function
 import Kore.Attribute.Injective
@@ -21,8 +20,8 @@ import Kore.Attribute.Sort.Constructors qualified as Attribute (
 import Kore.Attribute.SortInjection
 import Kore.Attribute.Symbol
 import Kore.IndexedModule.MetadataTools (
-    ExtractSyntax (..),
     MetadataSyntaxData (..),
+    MetadataTables (..),
     MetadataTools (MetadataTools),
     SmtMetadataTools,
  )
@@ -46,26 +45,6 @@ import Kore.Syntax.Id (
  )
 import Prelude.Kore
 
-data MockSyntaxData attributes = MockSyntaxData
-    { sortAttributes :: [(Sort, Attribute.Sort)]
-    , applicationSorts :: [(SymbolOrAlias, ApplicationSorts)]
-    , symbolAttributes :: [(SymbolOrAlias, attributes)]
-    }
-    deriving stock (GHC.Generic)
-    deriving anyclass (NFData)
-
-instance ExtractSyntax MockSyntaxData where
-    extractSortAttributes sdata = caseBasedFunction $ sortAttributes sdata
-    extractApplicationSorts sdata = caseBasedFunction $ applicationSorts sdata
-    extractSymbolAttributes sdata =
-        caseBasedFunction
-            ( map
-                ( \(SymbolOrAlias{symbolOrAliasConstructor}, a) ->
-                    (symbolOrAliasConstructor, a)
-                )
-                (symbolAttributes sdata)
-            )
-
 makeMetadataTools ::
     [(SymbolOrAlias, StepperAttributes)] ->
     [(Sort, Attribute.Sort)] ->
@@ -76,28 +55,14 @@ makeMetadataTools ::
 makeMetadataTools attr sortTypes sorts declarations sortConstructors =
     MetadataTools
         { syntax =
-            MetadataSyntaxDataExtension $
-                MockSyntaxData
-                    { sortAttributes = sortTypes
-                    , -- TODO(Vladimir): fix the inconsistency that both 'subsorts' and
-                      -- 'isSubsortOf' only work with direct (non-transitive) relationships.
-                      -- For now, we can manually add the relationships for tests.
-                      applicationSorts = sorts
-                    , symbolAttributes = attr
-                    }
+            MetadataSyntaxDataTable $
+                -- TODO(Vladimir): fix the inconsistency that both 'subsorts' and
+                -- 'isSubsortOf' only work with direct (non-transitive) relationships.
+                -- For now, we can manually add the relationships for tests.
+                MetadataTables sortTypes sorts attr
         , smtData = declarations
         , sortConstructors
         }
-
-caseBasedFunction ::
-    (Eq a, Show a, HasCallStack) =>
-    [(a, b)] ->
-    a ->
-    b
-caseBasedFunction cases arg =
-    fromMaybe
-        (error ("Unknown argument: " ++ show arg))
-        (lookup arg cases)
 
 functionAttributes :: StepperAttributes
 functionAttributes = defaultAttributes{function = Function True}
