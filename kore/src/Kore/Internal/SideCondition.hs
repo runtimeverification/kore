@@ -177,10 +177,7 @@ data SideCondition variable = SideCondition
     deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
     deriving anyclass (Debug, Diff)
 
-instance
-    (Eq variable, Hashable variable, Binary variable) =>
-    Binary (SideCondition variable)
-    where
+instance (Hashable variable, Binary variable) => Binary (SideCondition variable) where
     put
         SideCondition
             { assumedTrue
@@ -202,13 +199,13 @@ instance
             <*> getSet
             <*> getSet
 
-putSet :: (Hashable e, Binary e) => HashSet e -> Put
+putSet :: (Binary e) => HashSet e -> Put
 putSet = put . HashSet.toList
 
 getSet :: (Hashable e, Binary e) => Get (HashSet e)
 getSet = fmap HashSet.fromList get
 
-putMap :: (Binary k, Hashable k, Binary v) => HashMap k v -> Put
+putMap :: (Binary k, Binary v) => HashMap k v -> Put
 putMap = put . HashMap.toList
 
 getMap :: (Binary k, Hashable k, Binary v) => Get (HashMap k v)
