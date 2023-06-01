@@ -34,6 +34,35 @@ import Type.Reflection (
     typeRep,
  )
 
+-- | The representation of a side condition is just its hash. When a
+-- collision occurs, the effect is that a simplification is _skipped_.
+newtype Representation = Representation Int -- hash
+    deriving stock (Eq, Ord)
+    deriving newtype (Binary, Hashable, NFData)
+
+instance Show Representation where
+    showsPrec prec (Representation h) =
+        showParen (prec >= 10) $ showString ("Side Condition " <> show h)
+
+instance Pretty Representation where
+    pretty = pretty . show
+
+{- | Creates a 'Representation'. Should not be used directly.
+ See 'Kore.Internal.SideCondition.toRepresentation'.
+-}
+mkRepresentation :: Hashable a => a -> Representation
+mkRepresentation = Representation . hash
+
+instance Debug Representation where
+    debugPrec _ _ = "_"
+    {-# INLINE debugPrec #-}
+
+instance Diff Representation where
+    diffPrec _ _ = Nothing
+    {-# INLINE diffPrec #-}
+
+{-
+
 data Representation where
     Representation ::
         (Ord a, Pretty a, Binary a, Typeable a) =>
@@ -97,3 +126,4 @@ instance Debug Representation where
 instance Diff Representation where
     diffPrec _ _ = Nothing
     {-# INLINE diffPrec #-}
+-}
