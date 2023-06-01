@@ -48,13 +48,7 @@ import Control.Lens (
 import Control.Lens qualified as Lens
 import Control.Monad qualified as Monad
 import Data.Binary qualified as Binary
-import Data.ByteString.Lazy qualified as ByteString
-import Data.Compact (
-    getCompact,
- )
-import Data.Compact.Serialize (
-    hUnsafeGetCompact,
- )
+import Data.Either.Extra (eitherToMaybe)
 import Data.Generics.Product (
     field,
  )
@@ -77,8 +71,6 @@ import Data.Text.IO qualified as Text
 import Data.Version (
     showVersion,
  )
-import Data.Word
-import GHC.Fingerprint as Fingerprint
 import GHC.Generics qualified as GHC
 import GHC.Stack (
     emptyCallStack,
@@ -200,9 +192,7 @@ import System.Clock (
     diffTimeSpec,
     getTime,
  )
-import System.Environment (getExecutablePath)
 import System.Environment qualified as Env
-import System.IO (IOMode (..), SeekMode (..), hSeek, withFile)
 
 type Main = LoggerT IO
 
@@ -623,7 +613,7 @@ deserializeDefinition
     mainModuleName =
         do
             maybeSerializedDefinition <-
-                withFile definitionFilePath ReadMode readContents & liftIO
+                eitherToMaybe <$> liftIO (Binary.decodeFileOrFail definitionFilePath)
             case maybeSerializedDefinition of
                 Just serializedDefinition ->
                     return serializedDefinition
@@ -632,33 +622,6 @@ deserializeDefinition
                         solverOptions
                         definitionFilePath
                         mainModuleName
-      where
-        readContents definitionHandle = do
-            fingerprint <-
-                ByteString.hGet definitionHandle 16
-                    <&> Binary.decode
-            magicNumber <-
-                ByteString.hGet definitionHandle 16
-                    <&> ByteString.drop 8
-                    <&> Binary.decode @Word64
-            case magicNumber of
-                0x7c155e7a53f094f2 -> do
-                    checkFingerprint fingerprint
-                    hSeek definitionHandle AbsoluteSeek 16
-                    serializedDefinition <-
-                        hUnsafeGetCompact definitionHandle
-                            >>= either errorParse (return . getCompact)
-                    return (Just serializedDefinition)
-                _ -> return Nothing
-
-        checkFingerprint fingerprint = do
-            execHash <- getExecutablePath >>= Fingerprint.getFileHash
-            unless
-                (execHash == fingerprint)
-                ( errorParse
-                    "The definition was serialized with a different version of kore-exec. \
-                    \Re-run kompile with the current executable."
-                )
 
 makeSerializedDefinition ::
     KoreSolverOptions ->

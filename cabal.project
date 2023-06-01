@@ -2,11 +2,6 @@ packages:
   kore
   kore-rpc-types
 
-allow-newer:
-  compact:base,
-  compact:bytestring,
-  ghc-trace-events:base
-
 package *
   ghc-options: -fhide-source-paths -haddock
   profiling-detail: none

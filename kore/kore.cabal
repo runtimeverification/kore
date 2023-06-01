@@ -104,7 +104,6 @@ common library
   build-depends: clock >=0.8
   build-depends: co-log >=0.4
   build-depends: comonad >=5.0
-  build-depends: compact >= 0.2.0.0
   build-depends: conduit-extra >=1.3
   build-depends: containers >=0.5.8
   build-depends: cryptonite >=0.25
@@ -584,7 +583,6 @@ executable kore-exec
   build-depends: binary >=0.8.8.0
   build-depends: bytestring >=0.10
   build-depends: clock >=0.8
-  build-depends: compact >=0.2.0.0
   build-depends: containers >=0.5
   build-depends: data-default >=0.7
   build-depends: directory >=1.3
