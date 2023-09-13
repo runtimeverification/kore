@@ -496,7 +496,13 @@ respond serverState moduleName runSMT =
                                             PatternJson.fromSubstitution sort $
                                                 Substitution.mapVariables getRewritingVariable subst
                                         }
-
+        SimplifyImplication ImpliesRequest{antecedent, consequent} ->
+            pure . Right . SimplifyImplication $
+                SimplifyImplicationResult
+                    { validity = ImplicationUnknown (MatchingUnknown antecedent consequent)
+                    , substitution = Nothing
+                    , logs = mempty
+                    }
         -- this case is only reachable if the cancel appeared as part of a batch request
         Cancel -> pure $ Left cancelUnsupportedInBatchMode
   where

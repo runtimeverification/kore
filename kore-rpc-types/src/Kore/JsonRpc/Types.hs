@@ -99,6 +99,7 @@ instance FromRequest (API 'Req) where
     parseParams "simplify" = Just $ fmap (Simplify <$>) parseJSON
     parseParams "add-module" = Just $ fmap (AddModule <$>) parseJSON
     parseParams "get-model" = Just $ fmap (GetModel <$>) parseJSON
+    parseParams "simplify-implication" = Just $ fmap (SimplifyImplication <$>) parseJSON
     parseParams "cancel" = Just $ const $ return Cancel
     parseParams _ = Nothing
 
@@ -177,6 +178,48 @@ data GetModelResult = GetModelResult
         (FromJSON, ToJSON)
         via CustomJSON '[OmitNothingFields, FieldLabelModifier '[CamelToKebab]] GetModelResult
 
+data SimplifyImplicationResult = SimplifyImplicationResult
+    { validity :: ImplicationValidityResult
+    , substitution :: Maybe KoreJson
+    , logs :: Maybe [LogEntry]
+    }
+    deriving stock (Generic, Show, Eq)
+    deriving
+        (FromJSON, ToJSON)
+        via CustomJSON '[OmitNothingFields, FieldLabelModifier '[CamelToKebab]] SimplifyImplicationResult
+
+data ImplicationValidityResult
+    = -- | implication is valid
+      ImplicationValid
+    | -- | implication is invalid, explains why
+      ImplicationInvalid ImplicationInvalidReason
+    | -- | implication is unknown, explains why
+      ImplicationUnknown ImplicationUnknownReason
+    deriving stock (Generic, Show, Eq)
+    deriving
+        (FromJSON, ToJSON)
+        via CustomJSON '[ConstructorTagModifier '[CamelToKebab]] ImplicationValidityResult
+
+data ImplicationInvalidReason
+    = -- | antecedent and consequent do not match
+      MatchingFailed Text
+    | -- | matching was successful, but constraints don't agree: return unsatisfiable core of constraints
+      ConstraintSubsumptionFailed KoreJson
+    deriving stock (Generic, Show, Eq)
+    deriving
+        (FromJSON, ToJSON)
+        via CustomJSON '[ConstructorTagModifier '[CamelToKebab]] ImplicationInvalidReason
+
+data ImplicationUnknownReason
+    = -- | matching between antecedent and consequent is indeterminate, return the subterms that caused this
+      MatchingUnknown KoreJson KoreJson
+    | -- | matching was successful, but constraint subsumption is indeterminate: return unknown constraints
+      ConstraintSubsumptionUnknown KoreJson
+    deriving stock (Generic, Show, Eq)
+    deriving
+        (FromJSON, ToJSON)
+        via CustomJSON '[ConstructorTagModifier '[CamelToKebab]] ImplicationUnknownReason
+
 data SatResult
     = Sat
     | Unsat
@@ -194,6 +237,7 @@ data APIMethod
     | SimplifyM
     | AddModuleM
     | GetModelM
+    | SimplifyImplicationM
     deriving stock (Eq, Ord, Show, Enum)
 
 type family APIPayload (api :: APIMethod) (r :: ReqOrRes) where
@@ -207,6 +251,8 @@ type family APIPayload (api :: APIMethod) (r :: ReqOrRes) where
     APIPayload 'AddModuleM 'Res = ()
     APIPayload 'GetModelM 'Req = GetModelRequest
     APIPayload 'GetModelM 'Res = GetModelResult
+    APIPayload 'SimplifyImplicationM 'Req = ImpliesRequest
+    APIPayload 'SimplifyImplicationM 'Res = SimplifyImplicationResult
 
 data API (r :: ReqOrRes) where
     Execute :: APIPayload 'ExecuteM r -> API r
@@ -214,6 +260,7 @@ data API (r :: ReqOrRes) where
     Simplify :: APIPayload 'SimplifyM r -> API r
     AddModule :: APIPayload 'AddModuleM r -> API r
     GetModel :: APIPayload 'GetModelM r -> API r
+    SimplifyImplication :: APIPayload 'SimplifyImplicationM r -> API r
     Cancel :: API 'Req
 
 deriving stock instance Show (API 'Req)
@@ -228,6 +275,7 @@ instance ToJSON (API 'Res) where
         Simplify payload -> toJSON payload
         AddModule payload -> toJSON payload
         GetModel payload -> toJSON payload
+        SimplifyImplication payload -> toJSON payload
 
 instance Pretty.Pretty (API 'Req) where
     pretty = \case
@@ -236,6 +284,7 @@ instance Pretty.Pretty (API 'Req) where
         Simplify _ -> "simplify"
         AddModule _ -> "add-module"
         GetModel _ -> "get-model"
+        SimplifyImplication _ -> "simplify-implication"
         Cancel -> "cancel"
 
 rpcJsonConfig :: PrettyJson.Config

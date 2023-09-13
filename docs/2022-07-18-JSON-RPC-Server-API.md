@@ -422,6 +422,127 @@ Same as for execute
 }
 ```
 
+## Simplify Implication
+
+### Request:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "simplify-implication",
+  "params": {
+    "antecedent": {"format": "KORE", "version": 1, "term": {}},
+    "consequent": {"format": "KORE", "version": 1, "term": {}},
+    "module": "MODULE-NAME"
+  }
+}
+```
+
+Optional parameters: `module` (main module name)
+
+The request format is shared with the `"implies"` method.
+
+**NOTE**: `"simplify-implication"` currently only has a stub implementation in `kore-rpc`. The real implementation is in `kore-rpc-booster` (see [hs-backend-booster](https://github.com/runtimeverification/hs-backend-booster) repository). The documentation will reside here for consistency.
+
+### Error Response:
+
+Errors in decoding the `antecedent` or `consequent` terms are reported similar as for execute.
+
+### Correct Response:
+
+The endpoint is a lightweight variant fo the `"implies"` endpoint, which checks implication using matching between configuration terms and a lightweight (using K simplifications, rather than encoding to SMT) constraint subsumption.
+
+The implication can be "valid", "invalid" and "unknown". The result is returned in the `"validity"` field. The following results are possible:
+
+#### Implication is **valid**
+
+A constrained substitution as the result, and this is only returned if the implication is valid.
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "validity": {"tag": "implication-valid"},
+    "substitution": {"format": "KORE", "version": 1, "term": {}},
+  }
+}
+```
+
+#### Implication **invalid**: terms do not match
+
+Matching between antecedent and consequent configurations failed (different constructors, shared variables, sort error, etc.), constraints has not been subsumption been attempted. No matching substitution is returned.
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "validity": {"tag": "implication-valid",
+                 "contents": {"tag": "matching-failed",
+                              "contents": "Shared variables: X:SortWordStack{}"
+                 }},
+  }
+}
+```
+
+#### Implication **invalid**: terms match, but constraints subsumption failed
+
+Matching between antecedent and consequent configurations is successful, but constraints do not agree. Response contains the matching substitution and the unsatisfiable core of constraints.
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "validity": {"tag": "implication-valid",
+                 "contents": {"tag": "constraint-subsumption-failed",
+                              "contents": {"format": "KORE", "version": 1, "term": {}}
+                 }},
+    "substitution": {"format": "KORE", "version": 1, "term": {}},
+  }
+}
+```
+
+#### Implication **unknown**: matching indeterminate
+
+The matching algorithm is incomplete and may return an indeterminate result. The response will contains the subterms that the algorithm could not know how to match. No substitution is returned.
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "validity": {"tag": "implication-unknown",
+                 "contents": {"tag": "matching-unknown",
+                              "contents": {"first" : {"format": "KORE", "version": 1, "term": {}}
+                                          ,"second" : {"format": "KORE", "version": 1, "term": {}}
+                                          }
+                 }},
+  }
+}
+```
+
+#### Implication **unknown**: constraint subsumption indeterminate
+
+If matching is successful, but the constraint solver procedure (internal, or the SMT solver if enabled) returned "unknown". Response contains the matching substitution and the unknown core of constraints.
+
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "validity": {"tag": "implication-unknown",
+                 "contents": {"tag": "constraint-subsumption-unknown",
+                              "contents": {"tag": "constraint-subsumption-failed",
+                                           "contents": {"format": "KORE", "version": 1, "term": {}}
+                 }},
+    "substitution": {"format": "KORE", "version": 1, "term": {}},
+  }
+}
+```
+
 ## Add-module
 
 ### Request

@@ -1,0 +1,12 @@
+{
+    "format": "KORE",
+    "version": 1,
+    "term": {
+        "tag": "EVar",
+        "name": "X",
+        "sort": {
+            "tag": "SortVar",
+            "name": "S"
+        }
+    }
+}

@@ -254,3 +254,21 @@ for name in os.listdir("./get-model"):
       params["state"] = state
       req = rpc_request_id1("get-model", params)
       runTest(get_model_def_path, req, resp_golden_path)
+
+print("Running simplify-implication tests:")
+
+for name in os.listdir("./simplify-implication"):
+  info(f"- test '{name}'...")
+  simplify_implication_def_path = os.path.join("./simplify-implication", name, "definition.kore")
+  params_json_path = os.path.join("./simplify-implication", name, "antecedent.json")
+  state_json_path = os.path.join("./simplify-implication", name, "consequent.json")
+  resp_golden_path = os.path.join("./simplify-implication", name, "response.golden")
+  with open(params_json_path, 'r') as antecedent_json:
+    with open(state_json_path, 'r') as consequent_json:
+      antecedent = json.loads(antecedent_json.read())
+      consequent = json.loads(consequent_json.read())
+      params = {}
+      params["antecedent"] = antecedent
+      params["consequent"] = consequent
+      req = rpc_request_id1("simplify-implication", params)
+      runTest(simplify_implication_def_path, req, resp_golden_path)
