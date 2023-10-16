@@ -7,6 +7,7 @@ module Kore.Builtin.InternalBytes (
     assertSort,
     verifiers,
     builtinFunctions,
+    expectBuiltinBytes,
     asInternal,
     internalize,
     asPattern,
@@ -222,9 +223,9 @@ dotBytesVerifier =
         symbol = applicationSymbolOrAlias application
         internalBytesSort = applicationSortsResult . symbolSorts $ symbol
 
-matchBuiltinBytes :: Monad m => TermLike variable -> MaybeT m ByteString
-matchBuiltinBytes (InternalBytes_ _ byteString) = return $ ShortByteString.fromShort byteString
-matchBuiltinBytes _ = empty
+expectBuiltinBytes :: Monad m => TermLike variable -> MaybeT m ByteString
+expectBuiltinBytes (InternalBytes_ _ byteString) = return $ ShortByteString.fromShort byteString
+expectBuiltinBytes _ = empty
 
 evalBytes2String :: BuiltinAndAxiomSimplifier
 evalBytes2String =
@@ -232,7 +233,7 @@ evalBytes2String =
   where
     evalBytes2String0 :: Builtin.Function
     evalBytes2String0 _ resultSort [_bytes] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         Encoding.decode8Bit _bytes
             & String.asPattern resultSort
             & return
@@ -258,7 +259,7 @@ evalDecodeBytes = Builtin.applicationEvaluator evalDecodeBytes0
             let Application{applicationSymbolOrAlias = symbol} = app
                 resultSort = symbolSorts symbol & applicationSortsResult
             _str <- String.expectBuiltinString decodeBytesKey _strTerm
-            _bytes <- matchBuiltinBytes _bytesTerm
+            _bytes <- expectBuiltinBytes _bytesTerm
             decodeUtf app resultSort (Text.unpack _str) _bytes
     evalDecodeBytes0 _ _ = Builtin.wrongArity decodeBytesKey
 
@@ -316,7 +317,7 @@ evalUpdate =
   where
     evalUpdate0 :: Builtin.Function
     evalUpdate0 _ resultSort [_bytes, _index, _value] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _index <- fromInteger <$> Int.expectBuiltinInt updateKey _index
         _value <- fromInteger <$> Int.expectBuiltinInt updateKey _value
         let result
@@ -336,7 +337,7 @@ evalGet =
   where
     evalGet0 :: Builtin.Function
     evalGet0 _ resultSort [_bytes, _index] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _index <- fromInteger <$> Int.expectBuiltinInt getKey _index
         let result
                 | _index >= 0
@@ -355,7 +356,7 @@ evalSubstr =
   where
     evalSubstr0 :: Builtin.Function
     evalSubstr0 _ resultSort [_bytes, _start, _end] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _start <- fromInteger <$> Int.expectBuiltinInt substrKey _start
         _end <- fromInteger <$> Int.expectBuiltinInt substrKey _end
         let result
@@ -376,9 +377,9 @@ evalReplaceAt =
   where
     evalReplaceAt0 :: Builtin.Function
     evalReplaceAt0 _ resultSort [_bytes, _index, _new] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _index <- fromInteger <$> Int.expectBuiltinInt replaceAtKey _index
-        _new <- matchBuiltinBytes _new
+        _new <- expectBuiltinBytes _new
         go _bytes _index _new
             & maybe (Pattern.bottomOf resultSort) (asPattern resultSort)
             & return
@@ -403,7 +404,7 @@ evalPadRight =
   where
     evalPadRight0 :: Builtin.Function
     evalPadRight0 _ resultSort [_bytes, _length, _value] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _length <- fromInteger <$> Int.expectBuiltinInt padRightKey _length
         _value <- fromInteger <$> Int.expectBuiltinInt padRightKey _value
         (return . asPattern resultSort) (go _bytes _length _value)
@@ -421,7 +422,7 @@ evalPadLeft =
   where
     evalPadLeft0 :: Builtin.Function
     evalPadLeft0 _ resultSort [_bytes, _length, _value] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         _length <- fromInteger <$> Int.expectBuiltinInt padLeftKey _length
         _value <- fromInteger <$> Int.expectBuiltinInt padLeftKey _value
         return . asPattern resultSort $ go _bytes _length _value
@@ -439,7 +440,7 @@ evalReverse =
   where
     evalReverse0 :: Builtin.Function
     evalReverse0 _ resultSort [_bytes] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         ByteString.reverse _bytes
             & asPattern resultSort
             & return
@@ -451,7 +452,7 @@ evalLength =
   where
     evalLength0 :: Builtin.Function
     evalLength0 _ resultSort [_bytes] = do
-        _bytes <- matchBuiltinBytes _bytes
+        _bytes <- expectBuiltinBytes _bytes
         toInteger (ByteString.length _bytes)
             & Int.asPattern resultSort
             & return
@@ -463,8 +464,8 @@ evalConcat =
   where
     evalConcat0 :: Builtin.Function
     evalConcat0 _ resultSort [_lhs, _rhs] = do
-        _lhs <- matchBuiltinBytes _lhs
-        _rhs <- matchBuiltinBytes _rhs
+        _lhs <- expectBuiltinBytes _lhs
+        _rhs <- expectBuiltinBytes _rhs
         _lhs <> _rhs
             & asPattern resultSort
             & return
@@ -517,7 +518,7 @@ evalBytes2int =
     evalBytes2int0 _ resultSort [bytes, _end, _sign] = do
         _end <- matchEndianness _end
         _sign <- matchSignedness _sign
-        bytes' <- matchBuiltinBytes bytes
+        bytes' <- expectBuiltinBytes bytes
         bytes2int bytes' _end _sign
             & Int.asPattern resultSort
             & return

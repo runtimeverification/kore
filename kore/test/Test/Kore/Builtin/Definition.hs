@@ -841,24 +841,24 @@ ecdsaRecoverSymbol :: Internal.Symbol
 ecdsaRecoverSymbol =
     builtinSymbol
         "ecdsaRecoverKrypto"
-        stringSort
-        [stringSort, intSort, stringSort, stringSort]
+        bytesSort
+        [bytesSort, intSort, bytesSort, bytesSort]
         & hook "KRYPTO.ecdsaRecover"
 keccak256Symbol :: Internal.Symbol
 keccak256Symbol =
-    builtinSymbol "keccak256Krypto" stringSort [stringSort]
+    builtinSymbol "keccak256Krypto" stringSort [bytesSort]
         & hook "KRYPTO.keccak256"
 sha256Symbol :: Internal.Symbol
 sha256Symbol =
-    builtinSymbol "sha256Krypto" stringSort [stringSort]
+    builtinSymbol "sha256Krypto" stringSort [bytesSort]
         & hook "KRYPTO.sha256"
 sha3256Symbol :: Internal.Symbol
 sha3256Symbol =
-    builtinSymbol "sha3256Krypto" stringSort [stringSort]
+    builtinSymbol "sha3256Krypto" stringSort [bytesSort]
         & hook "KRYPTO.sha3256"
 ripemd160Symbol :: Internal.Symbol
 ripemd160Symbol =
-    builtinSymbol "ripemd160Krypto" stringSort [stringSort]
+    builtinSymbol "ripemd160Krypto" stringSort [bytesSort]
         & hook "KRYPTO.ripemd160"
 ecdsaRecoverKrypto ::
     TermLike RewritingVariableName ->

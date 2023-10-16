@@ -15,6 +15,7 @@ module Test.Kore.Builtin.Krypto (
 ) where
 
 import Control.Lens qualified as Lens
+import Data.ByteString.Char8 qualified as BS
 import Data.Generics.Sum.Constructors
 import Data.Proxy
 import Data.Text (
@@ -23,6 +24,7 @@ import Data.Text (
 import Data.Text qualified as Text
 import GHC.TypeLits qualified as TypeLits
 import Kore.Attribute.Symbol qualified as Attribute
+import Kore.Builtin.InternalBytes qualified as InternalBytes
 import Kore.Builtin.Krypto qualified as Krypto
 import Kore.Builtin.String qualified as String
 import Kore.Internal.OrPattern qualified as OrPattern
@@ -70,13 +72,13 @@ test_ecdsaRecover =
   where
     test messageHash v r s result =
         testCase (Text.unpack name) $ do
-            let expect = String.asPattern stringSort result
+            let expect = InternalBytes.asPattern internalBytesSort (BS.pack result)
             actual <-
                 ecdsaRecoverKrypto
-                    (String.asInternal stringSort messageHash)
+                    (InternalBytes.asInternal internalBytesSort (BS.pack messageHash))
                     (Test.Int.asInternal v)
-                    (String.asInternal stringSort r)
-                    (String.asInternal stringSort s)
+                    (InternalBytes.asInternal internalBytesSort (BS.pack r))
+                    (InternalBytes.asInternal internalBytesSort (BS.pack s))
                     & evaluate "KRYPTO.ecdsaRecover"
             assertEqual "" expect actual
       where

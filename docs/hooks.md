@@ -856,8 +856,8 @@ If-then-else: if condition then something, else something else.
 
 ## KRYPTO
 
-All hash functions in this module interpret their input string as a sequence of 8-bit bytes
-and output the digest in base-16 encoding
+All hash functions in this module interpret their input byte string as a raw sequence of 
+8-bit bytes and output the digest in base-16 encoding
 (a sequence of hexademical numerals `[0-9a-f]` each corresponding to 4 bits).
 
 ### KRYPTO.keccak256
@@ -865,7 +865,7 @@ and output the digest in base-16 encoding
 Compute the Keccak-256 hash of the input string.
 
 ~~~
-    hooked-symbol keccak256{}(String{}) : String{}
+    hooked-symbol keccak256{}(Bytes{}) : String{}
         [hook{}("KRYPTO.keccak256")]
 ~~~
 
@@ -874,7 +874,7 @@ Compute the Keccak-256 hash of the input string.
 Compute the RIPEMD-160 hash of the input string.
 
 ~~~
-    hooked-symbol ripemd160{}(String{}) : String{}
+    hooked-symbol ripemd160{}(Bytes{}) : String{}
         [hook{}("KRYPTO.ripemd160")]
 ~~~
 
@@ -883,7 +883,7 @@ Compute the RIPEMD-160 hash of the input string.
 Compute the SHA256 hash of the input string.
 
 ~~~
-    hooked-symbol sha256{}(String{}) : String{}
+    hooked-symbol sha256{}(Bytes{}) : String{}
         [hook{}("KRYPTO.sha256")]
 ~~~
 
@@ -892,7 +892,7 @@ Compute the SHA256 hash of the input string.
 Compute the SHA512/256 hash of the input string, returning raw bytes.
 
 ~~~
-    hooked-symbol sha512_256raw{}(String{}) : String{}
+    hooked-symbol sha512_256raw{}(Bytes{}) : Bytes{}
         [hook{}("KRYPTO.sha512_256raw")]
 ~~~
 
@@ -901,7 +901,7 @@ Compute the SHA512/256 hash of the input string, returning raw bytes.
 Compute the SHA3-256 hash of the input string.
 
 ~~~
-    hooked-symbol sha3256{}(String{}) : String{}
+    hooked-symbol sha3256{}(Bytes{}) : String{}
         [hook{}("KRYPTO.sha3256")]
 ~~~
 
@@ -910,7 +910,7 @@ Compute the SHA3-256 hash of the input string.
 `ecdsaPubKey` takes a 32-character byte string of a private key, and returns the 64 byte hex-encoded public key.
 
 ~~~
-    hooked-symbol ecdsaPubKey{}(String{}) : String{}
+    hooked-symbol ecdsaPubKey{}(Bytes{}) : String{}
         [hook{}("KRYPTO.ecdsaPubKey")]
 ~~~
 

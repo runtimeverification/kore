@@ -49,7 +49,6 @@ import Data.ByteString (
     ByteString,
  )
 import Data.ByteString qualified as ByteString
-import Data.Char as Char
 import Data.HashMap.Strict qualified as HashMap
 import Data.String (
     IsString,
@@ -58,7 +57,6 @@ import Data.String (
 import Data.Text (
     Text,
  )
-import Data.Text qualified as Text
 import Data.Word (
     Word8,
  )
@@ -66,10 +64,10 @@ import Foreign (alloca, allocaBytes, peek, poke)
 import Kore.Builtin.Builtin qualified as Builtin
 import Kore.Builtin.Encoding (
     decode8Bit,
-    encode8Bit,
     toBase16,
  )
 import Kore.Builtin.Int qualified as Int
+import Kore.Builtin.InternalBytes qualified as InternalBytes
 import Kore.Builtin.String qualified as String
 import Kore.Simplify.Simplify (
     BuiltinAndAxiomSimplifier,
@@ -127,28 +125,28 @@ symbolVerifiers =
         , (hashSha256Key, verifyHashFunction)
         , (sha3256Key, verifyHashFunction)
         , (hashSha3_256Key, verifyHashFunction)
-        , (sha512_256RawKey, verifyHashFunction)
+        , (sha512_256RawKey, verifyHashFunctionRaw)
         , (ripemd160Key, verifyHashFunction)
         , (hashRipemd160Key, verifyHashFunction)
         , (ecdsaPubKey, verifyHashFunction)
         ,
             ( ecdsaRecoverKey
             , Builtin.verifySymbol
-                String.assertSort
-                [ String.assertSort
+                InternalBytes.assertSort
+                [ InternalBytes.assertSort
                 , Int.assertSort
-                , String.assertSort
-                , String.assertSort
+                , InternalBytes.assertSort
+                , InternalBytes.assertSort
                 ]
             )
         ,
             ( secp256k1EcdsaRecoverKey
             , Builtin.verifySymbol
-                String.assertSort
-                [ String.assertSort
+                InternalBytes.assertSort
+                [ InternalBytes.assertSort
                 , Int.assertSort
-                , String.assertSort
-                , String.assertSort
+                , InternalBytes.assertSort
+                , InternalBytes.assertSort
                 ]
             )
         ]
@@ -171,11 +169,14 @@ builtinFunctions key
     | otherwise = Nothing
 
 verifyHashFunction :: Builtin.SymbolVerifier
-verifyHashFunction = Builtin.verifySymbol String.assertSort [String.assertSort]
+verifyHashFunction = Builtin.verifySymbol String.assertSort [InternalBytes.assertSort]
+
+verifyHashFunctionRaw :: Builtin.SymbolVerifier
+verifyHashFunctionRaw = Builtin.verifySymbol InternalBytes.assertSort [InternalBytes.assertSort]
 
 {- | A function evaluator for builtin hash function hooks.
 
-The symbol's argument must be a string which will be interpreted as a sequence
+The symbol's argument is a byte string which will be interpreted as a raw sequence
 of 8-bit bytes. The result is the hash as a string in big-endian base-16
 encoding.
 -}
@@ -191,17 +192,16 @@ evalHashFunction context algorithm =
   where
     evalHashFunctionWorker :: Builtin.Function
     evalHashFunctionWorker _ resultSort [input] = do
-        str <- String.expectBuiltinString context input
-        let bytes = encode8Bit str
-            digest = hashWith algorithm bytes
+        bytes <- InternalBytes.expectBuiltinBytes input
+        let digest = hashWith algorithm bytes
             result = fromString (show digest)
         return (String.asPattern resultSort result)
     evalHashFunctionWorker _ _ _ = Builtin.wrongArity context
 
 {- | A function evaluator for builtin hash function hooks.
 
-The symbol's argument must be a string which will be interpreted as a sequence
-of 8-bit bytes. The result is the hash as raw string.
+The symbol's argument is a byte string which will be interpreted as a raw sequence
+of 8-bit bytes. The result is the hash as a raw byte string.
 -}
 evalHashFunctionRaw ::
     HashAlgorithm algorithm =>
@@ -215,9 +215,8 @@ evalHashFunctionRaw context algorithm =
   where
     evalHashFunctionWorker :: Builtin.Function
     evalHashFunctionWorker _ resultSort [input] = do
-        str <- String.expectBuiltinString context input
-        let bytes = encode8Bit str
-            digest = hashWith algorithm bytes
+        bytes <- InternalBytes.expectBuiltinBytes input
+        let digest = hashWith algorithm bytes
             result = decode8Bit digest
         return (String.asPattern resultSort result)
     evalHashFunctionWorker _ _ _ = Builtin.wrongArity context
@@ -247,7 +246,7 @@ evalECDSAPubKey =
   where
     evalWorker :: Builtin.Function
     evalWorker _ resultSort [input] = do
-        sec_key <- encode8Bit <$> String.expectBuiltinString ecdsaPubKey input
+        sec_key <- InternalBytes.expectBuiltinBytes input
         return $
             String.asPattern resultSort $
                 if ByteString.length sec_key /= 32
@@ -276,19 +275,14 @@ evalECDSARecover =
     eval0 :: Builtin.Function
     eval0 _ resultSort [messageHash0, v0, r0, s0] = do
         messageHash <-
-            string2Integer . Text.unpack
-                <$> String.expectBuiltinString "" messageHash0
+            bstring2Integer <$> InternalBytes.expectBuiltinBytes messageHash0
         v <- Int.expectBuiltinInt "" v0
         r <-
-            string2Integer . Text.unpack
-                <$> String.expectBuiltinString "" r0
+            bstring2Integer <$> InternalBytes.expectBuiltinBytes r0
         s <-
-            string2Integer . Text.unpack
-                <$> String.expectBuiltinString "" s0
+            bstring2Integer <$> InternalBytes.expectBuiltinBytes s0
         pad 64 0 (signatureToKey messageHash r s v)
-            & byteString2String
-            & Text.pack
-            & String.asPattern resultSort
+            & InternalBytes.asPattern resultSort
             & return
     eval0 _ _ _ = Builtin.wrongArity ecdsaRecoverKey
 
@@ -407,19 +401,6 @@ encodePoint compressed (Point x y)
             , integer2ByteString y
             ]
 encodePoint _ _ = error "Should never obtain point-at-infinity here!"
-
-{- | Converts a 'String' to a 'ByteString'.
-
-Will error if the string contains any characters above @\255@.
--}
-byteString2String :: ByteString -> String
-byteString2String = map (chr . fromIntegral) . ByteString.unpack
-
-{- | Interprets a 'String' as an 'Integer' in big-endian unsigned
- representation.
--}
-string2Integer :: String -> Integer
-string2Integer = bstring2Integer . ByteString.pack . map (fromIntegral . ord)
 
 {- | Interprets a 'ByteString' as an 'Integer' in big-endian unsigned
  representation.
