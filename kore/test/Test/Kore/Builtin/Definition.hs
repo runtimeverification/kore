@@ -1746,7 +1746,8 @@ kryptoModule =
         { moduleName = kryptoModuleName
         , moduleAttributes = Attributes []
         , moduleSentences =
-            [ importParsedModule stringModuleName
+            [ importParsedModule bytesModuleName
+            , importParsedModule stringModuleName
             , importParsedModule intModuleName
             , importParsedModule listModuleName
             , hookedSymbolDecl ecdsaRecoverSymbol
