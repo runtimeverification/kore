@@ -4,15 +4,13 @@ module ECDSA
     imports STRING
     imports BOOL
 
-    syntax String ::= Hex2Raw ( String ) [function]
-                    | Keccak256 ( String ) [function, hook(KRYPTO.keccak256)]
-                    | ECDSAPubKey ( String ) [function, hook(KRYPTO.ecdsaPubKey)]
+    syntax String ::= Keccak256 ( Bytes ) [function, hook(KRYPTO.keccak256)]
+                    | ECDSAPubKey ( Bytes ) [function, hook(KRYPTO.ecdsaPubKey)]
  // -----------------------------------------------
-    rule Hex2Raw ( S ) => #unparseByteStack( #parseByteStack ( S ) )
 
     syntax Int ::= #addrFromPrivateKey ( String ) [function, klabel(addrFromPrivateKey)]
  // ------------------------------------------------------------------------------------
-    rule [addrFromPrivateKey]: #addrFromPrivateKey ( KEY ) => #addr( #parseHexWord( Keccak256 ( Hex2Raw ( ECDSAPubKey( Hex2Raw ( KEY ) ) ) ) ) )
+    rule [addrFromPrivateKey]: #addrFromPrivateKey ( KEY ) => #addr( #parseHexWord( Keccak256( #parseByteStack( ECDSAPubKey( #parseByteStack( KEY ) ) ) ) ) )
 
     syntax Int ::= #parseHexWord ( String ) [function]
  // --------------------------------------------------
@@ -35,10 +33,6 @@ module ECDSA
  // --------------------------------------------------------------
     rule #alignHexString(S) => S             requires         lengthString(S) modInt 2 ==Int 0
     rule #alignHexString(S) => "0" +String S requires notBool lengthString(S) modInt 2 ==Int 0
-
-    syntax String ::= #unparseByteStack ( Bytes ) [function, klabel(unparseByteStack), symbol]
- // ------------------------------------------------------------------------------------------
-    rule #unparseByteStack(WS) => Bytes2String(WS)
 
     syntax String ::= #unparseData      ( Int, Int  ) [function]
                     | #unparseDataBytes ( Bytes )     [function]
