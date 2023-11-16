@@ -150,7 +150,7 @@ filterMultiOr hsLoc multiOr = do
         Conditional variable term ->
         Simplifier (Maybe (Conditional variable term))
     refute p =
-        evalConditional (ErrorDecidePredicateUnknown hsLoc Nothing) p Nothing <&> \case
+        evalConditional (WarnDecidePredicateUnknown hsLoc Nothing) p Nothing <&> \case
             Nothing -> Just p
             Just False -> Nothing
             Just True -> Just p
