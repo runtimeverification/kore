@@ -643,11 +643,12 @@ runServer port serverState mainModule runSMT Log.LoggerEnv{logAction} = do
     log :: MonadIO m => Log.Entry entry => entry -> m ()
     log = Log.logWith $ Log.hoistLogAction liftIO logAction
 
+externaliseDecidePredicateUnknown :: DecidePredicateUnknown -> PatternJson.KoreJson
+externaliseDecidePredicateUnknown err =
+    PatternJson.fromPredicate
+        (TermLike.SortActualSort $ TermLike.SortActual (TermLike.Id "SortBool" TermLike.AstLocationNone) [])
+        (makeMultipleAndPredicate . toList $ predicates err)
+
 handleDecidePredicateUnknown :: JsonRpcHandler
 handleDecidePredicateUnknown = JsonRpcHandler $ \(err :: DecidePredicateUnknown) ->
-    pure
-        ( backendError SmtSolverError $
-            PatternJson.fromPredicate
-                (TermLike.SortActualSort $ TermLike.SortActual (TermLike.Id "SortBool" TermLike.AstLocationNone) [])
-                (makeMultipleAndPredicate . toList $ predicates err)
-        )
+    pure (backendError SmtSolverError $ externaliseDecidePredicateUnknown err)
