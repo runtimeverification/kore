@@ -80,30 +80,33 @@ jsonRpcServer ::
     -- | Connection settings
     ServerSettings ->
     -- | Action to perform on connecting client thread
-    (Request -> Respond q (Log.LoggingT IO) r) ->
+    (b -> Request -> Respond q (Log.LoggingT IO) r) ->
     [JsonRpcHandler] ->
-    m a
-jsonRpcServer serverSettings respond handlers =
+    ((b -> m ()) -> m ()) ->
+    m ()
+jsonRpcServer serverSettings respond handlers with =
     runGeneralTCPServer serverSettings $ \cl ->
-        runJSONRPCT
-            -- we have to ensure that the returned messages contain no newlines
-            -- inside the message and have a trailing newline, which is used as the delimiter
-            rpcJsonConfig{Json.confIndent = Spaces 0, Json.confTrailingNewline = True}
-            V2
-            False
-            (appSink cl)
-            (appSource cl)
-            (srv respond handlers)
+        with $ \b ->
+            runJSONRPCT
+                -- we have to ensure that the returned messages contain no newlines
+                -- inside the message and have a trailing newline, which is used as the delimiter
+                rpcJsonConfig{Json.confIndent = Spaces 0, Json.confTrailingNewline = True}
+                V2
+                False
+                (appSink cl)
+                (appSource cl)
+                (srv b respond handlers)
 
 data JsonRpcHandler = forall e. Exception e => JsonRpcHandler (e -> Log.LoggingT IO ErrorObj)
 
 srv ::
-    forall m q r.
+    forall m q r b.
     (MonadLoggerIO m, FromRequestCancellable q, ToJSON r) =>
-    (Request -> Respond q (Log.LoggingT IO) r) ->
+    b ->
+    (b -> Request -> Respond q (Log.LoggingT IO) r) ->
     [JsonRpcHandler] ->
     JSONRPCT m ()
-srv respond handlers = do
+srv st respond handlers = do
     reqQueue <- liftIO $ atomically newTChan
     let mainLoop tid =
             let loop =
@@ -147,8 +150,8 @@ srv respond handlers = do
             sendResponses :: BatchResponse -> Log.LoggingT IO ()
             sendResponses r = flip runReaderT rpcSession $ sendBatchResponse r
 
-            respondTo :: Request -> Log.LoggingT IO (Maybe Response)
-            respondTo req = buildResponse (respond req) req
+            respondTo ::Request -> Log.LoggingT IO (Maybe Response)
+            respondTo req = buildResponse (respond st req) req
 
             cancelReq :: ErrorObj -> BatchRequest -> Log.LoggingT IO ()
             cancelReq err = \case

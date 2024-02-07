@@ -753,7 +753,7 @@ runServer port serverState mainModule runSMT Log.LoggerEnv{logAction} = do
     flip runLoggingT logFun $
         jsonRpcServer
             srvSettings
-            ( \req parsed ->
+            ( \() req parsed ->
                 log (InfoJsonRpcProcessRequest (getReqId req) parsed)
                     >> respond serverState mainModule runSMT parsed
             )
@@ -761,6 +761,7 @@ runServer port serverState mainModule runSMT Log.LoggerEnv{logAction} = do
             , handleErrorCall
             , handleSomeException
             ]
+            (\f -> f ())
   where
     srvSettings = serverSettings port "*"
 
