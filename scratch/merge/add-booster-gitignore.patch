@@ -25,4 +25,4 @@ index 21afbfb8f..218e14137 100644
 +/booster/scripts/logs
 +/booster/scripts/bug-reports
 +/booster/test/rpc-integration/resources/*.dylib
-+/booster/test/llvm-integration/definition/llvm-kompiled/
++/booster/test/*/definition/*   kompiled/
