@@ -1,0 +1,28 @@
+diff --git a/.gitignore b/.gitignore
+index 21afbfb8f..218e14137 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -40,7 +40,7 @@ test-results.xml
+ *.fail
+ cabal.project.local
+ *.save-proofs.kore
+-.envrc
++/.envrc
+ /result*
+ /local.nix
+ /shell.local.nix
+@@ -49,5 +49,13 @@ cabal.project.local
+ kore-exec.tar.gz
+ hie.yaml
+ .hie/
+-.direnv
++/.direnv
++/.vscode
++.DS_Store
+ *~
++dev-tools/*.cabal
++booster/*.cabal
++/booster/scripts/logs
++/booster/scripts/bug-reports
++/booster/test/rpc-integration/resources/*.dylib
++/booster/test/llvm-integration/definition/llvm-kompiled/
