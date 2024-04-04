@@ -38,6 +38,7 @@
 - ignore: {name: "Replace case with maybe"}
 - ignore: {name: "Hoist not"}
 - ignore: {name: "Redundant bracket"}
+- ignore: {name: "Fuse foldr/fmap"}
 
 # Ignore suggestions to reduce duplication, because:
 #  - High rate of false positives
@@ -50,8 +51,8 @@
 - ignore: {name: Redundant lambda}
 
 # Testing class laws
-- ignore: {name: Functor law, within: [Test.Data.Sup, Test.ListT]}
-- ignore: {name: Use /=, within: [Test.Data.Sup]}
+- ignore: {name: "Functor law", within: [Test.Data.Sup, Test.ListT]}
+- ignore: {name: "Use /=", within: [Test.Data.Sup]}
 - ignore: {name: "Alternative law, left identity", within: [Test.ListT]}
 - ignore: {name: "Alternative law, right identity", within: [Test.ListT]}
 - ignore: {name: "Monad law, right identity", within: [Test.ListT]}

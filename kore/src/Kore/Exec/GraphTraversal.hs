@@ -376,13 +376,13 @@ graphTraversal
                             filter isStop collected
                 pure $
                     if
-                            | (not $ null stuck) ->
-                                GotStuck 0 (mapMaybe extractStuckOrVacuous stuck)
-                            | not $ null unproven ->
-                                Stopped
-                                    (mapMaybe extractState unproven)
-                                    (concatMap extractNext unproven)
-                            | otherwise -> fmap currentState result
+                        | (not $ null stuck) ->
+                            GotStuck 0 (mapMaybe extractStuckOrVacuous stuck)
+                        | not $ null unproven ->
+                            Stopped
+                                (mapMaybe extractState unproven)
+                                (concatMap extractNext unproven)
+                        | otherwise -> fmap currentState result
             other -> pure $ fmap currentState other
 
 {- | Used to select whether the step should be canceled

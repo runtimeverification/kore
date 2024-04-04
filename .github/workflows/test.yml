@@ -139,7 +139,7 @@ jobs:
           submodules: recursive
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v25
+        uses: cachix/install-nix-action@v26
         with:
           install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
@@ -183,7 +183,7 @@ jobs:
             stack-2-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('stack.yaml') }}
             stack-2-${{ runner.os }}-ghc-${{ env.ghc_version }}
 
-      - uses: haskell-actions/setup@v2.6.1
+      - uses: haskell-actions/setup@v2.7
         id: setup-haskell-stack
         with:
           ghc-version: ${{ env.ghc_version }}
@@ -207,7 +207,7 @@ jobs:
     needs: formatting
     runs-on: ubuntu-22.04
     env:
-      hlint_version: "3.5"
+      hlint_version: "3.6.1"
     steps:
       - uses: actions/checkout@v4
         with:
