@@ -16,7 +16,14 @@ fi
 # use absolute paths for all subsequent commands
 TARGET=$(realpath ${TARGET})
 
-ASSETS="add-booster-project-config.patch add-booster-gitignore.patch tweak-nix-flake.patch"
+ASSETS="adapt-booster-integration-tests.patch \
+        adapt-hlint.patch \
+        add-booster-gitignore.patch \
+        add-booster-project-config.patch \
+        modify-test-workflow.patch \
+        tweak-booster-fourmolu.patch \
+        tweak-nix-flake.patch \
+        "
 
 SCRIPTDIR=$(dirname $0)
 
@@ -49,8 +56,10 @@ git remote remove booster
 
 # build setup for all packages
 git mv booster/dev-tools ./dev-tools
+sed -i -e '/^ *- -eventlog/d' dev-tools/package.yaml
 git commit -m "Move dev-tools package to top"
 git rm booster/stack.yaml booster/stack.yaml.lock booster/cabal.project booster/.gitignore
+sed -i -e '/- stack.yaml/d' booster/package.yaml
 patch < add-booster-project-config.patch
 patch < add-booster-gitignore.patch
 stack ls dependencies
@@ -79,6 +88,16 @@ patch < adapt-hlint.patch
 scripts/hlint.sh
 git commit -a -m "Adapt hlint setup"
 
+# Adapt booster integration tests and move dependency files
+git rm booster/deps/k_release booster/deps/haskell-backend_release
+git mv booster/deps/blockchain-k-plugin_release deps/
+git mv booster/scripts/integration-tests.sh scripts/booster-integration-tests.sh
+patch -p1 < adapt-booster-integration-tests.patch
+git commit -a -m "Adapt booster integration test scripts, move dependency information"
+
+# Adapt github workflows
+patch -p1 < modify-test-workflow.patch
+git commit -a -m "Adapt PR test workflow (adding booster build and integration test)"
 
 popd
 

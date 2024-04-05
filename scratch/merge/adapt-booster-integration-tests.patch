@@ -1,0 +1,44 @@
+diff --git a/booster/test/rpc-integration/runDirectoryTest.sh b/booster/test/rpc-integration/runDirectoryTest.sh
+index 3669f97b3..39ba882c9 100755
+--- a/booster/test/rpc-integration/runDirectoryTest.sh
++++ b/booster/test/rpc-integration/runDirectoryTest.sh
+@@ -37,7 +37,7 @@ shift
+ # mangle kore client arguments
+ 
+ dir=$(basename $directory)
+-bindir=../../.build/booster/bin
++bindir=../../../.build/kore/bin
+ 
+ server=${SERVER:-$bindir/kore-rpc-booster}
+ client=${CLIENT:-$bindir/kore-rpc-client}
+diff --git a/scripts/booster-integration-tests.sh b/scripts/booster-integration-tests.sh
+index 2f7f9443d..7f5f90d16 100755
+--- a/scripts/booster-integration-tests.sh
++++ b/scripts/booster-integration-tests.sh
+@@ -3,14 +3,15 @@ set -euxo pipefail
+ 
+ K_VERSION=$(cat deps/k_release)
+ PLUGIN_VERSION=$(cat deps/blockchain-k-plugin_release)
+-export PATH="$(nix build github:runtimeverification/k/v$K_VERSION#k.openssl.procps --no-link  --print-build-logs --json | jq -r '.[].outputs | to_entries[].value')/bin:$PATH"
++export PATH="$(nix build github:runtimeverification/k/v$K_VERSION#k.openssl.procps.secp256k1 --no-link  --print-build-logs --json | jq -r '.[].outputs | to_entries[].value')/bin:$PATH"
+ 
+ if [ -f cabal.project.local ]; then
+     echo "[WARN] local cabal project configuration found"
+ fi
+ 
++hpack booster && hpack dev-tools
+ cabal update
+-cabal test llvm-integration
++cabal test llvm-integration predicates-integration
+ 
+ # The runDirectoryTest.sh script expects the following env vars to be set
+ export PLUGIN_DIR=$(nix build github:runtimeverification/blockchain-k-plugin/$PLUGIN_VERSION --no-link --json | jq -r '.[].outputs | to_entries[].value')
+@@ -22,7 +23,7 @@ BOOSTER_DEV=$(cabal exec which booster-dev)
+ KORE_RPC_DEV=$(cabal exec which kore-rpc-dev)
+ export CLIENT=$(cabal exec which kore-rpc-client)
+ 
+-cd test/rpc-integration
++cd booster/test/rpc-integration
+ for dir in $(ls -d test-*); do
+     name=${dir##test-}
+     echo "Running $name..."
