@@ -61,19 +61,6 @@ index e18f72c85..bba157455 100644
 
    nix-build:
      name: 'Nix / Unit Tests'
-@@ -74,9 +80,9 @@ jobs:
-           - runner: macos-12
-             os: macos-12
-             nix: x86_64-darwin
--          - runner: MacM1
--            os: self-macos-12
--            nix: aarch64-darwin
-+          # - runner: MacM1
-+          #   os: self-macos-12
-+          #   nix: aarch64-darwin
-     runs-on: ${{ matrix.runner }}
-     steps:
-       - name: Check out code
 @@ -109,7 +115,7 @@ jobs:
            authToken: '${{ secrets.CACHIX_PUBLIC_TOKEN }}'
 
@@ -98,7 +85,7 @@ index e18f72c85..bba157455 100644
 
        - name: Test
 -        run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "cabal update && cabal build all && cabal test --enable-tests --test-show-details=direct all"
-+        run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "cabal update && hpack ./booster && hpack dev-tools && cabal build all && cabal test --enable-tests --test-show-details=direct kore-test unit-tests"
++        run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "hpack ./booster && hpack dev-tools && cabal update && cabal build all && cabal test --enable-tests --test-show-details=direct kore-test unit-tests"
 
    nix-integration:
      name: 'Nix / Integration'
