@@ -1,30 +1,8 @@
-commit 89a8953d665bb4360a747052b90592df4446ea4d
-Author: Jost Berthold <jost.berthold@gmail.com>
-Date:   Thu Mar 28 20:18:00 2024 +1100
-
-    flake.nix: add booster artefacts and modify setup, remove booster flake
-
 diff --git a/flake.nix b/flake.nix
-index 2d227120c..5bb733921 100644
+index 50dc5d3d2..a71520cd0 100644
 --- a/flake.nix
 +++ b/flake.nix
-@@ -3,14 +3,13 @@
-   inputs = {
-     rv-utils.url = "github:runtimeverification/rv-nix-tools";
-     nixpkgs.follows = "rv-utils/nixpkgs";
--    nixpkgs2305.url = "nixpkgs/nixos-23.05";
-     stacklock2nix.url = "github:cdepillabout/stacklock2nix";
-     z3 = {
-       url = "github:Z3Prover/z3/z3-4.12.1";
-       flake = false;
-     };
-   };
--  outputs = { self, nixpkgs, nixpkgs2305, stacklock2nix, z3, rv-utils }:
-+  outputs = { self, nixpkgs, stacklock2nix, z3, rv-utils }:
-     let
-       perSystem = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
-       nixpkgsCleanFor = system: import nixpkgs { inherit system; };
-@@ -46,10 +45,25 @@
+@@ -45,10 +45,25 @@
              };
            additionalHaskellPkgSetOverrides = hfinal: hprev:
              with final.haskell.lib; {
@@ -50,16 +28,7 @@ index 2d227120c..5bb733921 100644
                kore = (overrideCabal hprev.kore (drv: {
                  doCheck = false;
                  postPatch = ''
-@@ -57,7 +71,7 @@
-                   substituteInPlace src/Kore/VersionInfo.hs \
-                     --replace '$(GitRev.gitHash)' '"${self.rev or "dirty"}"'
-                 '';
--                postInstall = ''
-+                  postInstall = ''
-                   ${drv.postInstall or ""}
-                   rm $out/bin/kore-check-functions
-                   rm $out/bin/kore-format
-@@ -67,9 +81,6 @@
+@@ -66,9 +81,6 @@
                  # and depending on another copy of ghc-compact breaks HLS in the dev shell.
                  ghc-compact = null;
                };
@@ -69,18 +38,15 @@ index 2d227120c..5bb733921 100644
  
                # everything belwo should be removed once HLS in nixpkgs catches up to ghc 9.6
                doctest-discover = dontCheck hprev.doctest-discover;
-@@ -201,8 +212,8 @@
+@@ -200,6 +212,7 @@
            additionalDevShellNativeBuildInputs = stacklockHaskellPkgSet:
              with ghcVersion final; [
                cabal-install
--              # fourmolu
--              (import nixpkgs2305 { inherit (prev) system; }).haskellPackages.fourmolu_0_12_0_0
-+              final.hpack
-+              fourmolu
++              hpack
+               fourmolu
                hlint
                stacklockHaskellPkgSet.haskell-language-server
-               final.haskell-language-server
-@@ -224,31 +235,45 @@
+@@ -222,31 +235,45 @@
            pkgs = nixpkgsFor system;
            kore = with pkgs;
              haskell.lib.justStaticExecutables haskell-backend.pkgSet.kore;
@@ -104,12 +70,9 @@ index 2d227120c..5bb733921 100644
            mkShell {
              nativeBuildInputs = [
                (haskell.lib.justStaticExecutables
--                # (ghcVersion pkgs).fourmolu
--                (import nixpkgs2305 { inherit system; }).haskellPackages.fourmolu_0_12_0_0
--                )
-+                (ghcVersion pkgs).fourmolu)
-+              (haskell.lib.justStaticExecutables
-+                (ghcVersion pkgs).hlint)
+                (ghcVersion pkgs).fourmolu)
+               (haskell.lib.justStaticExecutables
+                (ghcVersion pkgs).hlint)
 +              pkgs.hpack
              ];
 +            shellHook = ''
