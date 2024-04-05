@@ -1,0 +1,37 @@
+diff --git a/.hlint.yaml b/.hlint.yaml
+index 9a86bc62f..d07105701 100644
+--- a/.hlint.yaml
++++ b/.hlint.yaml
+@@ -1,24 +1,23 @@
++# HLint configuration file
++#
++# see `hlint --default` for help
++################################
++
+ # Specify additional command line arguments
+-- arguments: [-XTypeApplications]
++- arguments: [-XTypeApplications, -XOverloadedRecordDot]
+ 
+ # Control which extensions/flags/modules/functions can be used
+ - modules:
+-  - {name: [Data.Map], within: []}
+   - {name: [System.FilePath.Posix], within: []}
+-  - name:
+-      - Prettyprinter
+-      - Prettyprinter.Render.Text
+-      - Prettyprinter.String
+-    within:
+-      - Pretty
+-      - Kore.JsonRpc.Types
+ 
+ # Ignore some builtin hints
++
+ # This warning should apply to Control.Exception.evaluate, but is mistakenly
+ # applied to Kore.Rewrite.SMT.Evaluator.evaluate.
+ - ignore: {name: "Redundant evaluate"}
+ 
+ # Corporate style
++- ignore: {name: "Move brackets to avoid $" }
+ - ignore: {name: "Use tuple-section"}
+ - ignore: {name: "Use record patterns"}
+ - ignore: {name: "Use String"}

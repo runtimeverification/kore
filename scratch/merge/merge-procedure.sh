@@ -69,6 +69,16 @@ patch < tweak-nix-flake.patch
 nix flake lock
 git commit -a -m "flake.nix: add booster artefacts and modify setup, remove booster flake"
 
+# adapt fourmolu and hlint scripts, run them once to check
+git mv -f booster/scripts/fourmolu.sh scripts/fourmolu.sh
+git rm booster/fourmolu.yaml
+scripts/fourmolu.sh -c
+git commit -a -m "Adapt fourmolu setup + reformat two booster files"
+git mv booster/scripts/hlint.sh scripts/hlint.sh
+patch < adapt-hlint.patch
+scripts/hlint.sh
+git commit -a -m "Adapt hlint setup"
+
 
 popd
 
