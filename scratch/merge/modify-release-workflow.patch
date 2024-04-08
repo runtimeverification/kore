@@ -1,0 +1,97 @@
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 8681264db..a5d55270f 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -7,6 +7,7 @@ on:
+ env:
+   ghc_version: "9.6.4"
+   stack_version: "2.15.1"
++  hpack_version: '0.34.2'
+ 
+ jobs:
+   release:
+@@ -34,7 +35,7 @@ jobs:
+           authToken: '${{ secrets.CACHIX_PUBLIC_TOKEN }}'
+ 
+       - name: Build
+-        run: nix build .#kore-exec
++        run: nix build .#kore-exec .#kore-rpc-booster
+ 
+   cache-cabal:
+     name: 'Cache Cabal'
+@@ -82,15 +83,16 @@ jobs:
+           path: |
+             ~/.cabal/packages
+             ~/.cabal/store
+-          key: cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('kore/kore.cabal') }}-${{ hashFiles('kore-rpc-types/kore-rpc-types.cabal') }}
++          key: cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('cabal.project.freeze') }}-${{ hashFiles('kore/kore.cabal') }}-${{ hashFiles('kore-rpc-types/kore-rpc-types.cabal') }}-${{ hashFiles('booster/hs-backend-booster.cabal') }}
+           restore-keys: |
+-            cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('kore/kore.cabal') }}
++            cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('cabal.project.freeze') }}-${{ hashFiles('kore/kore.cabal') }}-${{ hashFiles('kore-rpc-types/kore-rpc-types.cabal') }}
++            cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('cabal.project.freeze') }}-${{ hashFiles('kore/kore.cabal') }}
++            cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}-${{ hashFiles('cabal.project.freeze') }}
+             cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('cabal.project') }}
+             cabal-nix-${{ runner.os }}-ghc-${{ env.ghc_version }}
+ 
+       - name: Test
+-        run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "cabal update && cabal test --enable-tests --test-show-details=direct all"
+-
++        run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "hpack ./booster && hpack dev-tools && cabal update && cabal build all && cabal test --enable-tests --test-show-details=direct kore-test unit-tests"
+ 
+   cache-stack:
+     name: 'Cache Stack'
+@@ -122,49 +124,18 @@ jobs:
+           enable-stack: true
+           stack-setup-ghc: true
+ 
+-      - name: Build dependencies
++      - name: Build all
+         run: |
+-          stack build --test
+-
+-  cache-stack-haddock:
+-    name: 'Cache Stack Haddock'
+-    runs-on: ubuntu-22.04
+-    steps:
+-      - name: Install prerequisites
+-        run: |
+-          sudo apt install --yes z3 libsecp256k1-dev
++          stack build --test --no-run-tests --pedantic
+ 
+-      - name: Check out code
+-        uses: actions/checkout@v4
+-        with:
+-          submodules: recursive
+-
+-      - name: Cache Stack root
+-        uses: actions/cache@v4
+-        with:
+-          path: ~/.stack
+-          key: stack-haddock-2-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('stack.yaml') }}-${{ hashFiles('stack.yaml.lock') }}
+-          restore-keys: |
+-            stack-haddock-2-${{ runner.os }}-ghc-${{ env.ghc_version }}-${{ hashFiles('stack.yaml') }}
+-            stack-haddock-2-${{ runner.os }}-ghc-${{ env.ghc_version }}
+-
+-      - uses: haskell-actions/setup@v2.7
+-        id: setup-haskell-stack
+-        with:
+-          ghc-version: ${{ env.ghc_version }}
+-          stack-version: ${{ env.stack_version }}
+-          enable-stack: true
+-          stack-setup-ghc: true
+-
+-      - name: Check documentation
+-        run: |
+-          stack haddock --fast
++      - name: Run unit tests
++        run: stack test kore:kore-test hs-backend-booster:unit-tests
+ 
+   update-dependents:
+     name: 'Publish Release'
+     runs-on: ubuntu-latest
+     environment: production
+-    needs: [release, cache-cabal, cache-stack, cache-stack-haddock]
++    needs: [release, cache-cabal, cache-stack]
+     steps:
+       - name: 'Update dependents'
+         env:

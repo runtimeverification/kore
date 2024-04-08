@@ -21,6 +21,7 @@ ASSETS="adapt-booster-integration-tests.patch \
         add-booster-gitignore.patch \
         add-booster-project-config.patch \
         modify-test-workflow.patch \
+        modify-release-workflow.patch \
         tweak-booster-fourmolu.patch \
         tweak-nix-flake.patch \
         "
@@ -96,8 +97,17 @@ patch -p1 < adapt-booster-integration-tests.patch
 git commit -a -m "Adapt booster integration test scripts, move dependency information"
 
 # Adapt github workflows
+## use merged test workflow
 patch -p1 < modify-test-workflow.patch
+git rm booster/.github/workflows/test.yml
 git commit -a -m "Adapt PR test workflow (adding booster build and integration test)"
+## adapt release workflow
+patch -p1 < modify-release-workflow.patch
+git rm booster/.github/workflows/master.yml
+git commit -a -m "Adapt release workflow (populating caches and producing github release)"
+## remove old obsolete workflows: update-regression-tests.yml, profiling and kevm performance workflows, with doc.s
+git rm .github/workflows/profiling.yaml .github/workflows/kevm-performance-test.yaml docs/2022-11-02-perf-test-automation.md .github/workflows/update-regression-tests.yml
+git commit -m "Remove old workflows that are now obsolete"
 
 popd
 
