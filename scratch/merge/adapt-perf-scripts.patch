@@ -1,0 +1,90 @@
+diff --git a/scripts/performance-tests-kevm.sh b/scripts/performance-tests-kevm.sh
+index 2866bef2c..c04bff057 100755
+--- a/scripts/performance-tests-kevm.sh
++++ b/scripts/performance-tests-kevm.sh
+@@ -35,11 +35,11 @@ trap "exit 1"           HUP INT PIPE QUIT TERM
+ trap 'rm -rf "$TEMPD" && killall kore-rpc-booster || echo "No zombie processes found"'  EXIT
+ 
+ feature_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/booster-backend $SCRIPT_DIR/../ --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/haskell-backend $SCRIPT_DIR/../ --command bash -c "$1"
+ }
+ 
+ master_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/booster-backend github:runtimeverification/hs-backend-booster/$MASTER_COMMIT --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/haskell-backend github:runtimeverification/haskell-backend/$MASTER_COMMIT --command bash -c "$1"
+ }
+ 
+ cd $TEMPD
+@@ -94,4 +94,4 @@ fi
+ 
+ cd $SCRIPT_DIR
+ python3 compare.py logs/kevm-$KEVM_VERSION-$FEATURE_BRANCH_NAME.log logs/kevm-$KEVM_VERSION-master-$MASTER_COMMIT_SHORT.log > logs/kevm-$KEVM_VERSION-master-$MASTER_COMMIT_SHORT-$FEATURE_BRANCH_NAME-compare
+-fi
+\ No newline at end of file
++fi
+diff --git a/scripts/performance-tests-kontrol.sh b/scripts/performance-tests-kontrol.sh
+index a993691f8..fcf08d4b1 100755
+--- a/scripts/performance-tests-kontrol.sh
++++ b/scripts/performance-tests-kontrol.sh
+@@ -85,11 +85,11 @@ sed -i'' -e "s|'forge', 'build'|'forge', 'build', '--no-auto-detect'|g" src/kont
+ sed -i'' -e "s|'forge', 'build'|'forge', 'build', '--no-auto-detect'|g" src/tests/integration/test_foundry_prove.py
+ 
+ feature_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input kevm/k-framework/booster-backend $SCRIPT_DIR/../ --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input kevm/k-framework/haskell-backend $SCRIPT_DIR/../ --command bash -c "$1"
+ }
+ 
+ master_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input kevm/k-framework/booster-backend github:runtimeverification/hs-backend-booster/$MASTER_COMMIT --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input kevm/k-framework/haskell-backend github:runtimeverification/haskell-backend/$MASTER_COMMIT --command bash -c "$1"
+ }
+ 
+ feature_shell "poetry install && poetry run kdist --verbose build evm-semantics.plugin evm-semantics.haskell kontrol.foundry --jobs 4"
+@@ -107,4 +107,4 @@ fi
+ 
+ cd $SCRIPT_DIR
+ python3 compare.py logs/kontrol-$KONTROL_VERSION-$FEATURE_BRANCH_NAME.log logs/kontrol-$KONTROL_VERSION-master-$MASTER_COMMIT_SHORT.log > logs/kontrol-$KONTROL_VERSION-master-$MASTER_COMMIT_SHORT-$FEATURE_BRANCH_NAME-compare
+-fi
+\ No newline at end of file
++fi
+diff --git a/scripts/performance-tests-mx.sh b/scripts/performance-tests-mx.sh
+index a4c9f9d5a..d34e7a7f5 100755
+--- a/scripts/performance-tests-mx.sh
++++ b/scripts/performance-tests-mx.sh
+@@ -35,11 +35,11 @@ trap "exit 1"           HUP INT PIPE QUIT TERM
+ trap 'rm -rf "$TEMPD" && killall kore-rpc-booster || echo "No zombie processes found"'  EXIT
+ 
+ feature_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/booster-backend $SCRIPT_DIR/../ --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/haskell-backend $SCRIPT_DIR/../ --command bash -c "$1"
+ }
+ 
+ master_shell() {
+-  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/booster-backend github:runtimeverification/hs-backend-booster/$MASTER_COMMIT --command bash -c "$1"
++  GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input k-framework/haskell-backend github:runtimeverification/haskell-backend/$MASTER_COMMIT --command bash -c "$1"
+ }
+ 
+ cd $TEMPD
+@@ -94,4 +94,4 @@ fi
+ 
+ cd $SCRIPT_DIR
+ python3 compare.py logs/mx-$MX_VERSION-$FEATURE_BRANCH_NAME.log logs/mx-$MX_VERSION-master-$MASTER_COMMIT_SHORT.log > logs/mx-$MX_VERSION-master-$MASTER_COMMIT_SHORT-$FEATURE_BRANCH_NAME-compare
+-fi
+\ No newline at end of file
++fi
+diff --git a/scripts/run-with-tarball.sh b/scripts/run-with-tarball.sh
+index 0019d8ba2..b94227855 100755
+--- a/scripts/run-with-tarball.sh
++++ b/scripts/run-with-tarball.sh
+@@ -17,8 +17,8 @@ shift
+ tarname=$(basename $tarball)
+ 
+ booster=${BOOSTER:-$(realpath $(dirname $0)/..)}
+-server=${SERVER:-$booster/.build/booster/bin/kore-rpc-booster}
+-client=${CLIENT:-$booster/.build/booster/bin/kore-rpc-client}
++server=${SERVER:-$booster/.build/kore/bin/kore-rpc-booster}
++client=${CLIENT:-$booster/.build/kore/bin/kore-rpc-client}
+ log_dir=${LOG_DIR:-.}
+ 
+ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"

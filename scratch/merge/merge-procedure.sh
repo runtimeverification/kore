@@ -18,6 +18,7 @@ TARGET=$(realpath ${TARGET})
 
 ASSETS="adapt-booster-integration-tests.patch \
         adapt-hlint.patch \
+        adapt-perf-scripts.patch \
         add-booster-gitignore.patch \
         add-booster-project-config.patch \
         modify-test-workflow.patch \
@@ -59,8 +60,8 @@ git remote remove booster
 git mv booster/dev-tools ./dev-tools
 sed -i -e '/^ *- -eventlog/d' dev-tools/package.yaml
 git commit -m "Move dev-tools package to top"
-git rm booster/stack.yaml booster/stack.yaml.lock booster/cabal.project booster/.gitignore
-sed -i -e '/- stack.yaml/d' booster/package.yaml
+git rm booster/stack.yaml booster/stack.yaml.lock booster/cabal.project booster/.gitignore booster/Makefile booster/.coderabbit.yaml booster/LICENSE
+sed -i -e '/- stack.yaml/d' -e '/- LICENSE/d' booster/package.yaml
 patch < add-booster-project-config.patch
 patch < add-booster-gitignore.patch
 stack ls dependencies
@@ -74,7 +75,7 @@ git add ./cabal.project.freeze
 git commit -a -m "update cabal freeze file and generating script"
 
 # make flake
-git rm booster/flake.nix booster/flake.lock
+git rm booster/flake.nix booster/flake.lock booster/default.nix booster/shell.nix
 patch < tweak-nix-flake.patch
 nix flake lock
 git commit -a -m "flake.nix: add booster artefacts and modify setup, remove booster flake"
@@ -85,6 +86,7 @@ git rm booster/fourmolu.yaml
 scripts/fourmolu.sh -c
 git commit -a -m "Adapt fourmolu setup + reformat two booster files"
 git mv booster/scripts/hlint.sh scripts/hlint.sh
+git rm booster/.hlint.yaml
 patch < adapt-hlint.patch
 scripts/hlint.sh
 git commit -a -m "Adapt hlint setup"
@@ -108,6 +110,12 @@ git commit -a -m "Adapt release workflow (populating caches and producing github
 ## remove old obsolete workflows: update-regression-tests.yml, profiling and kevm performance workflows, with doc.s
 git rm .github/workflows/profiling.yaml .github/workflows/kevm-performance-test.yaml docs/2022-11-02-perf-test-automation.md .github/workflows/update-regression-tests.yml
 git commit -m "Remove old workflows that are now obsolete"
+
+# migrate all booster scripts, patching perf scripts to work with the new K flake
+git rm booster/scripts/update-haskell-backend.sh
+git mv booster/scripts/*.sh booster/scripts/compare.py booster/scripts/Count.hs scripts/
+patch -p1 < adapt-perf-scripts.patch
+git commit -a -m "migrate remaining booster scripts, adapting performance run scripts"
 
 popd
 
