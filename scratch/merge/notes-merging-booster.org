@@ -1,0 +1,125 @@
+#+Title: Notes about merging booster and legacy-kore repos
+
+* Prior work
+** DONE Align K dependency for integration tests
+- major trouble because of plugin and llvm updates
+  - secp256k1 lib needs to be provided in nix setup for the foundry
+    integration test
+  - the plugin now requires building a library blake2.a which nix does
+    not build
+    - modifying the makefile to get that done
+    - also mopping up other s^&^ after Dwight
+- also: #if_#then_#else is now called ite. Very important!
+** DONE clean up legacy-kore from old cruft we don't use any more: one independent commit
+- remove stylish-haskell config
+- remove all comments from hlint config
+- clean up stack.yaml file (old comments)
+
+* Procedure
+** Merge direction: booster into legacy-kore
+First thought the other way round would be better, but
+- booster has a single package at the top
+  - and dev-tools in a subdirectory
+- legacy-kore has two packages in subdirectories
+- we want 4 packages in subdirectories at the end
+  - kore-rpc-types, kore, booster, dev-tools
+** Merge: as follows
+#+begin_example
+#!/bin/bash
+
+set -eux
+
+TARGET=${1?"Must provide a non-existing target directory"}
+
+which git-filter-repo || (echo "git-filter-repo required"; exit 2)
+
+if [ -f ${TARGET} ]; then
+    echo "Target directory $TARGET exists, aborting script"
+    exit 1
+fi
+
+git clone git@github.com:runtimeverification/haskell-backend.git $TARGET
+
+git clone git@github.com:runtimeverification/hs-backend-booster.git ${TARGET}-booster
+
+pushd ${TARGET}-booster
+time git-filter-repo --to-subdirectory-filter booster
+popd
+
+pushd $TARGET
+git checkout -b booster-merge-$TARGET
+git remote add booster ../${TARGET}-booster
+git fetch booster --no-tags
+EDITOR=true git merge --allow-unrelated-histories booster/master
+git remote remove booster
+popd
+#+end_example
+** After merging
+*** DONE Adapt build procedure
+- add dev-tools and booster submodules
+  - git mv booster/dev-tools ./dev-tools
+  - git rm booster/stack.yaml booster/cabal.project booster/.gitignore
+  - patch: .gitignore
+  - patch: add booster things to stack.yaml and cabal.project
+    - stack extra-libs:
+      - smtlib-backends-0.3
+      - smtlib-backends-process-0.3
+    - booster/dev-tools in project lists
+
+*** IN_PROGRESS set up workflows for combined build
+- leave the two workflows separate first, then merge
+  - software build needs to be merged immediately
+**** TODO can maybe use directory filters (-> github workflow manual)
+- to exclude some long tests when not necessary
+**** DONE adapt update workflow (back-reference to K)
+**** DONE adapt master workflow(s) to do as before
+
+*** DONE merge nix derivations
+- aim to simplify the derivation
+- start from the booster version, adding kore things as necessary
+  - smtlib-process things without tests
+  - possibly more of those issues
+
+*** DONE prepare K repository build to only use haskell-backend
+- remove the booster submodule
+- strip out booster code from build procedure
+**** DONE Switch dependency and update trigger in K Framework repo to haskell-backend
+- needs to use the new derivation (see above)
+- merge dependency mechanism (remove booster/deps, transfer its contents)
+**** DONE modify update-deps workflow to update haskell-backend not booster
+- basically simplifying things (stripping out booster)
+*** TODO reconfigure dependency downstream dispatch in devops repo
+https://github.com/runtimeverification/devops/blob/master/deps/runtimeverification/haskell-backend.json
+
+
+** Later
+*** Move secondary kore binaries to dev-tools
+*** What about the "web" submodule? Do we need/use it?
+*** Merge integration tests into new directory structure
+**** Convert/add kore-rpc based tests derived from old integration tests
+- old tests/* -> tests/kore-exec (unmodified)
+- booster/tests/rpc-integration -> tests/rpc-integration:
+  - merge old and new tests
+  - use new scripts and client
+
+* List of things to do after merging
+** avoid running integration tests for kore-exec when nothing changed
+- github path filter action for kore and kore-rpc-types (and
+  tests/kore-exec, of course), as well as all general build setup
+** Little things
+*** test performance scripts, adjust .gitignore to ignore artefacts
+*** Do we need the generate-json and the update-regression-tests scripts?
+*** go through README files
+- remove booster README
+- add information about booster to top-level README
+*** merge documentation folders
+  - design-decisions -> docs/design-decisions ?
+  - booster/docs -> docs (with renamed files) ?
+
+** move secondary kore binaries to dev-tools package
+** rework directory structure for tests
+- tests/kore-exec
+- tests/rpc-integration
+  - merging old and new tests
+  - using kore-rpc-client and script
+- tests/interactive (for kore-repl), if we keep those at all
