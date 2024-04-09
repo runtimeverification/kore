@@ -46,7 +46,7 @@ index 50dc5d3d2..a71520cd0 100644
                fourmolu
                hlint
                stacklockHaskellPkgSet.haskell-language-server
-@@ -222,31 +235,45 @@
+@@ -222,31 +235,48 @@
            pkgs = nixpkgsFor system;
            kore = with pkgs;
              haskell.lib.justStaticExecutables haskell-backend.pkgSet.kore;
@@ -92,6 +92,9 @@ index 50dc5d3d2..a71520cd0 100644
 +              pkgs.z3
 +              pkgs.lsof
 +          ];
++          shellHook = ''
++            hpack booster && hpack dev-tools
++          '';
          };
        });
  
