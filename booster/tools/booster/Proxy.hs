@@ -210,15 +210,12 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                             (fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9)
                                         ]
                                 | otherwise = Nothing
+                        -- NOTE: we do not include simplification logs into the response,
+                        -- as they are output at SimplifyJson CLI log level
                         pure . Right . Simplify $
                             SimplifyResult
                                 { state = koreRes.state
-                                , logs =
-                                    combineLogs
-                                        [ timing
-                                        , boosterRes.logs
-                                        , map RPCLog.logEntryEraseTerms <$> koreRes.logs
-                                        ]
+                                , logs = timing
                                 }
                     koreError ->
                         -- can only be an error
@@ -493,6 +490,9 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
     -- If the state simplifies to bottom, only the logs are returned,
     -- otherwise the logs and the simplified state (after splitting it
     -- into term and predicates by an internal trivial execute call).
+    --
+    -- Only the timing logs will be returned (if requested by the top-level).
+    -- Simplification logs are only output to stderr/file at SimplifyJson level.
     simplifyExecuteState ::
         LogSettings ->
         Maybe Text ->
@@ -500,7 +500,7 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
         ExecuteState ->
         m (Either (Maybe [RPCLog.LogEntry]) (ExecuteState, Maybe [RPCLog.LogEntry]))
     simplifyExecuteState
-        LogSettings{logSuccessfulSimplifications, logFailedSimplifications, logTiming}
+        LogSettings{logTiming}
         mbModule
         def
         s = do
@@ -551,8 +551,8 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                 SimplifyRequest
                     { state = execStateToKoreJson state
                     , _module = mbModule
-                    , logSuccessfulSimplifications
-                    , logFailedSimplifications
+                    , logSuccessfulSimplifications = Nothing
+                    , logFailedSimplifications = Nothing
                     , logTiming
                     }
 
