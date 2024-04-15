@@ -24,8 +24,8 @@
 #   SERVER_OPTS: additional options to pass to the SERVER
 #                  (default: none)
 #   CONNECTION_ATTEMPTS: attempts to establish a connection with the server
-#                        after sleepeng for 1 second
-#                          (default: 15)
+#                        after sleepeng for 2 seconds
+#                          (default: 20)
 
 directory=${1?"Please provide a test directory in a single argument"}
 
@@ -80,7 +80,7 @@ i=$connection_attempts
 while ! lsof -a -p${server_pid} -sTCP:LISTEN -iTCP && [[ $i -ge 0 ]]; do
     echo "Waiting for server ($i attempts left)"
     i=$((i-1))
-    sleep 1
+    sleep 2
 done
 
 # find server port via lsof
