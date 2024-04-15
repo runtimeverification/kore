@@ -21,8 +21,6 @@ import Data.Aeson (ToJSON (..))
 import Data.Aeson.KeyMap qualified as Aeson
 import Data.Aeson.Text (encodeToLazyText)
 import Data.Aeson.Types (Value (..))
-import Data.Bifunctor (second)
-import Data.Either (partitionEithers)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, mapMaybe)
@@ -309,18 +307,17 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                 | boosterResult.reason == DepthBound && isJust cfg.forceFallback -> do
                     Log.logInfoNS "proxy" . Text.pack $
                         "Forced simplification at " <> show (currentDepth + boosterResult.depth)
-                    simplifyResult <- simplifyExecuteState logSettings r._module def boosterResult.state
+                    simplifyResult <- simplifyExecuteState r._module def boosterResult.state
                     case simplifyResult of
-                        Left logsOnly -> do
+                        Nothing -> do
                             -- state was simplified to \bottom, return vacuous
                             Log.logInfoNS "proxy" "Vacuous state after simplification"
-                            pure . Right . Execute $ makeVacuous logsOnly boosterResult
-                        Right (simplifiedBoosterState, boosterStateSimplificationLogs) -> do
+                            pure . Right . Execute $ makeVacuous boosterResult
+                        Just simplifiedBoosterState -> do
                             let accumulatedLogs =
                                     combineLogs
                                         [ rpcLogs
                                         , boosterResult.logs
-                                        , boosterStateSimplificationLogs
                                         ]
                             executionLoop
                                 logSettings
@@ -338,13 +335,13 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                         "Booster " <> show boosterResult.reason <> " at " <> show boosterResult.depth
                     -- simplify Booster's state with Kore's simplifier
                     Log.logInfoNS "proxy" . Text.pack $ "Simplifying booster state and falling back to Kore "
-                    simplifyResult <- simplifyExecuteState logSettings r._module def boosterResult.state
+                    simplifyResult <- simplifyExecuteState r._module def boosterResult.state
                     case simplifyResult of
-                        Left logsOnly -> do
+                        Nothing -> do
                             -- state was simplified to \bottom, return vacuous
                             Log.logInfoNS "proxy" "Vacuous state after simplification"
-                            pure . Right . Execute $ makeVacuous logsOnly boosterResult
-                        Right (simplifiedBoosterState, boosterStateSimplificationLogs) -> do
+                            pure . Right . Execute $ makeVacuous boosterResult
+                        Just simplifiedBoosterState -> do
                             -- attempt to do one step in the old backend
                             (kResult, kTime) <-
                                 Stats.timed $
@@ -400,7 +397,7 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                                     "kore confirms result " <> Text.pack (show bRes)
 
                                     -- Kore may have produced simplification logs during rewriting. If so,
-                                    -- output them Kore at "SimplifyJson" level, effectively
+                                    -- output them at "SimplifyJson" level, effectively
                                     -- appending them to Booster's traces. Erase terms from the traces.
                                     when (isJust koreResult.logs) $ do
                                         outputLogsAtLevel (Log.LevelOther "SimplifyJson")
@@ -431,12 +428,12 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                             -- NB This has been found to make a difference,
                                             -- even for results produced by legacy-kore.
                                             postExecResult <-
-                                                simplifyExecResult logSettings r._module def koreResult
+                                                simplifyExecResult r._module def koreResult
 
                                             case postExecResult of
-                                                Left (nextState, newLogs) -> do
+                                                Left nextState -> do
                                                     -- simplification revealed that we should actually proceed
-                                                    continueWith newLogs nextState
+                                                    continueWith [] nextState
                                                 Right result -> do
                                                     logStats ExecuteM (time + bTime + kTime, koreTime + kTime)
                                                     pure $
@@ -462,16 +459,16 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                         "Booster " <> show boosterResult.reason <> " at " <> show boosterResult.depth
                     -- perform post-exec simplification
                     postExecResult <-
-                        simplifyExecResult logSettings r._module def boosterResult
+                        simplifyExecResult r._module def boosterResult
                     case postExecResult of
-                        Left (nextState, newLogs) ->
+                        Left nextState ->
                             executionLoop
                                 logSettings
                                 def
                                 ( currentDepth + boosterResult.depth
                                 , time + bTime
                                 , koreTime
-                                , combineLogs $ rpcLogs : boosterResult.logs : newLogs
+                                , combineLogs [rpcLogs, boosterResult.logs]
                                 )
                                 r{ExecuteRequest.state = nextState}
                         Right result -> do
@@ -493,13 +490,11 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
     -- Only the timing logs will be returned (if requested by the top-level).
     -- Simplification logs are only output to stderr/file at SimplifyJson level.
     simplifyExecuteState ::
-        LogSettings ->
         Maybe Text ->
         KoreDefinition ->
         ExecuteState ->
-        m (Either (Maybe [RPCLog.LogEntry]) (ExecuteState, Maybe [RPCLog.LogEntry]))
+        m (Maybe ExecuteState)
     simplifyExecuteState
-        LogSettings{logTiming}
         mbModule
         def
         s = do
@@ -511,7 +506,7 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                 -- failure mode would be malformed or invalid kore
                 Right (Simplify simplified)
                     | KoreJson.KJBottom _ <- simplified.state.term ->
-                        pure (Left simplified.logs)
+                        pure Nothing
                     | otherwise -> do
                         -- convert back to a term/constraints form by re-internalising
                         let internalPattern =
@@ -527,23 +522,21 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                 -- put back the ruleId, ruleSubstitution and rulePredicate that was originally passed to simplifyExecuteState
                                 -- this ensures the information from next states in a branch reponse doesn't get lost
                                 pure $
-                                    Right
-                                        ( (Booster.toExecState p sub unsup Nothing)
+                                    Just
+                                        (Booster.toExecState p sub unsup Nothing)
                                             { ruleId = s.ruleId
                                             , ruleSubstitution = s.ruleSubstitution
                                             , rulePredicate = s.rulePredicate
                                             }
-                                        , simplified.logs
-                                        )
                             Left err -> do
                                 Log.logWarnNS "proxy" $
                                     "Error processing execute state simplification result: "
                                         <> Text.pack (show err)
-                                pure $ Right (s, Nothing)
+                                pure $ Just s
                 _other -> do
                     -- if we hit an error here, return the original
                     Log.logWarnNS "proxy" "Unexpected failure when calling Kore simplifier, returning original term"
-                    pure $ Right (s, Nothing)
+                    pure $ Just s
           where
             toSimplifyRequest :: ExecuteState -> SimplifyRequest
             toSimplifyRequest state =
@@ -552,37 +545,33 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                     , _module = mbModule
                     , logSuccessfulSimplifications = Nothing
                     , logFailedSimplifications = Nothing
-                    , logTiming
+                    , logTiming = Nothing
                     }
 
     -- used for post-exec simplification returns either a state to
-    -- continue execution from, with associated simplification logs
-    -- (only new logs), or a simplified result with combined logs
+    -- continue execution from a simplified result
     simplifyExecResult ::
-        LogSettings ->
         Maybe Text ->
         KoreDefinition ->
         ExecuteResult ->
-        m (Either (KoreJson.KoreJson, [Maybe [RPCLog.LogEntry]]) ExecuteResult)
-    simplifyExecResult logSettings mbModule def res@ExecuteResult{reason, state, nextStates}
+        m (Either KoreJson.KoreJson ExecuteResult)
+    simplifyExecResult mbModule def res@ExecuteResult{reason, state, nextStates}
         | not cfg.simplifyAtEnd = pure $ Right res
         | otherwise = do
             Log.logInfoNS "proxy" . Text.pack $ "Simplifying state in " <> show reason <> " result"
-            simplified <- simplifyExecuteState logSettings mbModule def state
+            simplified <- simplifyExecuteState mbModule def state
             case simplified of
-                Left logsOnly -> do
+                Nothing -> do
                     -- state simplified to \bottom, return vacuous
                     Log.logInfoNS "proxy" "Vacuous after simplifying result state"
-                    pure . Right $ makeVacuous logsOnly res
-                Right (simplifiedState, simplifiedStateLogs) -> do
+                    pure . Right $ makeVacuous res
+                Just simplifiedState -> do
                     simplifiedNexts <-
                         maybe
                             (pure [])
-                            (mapM $ simplifyExecuteState logSettings mbModule def)
+                            (mapM $ simplifyExecuteState mbModule def)
                             nextStates
-                    let (logsOnly, (filteredNexts, filteredNextLogs)) =
-                            second unzip $ partitionEithers simplifiedNexts
-                        newLogs = simplifiedStateLogs : logsOnly <> filteredNextLogs
+                    let filteredNexts = catMaybes simplifiedNexts
 
                     pure $ case reason of
                         Branching
@@ -591,15 +580,14 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                     res
                                         { reason = Stuck
                                         , nextStates = Nothing
-                                        , logs = combineLogs $ res.logs : simplifiedStateLogs : logsOnly
                                         }
                             | length filteredNexts == 1 ->
                                 -- all but one next states are bottom, execution should proceed
-                                Left (execStateToKoreJson $ head filteredNexts, logsOnly <> filteredNextLogs)
+                                Left (execStateToKoreJson $ head filteredNexts)
                         -- otherwise falling through to _otherReason
                         CutPointRule
                             | null filteredNexts ->
-                                Right $ makeVacuous (combineLogs $ res.logs : newLogs) res
+                                Right $ makeVacuous res
                         _otherReason ->
                             Right $
                                 res
@@ -608,7 +596,6 @@ respondEither cfg@ProxyConfig{statsVar, boosterState} booster kore req = case re
                                         if null filteredNexts
                                             then Nothing
                                             else Just filteredNexts
-                                    , logs = combineLogs $ res.logs : newLogs
                                     }
 
 data LogSettings = LogSettings
@@ -635,13 +622,12 @@ isSimplificationLogEntry = \case
     RPCLog.Simplification{} -> True
     _ -> False
 
-makeVacuous :: Maybe [RPCLog.LogEntry] -> ExecuteResult -> ExecuteResult
-makeVacuous newLogs execState =
+makeVacuous :: ExecuteResult -> ExecuteResult
+makeVacuous execState =
     execState
         { reason = Vacuous
         , nextStates = Nothing
         , rule = Nothing
-        , logs = combineLogs [execState.logs, newLogs]
         }
 
 mkFallbackLogEntry :: ExecuteResult -> ExecuteResult -> RPCLog.LogEntry
