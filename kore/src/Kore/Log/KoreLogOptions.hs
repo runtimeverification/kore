@@ -181,6 +181,7 @@ instance Show KoreLogType where
 data KoreLogFormat
     = Standard
     | OneLine
+    | Json
     deriving stock (Eq, Show)
 
 instance Default KoreLogType where
@@ -204,11 +205,12 @@ parseKoreLogFormat = option formatReader info
     formatReader = Options.maybeReader $ \case
         "standard" -> Just Standard
         "oneline" -> Just OneLine
+        "json" -> Just Json
         _ -> Nothing
     info =
         mempty
             <> Options.long "log-format"
-            <> Options.help "Log format: standard, oneline"
+            <> Options.help "Log format: standard, oneline, json"
             <> Options.value def
 
 type EntryTypes = Set SomeTypeRep
@@ -672,6 +674,7 @@ unparseKoreLogOptions
 
         koreLogFormatFlag Standard = []
         koreLogFormatFlag OneLine = ["--log-format=oneline"]
+        koreLogFormatFlag Json = ["--log-format=json"]
 
         timestampsSwitchFlag TimestampsEnable = ["--enable-log-timestamps"]
         timestampsSwitchFlag TimestampsDisable = ["--disable-log-timestamps"]
