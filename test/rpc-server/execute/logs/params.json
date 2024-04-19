@@ -2,7 +2,5 @@
     "terminal-rules": ["TEST.DE", "TEST.AB"],
     "max-depth": 3,
     "log-successful-rewrites": true,
-    "log-failed-rewrites": true,
-    "log-successful-simplifications": true,
-    "log-failed-simplifications": true
+    "log-failed-rewrites": true
 }
