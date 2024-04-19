@@ -10,6 +10,7 @@ module Kore.Log.WarnDepthLimitExceeded (
     warnDepthLimitExceeded,
 ) where
 
+import Data.Aeson qualified as JSON
 import Debug
 import Log
 import Numeric.Natural (
@@ -39,6 +40,8 @@ instance Entry WarnDepthLimitExceeded where
     entrySeverity _ = Warning
     oneLineDoc (WarnDepthLimitExceeded limitExceeded) =
         Pretty.pretty limitExceeded
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
     helpDoc _ = "warn when depth limit is exceeded"
 
 warnDepthLimitExceeded :: MonadLog log => Natural -> log ()

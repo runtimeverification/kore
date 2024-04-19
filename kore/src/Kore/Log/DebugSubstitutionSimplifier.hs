@@ -11,6 +11,7 @@ module Kore.Log.DebugSubstitutionSimplifier (
     debugSubstitutionSimplifierResult,
 ) where
 
+import Data.Aeson qualified as JSON
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Log
@@ -38,6 +39,8 @@ instance Entry DebugSubstitutionSimplifier where
     entrySeverity _ = Debug
     contextDoc _ = Just "while simplifying substitution"
     oneLineDoc = pretty . show
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log non-\\bottom results when normalizing unification solutions"
 
 instance SQL.Table DebugSubstitutionSimplifier

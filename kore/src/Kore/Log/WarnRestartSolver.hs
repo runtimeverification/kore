@@ -11,6 +11,7 @@ module Kore.Log.WarnRestartSolver (
 ) where
 
 import Control.Monad.Catch qualified as Exception
+import Data.Aeson qualified as JSON
 import Log
 import Prelude.Kore
 import Pretty (
@@ -35,6 +36,8 @@ instance Pretty WarnRestartSolver where
 instance Entry WarnRestartSolver where
     entrySeverity _ = Warning
     oneLineDoc _ = "WarnRestartSolver"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ =
         "warning raised to notify the user that the solver has\
         \ crashed and the backend will attempt to restart it,\

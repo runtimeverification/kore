@@ -13,6 +13,7 @@ import Control.Monad.Logger (
     LogStr,
     fromLogStr,
  )
+import Data.Aeson qualified as JSON
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Log
@@ -39,6 +40,8 @@ instance Entry LogJsonRpcServer where
         LevelWarn -> Warning
         LevelError -> Error
         _ -> Debug
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log JSON RPC Server messages"
     oneLineDoc LogJsonRpcServer{msg} = pretty $ Text.replace "\n" " " $ Text.decodeUtf8 $ fromLogStr msg
 

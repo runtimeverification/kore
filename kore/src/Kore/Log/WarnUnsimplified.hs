@@ -12,6 +12,7 @@ module Kore.Log.WarnUnsimplified (
     warnUnsimplifiedCondition,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Internal.Condition (
     Condition,
  )
@@ -89,11 +90,15 @@ instance Pretty WarnUnsimplifiedCondition where
 instance Entry WarnUnsimplifiedPredicate where
     entrySeverity _ = Debug
     oneLineDoc WarnUnsimplifiedPredicate{limit} = Pretty.pretty limit
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when a predicate is not simplified"
 
 instance Entry WarnUnsimplifiedCondition where
     entrySeverity _ = Debug
     oneLineDoc WarnUnsimplifiedCondition{limit} = Pretty.pretty limit
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when a condition is not simplified"
 
 warnUnsimplifiedPredicate ::

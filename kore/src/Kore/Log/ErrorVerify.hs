@@ -15,6 +15,7 @@ import Control.Monad.Catch (
     MonadThrow,
     throwM,
  )
+import Data.Aeson qualified as JSON
 import Kore.Error qualified as Kore
 import Kore.Validate.Error (
     VerifyError,
@@ -38,6 +39,8 @@ instance Pretty ErrorVerify where
 instance Entry ErrorVerify where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorVerify"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
 
 errorVerify :: MonadThrow log => Kore.Error VerifyError -> log a
 errorVerify koreError =

@@ -10,6 +10,7 @@ module Kore.Log.DebugBeginClaim (
     debugBeginClaim,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Attribute.SourceLocation (
     SourceLocation,
  )
@@ -35,6 +36,8 @@ instance Entry DebugBeginClaim where
     helpDoc _ = "log starting claims"
     oneLineDoc DebugBeginClaim{claim} =
         pretty @SourceLocation $ from claim
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
 
 debugBeginClaim ::
     MonadLog log =>

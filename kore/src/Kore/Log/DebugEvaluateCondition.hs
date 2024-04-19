@@ -11,6 +11,7 @@ module Kore.Log.DebugEvaluateCondition (
     debugEvaluateConditionResult,
 ) where
 
+import Data.Aeson qualified as JSON
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Internal.Predicate (
@@ -61,6 +62,8 @@ instance Entry DebugEvaluateCondition where
     contextDoc _ = Just "while evaluating predicate"
     oneLineDoc (DebugEvaluateCondition _) = "DebugEvaluateCondition _"
     oneLineDoc result = pretty (show result)
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log every predicate evaluated by the SMT solver"
 
 instance SQL.Table DebugEvaluateCondition

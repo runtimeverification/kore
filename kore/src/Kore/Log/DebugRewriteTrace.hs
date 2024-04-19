@@ -17,6 +17,7 @@ module Kore.Log.DebugRewriteTrace (
     rewriteTraceLogger,
 ) where
 
+import Data.Aeson qualified as JSON
 import Data.ByteString (
     ByteString,
  )
@@ -180,21 +181,33 @@ instance Pretty DebugRewriteTrace where
 instance Entry DebugInitialClaim where
     entrySeverity _ = Debug
     oneLineDoc (DebugInitialClaim uniqueId _) = "Initial claim " <> maybe mempty pretty (getUniqueId uniqueId)
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+
     helpDoc _ = "log every claim before proving it"
 
 instance Entry DebugInitialPattern where
     entrySeverity _ = Debug
     oneLineDoc (DebugInitialPattern _) = "Initial pattern"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+
     helpDoc _ = "log initial pattern before rewriting"
 
 instance Entry DebugFinalPatterns where
     entrySeverity _ = Debug
     oneLineDoc (DebugFinalPatterns _) = "Final patterns"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+
     helpDoc _ = "log final patterns after rewriting"
 
 instance Entry DebugRewriteTrace where
     entrySeverity _ = Debug
     oneLineDoc DebugRewriteTrace{} = "Rewrite trace"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+
     helpDoc _ = "log rewrite substitutions"
 
 unparseOneLine :: Unparse p => p -> Text

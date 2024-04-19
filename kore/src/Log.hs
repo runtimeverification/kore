@@ -75,6 +75,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict qualified as Strict (
     StateT,
  )
+import Data.Aeson qualified as JSON
 import Data.Text (
     Text,
  )
@@ -105,6 +106,7 @@ data LogMessage = LogMessage
 instance Entry LogMessage where
     entrySeverity LogMessage{severity} = severity
     oneLineDoc (LogMessage{severity}) = prettySeverity severity
+    oneLineJson (LogMessage{severity}) = JSON.toJSON (show severity)
 
 instance Pretty LogMessage where
     pretty LogMessage{message, callstack} =

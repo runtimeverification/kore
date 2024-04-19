@@ -10,6 +10,7 @@ module Kore.Log.DebugRetrySolverQuery (
     debugRetrySolverQuery,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Internal.Predicate (
     Predicate,
  )
@@ -48,6 +49,8 @@ instance Pretty DebugRetrySolverQuery where
 instance Entry DebugRetrySolverQuery where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugRetrySolverQuery"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ =
         "warning raised when the solver failed to decide\
         \ the satisfiability of a formula, indicating that\

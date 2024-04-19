@@ -16,6 +16,7 @@ module Kore.Log.DebugSolver (
     solverTranscriptLogger,
 ) where
 
+import Data.Aeson qualified as JSON
 import Data.Default
 import Data.Text (
     Text,
@@ -27,7 +28,9 @@ import Log (
     LogAction (..),
     Severity (Debug),
     SomeEntry (..),
+    entryTypeText,
     logWith,
+    toEntry,
  )
 import Options.Applicative (
     Parser,
@@ -65,11 +68,15 @@ instance Pretty DebugSolverRecv where
 instance Entry DebugSolverSend where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugSolverSend"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log commands sent to SMT solver"
 
 instance Entry DebugSolverRecv where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugSolverRecv"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log responses received from SMT solver"
 
 logDebugSolverSendWith ::

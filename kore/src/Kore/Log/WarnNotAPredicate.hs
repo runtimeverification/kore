@@ -12,6 +12,7 @@ module Kore.Log.WarnNotAPredicate (
     Severity (..),
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Internal.Conditional qualified as Conditional
 import Kore.Internal.Pattern (Pattern)
 import Kore.Internal.Predicate (Predicate)
@@ -47,6 +48,8 @@ instance Entry WarnNotAPredicate where
             . Pretty.renderString
             . Pretty.layoutOneLine
             . Pretty.pretty
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ =
         "warn when a predicate simplification produces a non-predicate"
 

@@ -9,6 +9,7 @@ module Kore.Log.InfoJsonRpcCancelRequest (
     InfoJsonRpcCancelRequest (..),
 ) where
 
+import Data.Aeson qualified as JSON
 import Log
 import Network.JSONRPC (
     Id (..),
@@ -35,4 +36,6 @@ instance Pretty InfoJsonRpcCancelRequest where
 instance Entry InfoJsonRpcCancelRequest where
     entrySeverity _ = Info
     oneLineDoc = Pretty.pretty
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
     helpDoc _ = "log cancelled request to the JSON RPC server"

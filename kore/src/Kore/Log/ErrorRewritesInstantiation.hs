@@ -14,6 +14,7 @@ import Control.Exception (
     Exception (..),
     throw,
  )
+import Data.Aeson qualified as JSON
 import Data.Set (
     Set,
  )
@@ -94,6 +95,8 @@ instance Entry ErrorRewritesInstantiation where
             { problem = SubstitutionCoverageError{location}
             } =
             pretty location
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log rewrite instantiation errors"
 
 instance Pretty ErrorRewritesInstantiation where

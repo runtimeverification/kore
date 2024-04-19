@@ -15,6 +15,7 @@ import Control.Monad.Catch (
     MonadThrow,
     throwM,
  )
+import Data.Aeson qualified as JSON
 import Log hiding (message)
 import Prelude.Kore
 import Pretty
@@ -34,6 +35,8 @@ instance Pretty ErrorOutOfDate where
 instance Entry ErrorOutOfDate where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorOutOfDate"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
 
 errorOutOfDate :: MonadThrow log => String -> log a
 errorOutOfDate message =

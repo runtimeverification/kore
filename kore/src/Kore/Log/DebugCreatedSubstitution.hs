@@ -10,6 +10,7 @@ module Kore.Log.DebugCreatedSubstitution (
     debugCreatedSubstitution,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Internal.Predicate qualified as Predicate
 import Kore.Internal.Substitution (Substitution)
 import Kore.Internal.Substitution qualified as Substitution
@@ -47,6 +48,8 @@ instance Entry DebugCreatedSubstitution where
             . layoutPrettyUnbounded
             . Pretty.group
             . pretty
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log every substitution created when applying semantic rules"
 
 debugCreatedSubstitution ::

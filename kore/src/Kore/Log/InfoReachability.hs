@@ -10,6 +10,7 @@ module Kore.Log.InfoReachability (
     whileReachability,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Reachability.Prim
 import Log qualified
 import Prelude.Kore
@@ -31,6 +32,8 @@ instance Log.Entry InfoReachability where
     entrySeverity _ = Log.Info
     contextDoc InfoReachability{prim} = (<+>) "while" <$> primDoc prim
     oneLineDoc InfoReachability{prim} = Pretty.pretty . show $ prim
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log reachability proof steps"
 
 primDoc :: Prim -> Maybe (Doc ann)

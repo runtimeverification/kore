@@ -10,6 +10,7 @@ module Kore.Log.DebugAttemptUnification (
     debugAttemptUnification,
 ) where
 
+import Data.Aeson qualified as JSON
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Internal.TermLike (
@@ -38,6 +39,8 @@ instance Entry DebugAttemptUnification where
     entrySeverity _ = Debug
     contextDoc _ = Just "while attempting unification"
     oneLineDoc _ = "DebugAttemptUnification"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "log unification attempts"
 
 instance Pretty DebugAttemptUnification where

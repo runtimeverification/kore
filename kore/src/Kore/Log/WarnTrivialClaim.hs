@@ -11,6 +11,7 @@ module Kore.Log.WarnTrivialClaim (
     warnTrivialClaimRemoved,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Attribute.SourceLocation
 import Kore.Log.InfoProofDepth
 import Kore.Reachability.SomeClaim
@@ -57,6 +58,8 @@ instance Entry WarnTrivialClaim where
             , Pretty.colon
             , Pretty.pretty @SourceLocation $ from claim
             ]
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when a claim is proven without taking any steps"
 
 warnProvenClaimZeroDepth ::

@@ -9,6 +9,7 @@ module Kore.Log.InfoJsonRpcProcessRequest (
     InfoJsonRpcProcessRequest (..),
 ) where
 
+import Data.Aeson qualified as JSON
 import Log
 import Network.JSONRPC (
     Id (..),
@@ -43,4 +44,6 @@ instance Pretty InfoJsonRpcProcessRequest where
 instance Entry InfoJsonRpcProcessRequest where
     entrySeverity _ = Info
     oneLineDoc = Pretty.pretty
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
     helpDoc _ = "log valid requests to the JSON RPC server"

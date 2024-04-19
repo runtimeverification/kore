@@ -10,6 +10,7 @@ module Kore.Log.WarnFunctionWithoutEvaluators (
     warnFunctionWithoutEvaluators,
 ) where
 
+import Data.Aeson qualified as JSON
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
 import Kore.Attribute.Symbol (sourceLocation)
@@ -23,12 +24,7 @@ import Kore.Internal.Symbol (
 import Kore.Unparser (
     unparse,
  )
-import Log (
-    Entry (..),
-    MonadLog,
-    Severity (Warning),
-    logEntry,
- )
+import Log
 import Prelude.Kore
 import Pretty (
     Pretty,
@@ -65,6 +61,8 @@ instance Entry WarnFunctionWithoutEvaluators where
     entrySeverity _ = Warning
     oneLineDoc (WarnFunctionWithoutEvaluators Symbol{symbolAttributes}) =
         Pretty.pretty $ sourceLocation symbolAttributes
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when encountering a function with no definition"
 
 instance SQL.Table WarnFunctionWithoutEvaluators

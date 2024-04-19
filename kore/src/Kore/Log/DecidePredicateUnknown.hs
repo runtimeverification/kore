@@ -20,6 +20,7 @@ import Control.Exception (
     Exception (..),
     throw,
  )
+import Data.Aeson qualified as JSON
 import Data.Text (Text)
 import Debug
 import Kore.Attribute.SourceLocation (
@@ -102,6 +103,8 @@ instance Entry DecidePredicateUnknown where
         prettyHsLoc Loc{loc_module, loc_start = (row, col)} =
             Pretty.pretty loc_module <> ":" <> Pretty.pretty row <> ":" <> Pretty.pretty col
     oneLineDoc _ = "DecidePredicateUnknown"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ =
         "error or a warning when the solver cannot decide the satisfiability of a formula"
 

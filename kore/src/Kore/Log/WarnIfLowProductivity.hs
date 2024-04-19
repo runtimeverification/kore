@@ -10,6 +10,7 @@ module Kore.Log.WarnIfLowProductivity (
     warnIfLowProductivity,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Attribute.Definition (KFileLocations (..))
 import Log
 import Numeric.Natural
@@ -62,6 +63,8 @@ instance Entry WarnIfLowProductivity where
     entrySeverity _ = Warning
     oneLineDoc (WarnIfLowProductivity productivityPercent _) =
         Pretty.pretty productivityPercent
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when productivty (MUT time / Total time) drops below 90%"
 
 warnIfLowProductivity ::

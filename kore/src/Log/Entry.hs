@@ -27,6 +27,7 @@ import Control.Lens qualified as Lens
 import Control.Lens.Prism (
     Prism,
  )
+import Data.Aeson qualified as JSON
 import Data.Proxy (
     Proxy (..),
  )
@@ -59,6 +60,8 @@ class (Show entry, Typeable entry) => Entry entry where
 
     oneLineDoc :: entry -> Pretty.Doc ann
 
+    oneLineJson :: entry -> JSON.Value
+
     contextDoc :: entry -> Maybe (Pretty.Doc ann)
     contextDoc = const Nothing
 
@@ -80,6 +83,7 @@ instance Entry SomeEntry where
     entrySeverity (SomeEntry _ entry) = entrySeverity entry
     longDoc (SomeEntry _ entry) = longDoc entry
     oneLineDoc (SomeEntry _ entry) = oneLineDoc entry
+    oneLineJson (SomeEntry _ entry) = oneLineJson entry
     contextDoc (SomeEntry _ entry) = contextDoc entry
 
 someEntry :: (Entry e1, Entry e2) => Prism SomeEntry SomeEntry e1 e2

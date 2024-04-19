@@ -10,6 +10,7 @@ module Kore.Log.WarnUnexploredBranches (
     warnUnexploredBranches,
 ) where
 
+import Data.Aeson qualified as JSON
 import Log
 import Numeric.Natural
 import Prelude.Kore
@@ -36,6 +37,8 @@ instance Entry WarnUnexploredBranches where
     oneLineDoc (WarnUnexploredBranches count) =
         Pretty.pretty count
             Pretty.<+> "branches were still unexplored when the action failed."
+    oneLineJson entry@(WarnUnexploredBranches _count) =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
     helpDoc _ =
         "indicate whether and how many unexplored branches existed when failing."
 

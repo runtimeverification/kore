@@ -11,6 +11,7 @@ module Kore.Log.DebugAttemptedRewriteRules (
     debugAttemptedRewriteRule,
 ) where
 
+import Data.Aeson qualified as JSON
 import Data.Text (Text)
 import Kore.Attribute.Axiom (
     SourceLocation,
@@ -56,6 +57,8 @@ instance Pretty DebugAttemptedRewriteRules where
 instance Entry DebugAttemptedRewriteRules where
     entrySeverity _ = Debug
     helpDoc _ = "log attempted rewrite rules"
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     oneLineDoc DebugAttemptedRewriteRules{attemptedRewriteRule} =
         pretty attemptedRewriteRule
 

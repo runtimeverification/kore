@@ -10,6 +10,7 @@ module Kore.Log.WarnNotImplemented (
     warnNotImplemented,
 ) where
 
+import Data.Aeson qualified as JSON
 import Kore.Attribute.Symbol (sourceLocation)
 import Kore.Internal.TermLike
 import Kore.Unparser
@@ -34,6 +35,8 @@ instance InternalVariable variable => Entry (WarnNotImplemented variable) where
     entrySeverity _ = Warning
     oneLineDoc (WarnNotImplemented (Application Symbol{symbolAttributes} _)) =
         Pretty.pretty $ sourceLocation symbolAttributes
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
     helpDoc _ = "warn when we try to evaluate a partial builtin function on unimplemented cases"
 
 warnNotImplemented ::

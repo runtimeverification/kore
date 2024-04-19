@@ -11,6 +11,7 @@ module Kore.Log.WarnStepTimeout (
     warnStepMATimeout,
 ) where
 
+import Data.Aeson qualified as JSON
 import Log
 import Prelude.Kore
 import Pretty (Pretty)
@@ -40,6 +41,9 @@ instance Entry WarnStepTimeout where
     entrySeverity _ = Warning
 
     oneLineDoc _ = "WarnStepTimeout"
+
+    oneLineJson entry =
+        JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
 
     helpDoc _ = "warn when a step has timed out"
 
