@@ -52,6 +52,7 @@ import Kore.Internal.TermLike (
     SomeVariableName,
     TermLike,
  )
+import Kore.JsonRpc.Types.Log qualified as KoreRpcLog
 import Kore.Rewrite.Axiom.MatcherData (
     MatchResult,
  )
@@ -270,8 +271,34 @@ instance Entry DebugAttemptEquation where
             (srcLoc equation)
     oneLineDoc (DebugAttemptEquationResult _ (Left _)) = "equation is not applicable"
     oneLineDoc (DebugAttemptEquationResult _ (Right _)) = "equation is applicable"
-    oneLineJson entry =
-        JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+
+    oneLineJson = \case
+        entry@DebugAttemptEquation{} -> JSON.object ["entry" JSON..= Log.entryTypeText (Log.toEntry entry)]
+        DebugAttemptEquationResult equation (Right _) ->
+            JSON.toJSON $
+                KoreRpcLog.Simplification
+                    { originalTerm = Nothing
+                    , originalTermIndex = Nothing
+                    , result =
+                        KoreRpcLog.Success
+                            { rewrittenTerm = Nothing
+                            , substitution = Nothing
+                            , ruleId = fromMaybe "UNKNOWN" (Attribute.getUniqueId . Attribute.uniqueId . attributes $ equation)
+                            }
+                    , origin = KoreRpcLog.KoreRpc
+                    }
+        DebugAttemptEquationResult equation (Left failureReason) ->
+            JSON.toJSON $
+                KoreRpcLog.Simplification
+                    { originalTerm = Nothing
+                    , originalTermIndex = Nothing
+                    , result =
+                        KoreRpcLog.Failure
+                            { reason = (Pretty.renderText . Pretty.layoutOneLine) (pretty failureReason)
+                            , _ruleId = Attribute.getUniqueId . Attribute.uniqueId . attributes $ equation
+                            }
+                    , origin = KoreRpcLog.KoreRpc
+                    }
 
 -- | Log the result of attempting to apply an 'Equation'.
 debugAttemptEquationResult ::
