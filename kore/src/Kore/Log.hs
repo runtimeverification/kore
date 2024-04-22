@@ -33,7 +33,7 @@ import Control.Monad.Cont (
     ContT (..),
     runContT,
  )
-import Data.Aeson qualified as JSON
+import Data.Aeson.Text qualified as JSON
 import Data.Functor.Contravariant (
     contramap,
  )
@@ -284,7 +284,7 @@ makeKoreLogger exeName startTime timestampSwitch koreLogFormat logActionText =
         | OneLine <- koreLogFormat =
             Pretty.hsep [header, oneLineDoc actualEntry]
         | Json <- koreLogFormat =
-            Pretty.hsep [header, Pretty.viaShow . JSON.encode $ oneLineJson actualEntry]
+            Pretty.hsep [header, Pretty.pretty . JSON.encodeToLazyText $ oneLineJson actualEntry]
         | otherwise =
             (Pretty.vsep . concat)
                 [ [header]
