@@ -23,8 +23,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger.CallStack qualified as Log
 import Control.Monad.Trans.Except (catchE, except, runExcept, runExceptT, throwE, withExceptT)
 import Crypto.Hash (SHA256 (..), hashWith)
-import Data.Bifunctor (second)
-import Data.Coerce (coerce)
 import Data.Foldable
 import Data.List (singleton)
 import Data.Map.Strict (Map)
@@ -224,25 +222,8 @@ respond stateVar =
             start <- liftIO $ getTime Monotonic
             let internalised =
                     runExcept $ internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
-            let mkEquationTraces
-                    | coerce doTracing =
-                        Just
-                            . mapMaybe
-                                ( mkLogEquationTrace
-                                    ( fromMaybe False req.logSuccessfulSimplifications
-                                    , fromMaybe False req.logFailedSimplifications
-                                    )
-                                )
-                    | otherwise =
-                        const Nothing
-                mkTraces duration traceData
-                    | Just True <- req.logTiming =
-                        Just $
-                            [ProcessingTime (Just Booster) duration]
-                                <> fromMaybe [] (mkEquationTraces traceData)
-                    | otherwise =
-                        mkEquationTraces traceData
-                doTracing =
+            let doTracing =
+                    -- TODO remove, not used any more
                     Flag $
                         any
                             (fromMaybe False)
@@ -287,10 +268,10 @@ respond stateVar =
                                 result = case catMaybes (mbPredicate : mbSubstitution : map Just unsupported) of
                                     [] -> term
                                     ps -> KoreJson.KJAnd tSort $ term : ps
-                            pure $ Right (addHeader result, [])
+                            pure $ Right $ addHeader result
                         (Left ApplyEquations.SideConditionFalse{}, _) -> do
                             let tSort = externaliseSort $ sortOfPattern pat
-                            pure $ Right (addHeader $ KoreJson.KJBottom tSort, [])
+                            pure $ Right $ addHeader $ KoreJson.KJBottom tSort
                         (Left (ApplyEquations.EquationLoop _terms), _) ->
                             pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
                         (Left other, _) ->
@@ -298,9 +279,8 @@ respond stateVar =
                 -- predicate only
                 Right (Predicates ps)
                     | null ps.boolPredicates && null ps.ceilPredicates && null ps.substitution && null ps.unsupported ->
-                        pure $
-                            Right
-                                (addHeader $ Syntax.KJTop (fromMaybe (error "not a predicate") $ sortOfJson req.state.term), [])
+                        pure . Right . addHeader $
+                            Syntax.KJTop (fromMaybe (error "not a predicate") $ sortOfJson req.state.term)
                     | otherwise -> do
                         Log.logInfoNS "booster" "Simplifying predicates"
                         unless (null ps.unsupported) $ do
@@ -330,7 +310,7 @@ respond stateVar =
                                                     <> map (uncurry $ externaliseSubstitution predicateSort) (Map.toList ps.substitution)
                                                     <> ps.unsupported
 
-                                        pure $ Right (addHeader $ Syntax.KJAnd predicateSort result, [])
+                                        pure . Right . addHeader $ Syntax.KJAnd predicateSort result
                                     (Left something, _) ->
                                         pure . Left . RpcError.backendError $ RpcError.Aborted $ renderText $ pretty something
             whenJust solver SMT.closeSolver
@@ -338,10 +318,14 @@ respond stateVar =
 
             let duration =
                     fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9
-                mkSimplifyResponse state traceData =
+                timeTrace t
+                    | Just True <- req.logTiming =
+                        Just [ProcessingTime (Just Booster) t]
+                    | otherwise = Nothing
+                mkSimplifyResponse state =
                     RpcTypes.Simplify
-                        RpcTypes.SimplifyResult{state, logs = mkTraces duration traceData}
-            pure $ second (uncurry mkSimplifyResponse) (fmap (second (map ApplyEquations.eraseStates)) result)
+                        RpcTypes.SimplifyResult{state, logs = timeTrace duration}
+            pure $ fmap mkSimplifyResponse result
         RpcTypes.GetModel req -> withModule req._module $ \case
             (_, _, Nothing) -> do
                 Log.logErrorNS "booster" "get-model request, not supported without SMT solver"
