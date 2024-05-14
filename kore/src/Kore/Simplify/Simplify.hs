@@ -154,7 +154,7 @@ data Env = Env
     , tracingEnabled :: Bool
     }
 
-data SimplifierTrace = SimplifierTrace {equationId :: UniqueId}
+newtype SimplifierTrace = SimplifierTrace {equationId :: UniqueId}
     deriving stock (Eq, Show)
 
 {- | @Simplifier@ represents a simplification action.
