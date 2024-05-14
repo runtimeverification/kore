@@ -133,8 +133,6 @@ respond stateVar =
                                     (fromMaybe False)
                                     [ req.logSuccessfulRewrites
                                     , req.logFailedRewrites
-                                    , req.logSuccessfulSimplifications
-                                    , req.logFailedSimplifications
                                     , req.logFallbacks
                                     ]
                     -- apply the given substitution before doing anything else
@@ -222,14 +220,7 @@ respond stateVar =
             start <- liftIO $ getTime Monotonic
             let internalised =
                     runExcept $ internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
-            let doTracing =
-                    -- TODO remove, not used any more
-                    Flag $
-                        any
-                            (fromMaybe False)
-                            [ req.logSuccessfulSimplifications
-                            , req.logFailedSimplifications
-                            ]
+            let doTracing = Flag False
 
             solver <- traverse (SMT.initSolver def) mSMTOptions
 
@@ -713,7 +704,6 @@ execResponse mbDuration req (d, traces, rr) originalSubstitution unsupported = c
                         let abortRewriteLog =
                                 mkLogRewriteTrace
                                     (logSuccessfulRewrites, logFailedRewrites)
-                                    (logSuccessfulSimplifications, logFailedSimplifications)
                                     (RewriteStepFailed failure)
                          in logs <|> abortRewriteLog
                     , state = toExecState p originalSubstitution unsupported Nothing
@@ -724,8 +714,6 @@ execResponse mbDuration req (d, traces, rr) originalSubstitution unsupported = c
   where
     logSuccessfulRewrites = fromMaybe False req.logSuccessfulRewrites
     logFailedRewrites = fromMaybe False req.logFailedRewrites
-    logSuccessfulSimplifications = fromMaybe False req.logSuccessfulSimplifications
-    logFailedSimplifications = fromMaybe False req.logFailedSimplifications
     depth = RpcTypes.Depth d
 
     logs =
@@ -734,7 +722,6 @@ execResponse mbDuration req (d, traces, rr) originalSubstitution unsupported = c
                     fmap
                         ( mkLogRewriteTrace
                             (logSuccessfulRewrites, logFailedRewrites)
-                            (logSuccessfulSimplifications, logFailedSimplifications)
                         )
                         traces
             timingLog =
@@ -763,85 +750,12 @@ toExecState pat sub unsupported muid =
         | null unsupported = id
         | otherwise = maybe (Just allUnsupported) (Just . Syntax.KJAnd termSort . (: unsupported))
 
-mkLogEquationTrace :: (Bool, Bool) -> ApplyEquations.EquationTrace () -> Maybe LogEntry
-mkLogEquationTrace
-    (logSuccessfulSimplifications, logFailedSimplifications) = \case
-        ApplyEquations.EquationApplied _subjectTerm metadata _rewritten ->
-            if logSuccessfulSimplifications
-                then
-                    Just $
-                        Simplification
-                            { origin
-                            , result =
-                                Success
-                                    { ruleId = fromMaybe "UNKNOWN" _ruleId
-                                    }
-                            }
-                else Nothing
-          where
-            origin = Booster
-            _ruleId = fmap getUniqueId metadata.ruleId
-        ApplyEquations.EquationNotApplied _subjectTerm metadata result ->
-            case result of
-                ApplyEquations.FailedMatch{}
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result = Failure{reason = "Failed match", _ruleId}
-                                }
-                ApplyEquations.IndeterminateMatch
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result = Failure{reason = "Indeterminate match", _ruleId}
-                                }
-                ApplyEquations.IndeterminateCondition{}
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result = Failure{reason = "Indeterminate side-condition", _ruleId}
-                                }
-                ApplyEquations.ConditionFalse{}
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result = Failure{reason = "Side-condition is false", _ruleId}
-                                }
-                ApplyEquations.RuleNotPreservingDefinedness
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result = Failure{reason = "The equation does not preserve definedness", _ruleId}
-                                }
-                ApplyEquations.MatchConstraintViolated _ varName
-                    | logFailedSimplifications ->
-                        Just $
-                            Simplification
-                                { origin
-                                , result =
-                                    Failure
-                                        { reason = "Symbolic/concrete constraint violated for variable: " <> Text.decodeUtf8 varName
-                                        , _ruleId
-                                        }
-                                }
-                _ -> Nothing
-          where
-            origin = Booster
-            _ruleId = fmap getUniqueId metadata.ruleId
-
 mkLogRewriteTrace ::
-    (Bool, Bool) ->
     (Bool, Bool) ->
     RewriteTrace () ->
     Maybe [LogEntry]
 mkLogRewriteTrace
-    (logSuccessfulRewrites, logFailedRewrites)
-    equationLogOpts@(logSuccessfulSimplifications, logFailedSimplifications) =
+    (logSuccessfulRewrites, logFailedRewrites) =
         \case
             RewriteSingleStep _ uid _ _res
                 | logSuccessfulRewrites ->
@@ -890,54 +804,5 @@ mkLogRewriteTrace
                                             }
                                 , origin = Booster
                                 }
-            RewriteSimplified equationTraces Nothing
-                | logSuccessfulSimplifications || logFailedSimplifications ->
-                    mapM (mkLogEquationTrace equationLogOpts) equationTraces
-                | otherwise -> Just []
-            RewriteSimplified equationTraces (Just failure)
-                | logFailedSimplifications -> do
-                    let final = singleton $ case failure of
-                            ApplyEquations.IndexIsNone _trm ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "No index found for term", _ruleId = Nothing}
-                                    }
-                            ApplyEquations.TooManyIterations i _ _ ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "Reached iteration depth limit " <> pack (show i), _ruleId = Nothing}
-                                    }
-                            ApplyEquations.EquationLoop _ ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "Loop detected", _ruleId = Nothing}
-                                    }
-                            ApplyEquations.TooManyRecursions stk ->
-                                Simplification
-                                    { origin = Booster
-                                    , result =
-                                        Failure
-                                            { reason =
-                                                "Reached recursion limit of "
-                                                    <> pack (show $ length stk)
-                                            , _ruleId = Nothing
-                                            }
-                                    }
-                            ApplyEquations.InternalError err ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "Internal error: " <> err, _ruleId = Nothing}
-                                    }
-                            ApplyEquations.SideConditionFalse _predicate ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "Side conditions false", _ruleId = Nothing}
-                                    }
-                            ApplyEquations.UndefinedTerm _t _err ->
-                                Simplification
-                                    { origin = Booster
-                                    , result = Failure{reason = "Undefined term found", _ruleId = Nothing}
-                                    }
-                    (<> final) <$> mapM (mkLogEquationTrace equationLogOpts) equationTraces
-                | otherwise -> Just []
+            RewriteSimplified _ -> Just []
             _ -> Nothing
