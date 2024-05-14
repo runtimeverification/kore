@@ -644,9 +644,7 @@ mkFallbackLogEntry boosterResult koreResult =
         koreRewriteSuccessLog = filter isRewriteSuccessLogEntry . fromMaybe [] $ koreResult.logs
         koreRuleIds = mapMaybe getRewriteSuccessRuleId koreRewriteSuccessLog
      in RPCLog.Fallback
-            { originalTerm = Just $ execStateToKoreJson boosterResult.state
-            , rewrittenTerm = Just $ execStateToKoreJson koreResult.state
-            , reason = fallbackReason
+            { reason = fallbackReason
             , fallbackRuleId = fallbackRuleId
             , recoveryRuleIds = NonEmpty.nonEmpty koreRuleIds
             , recoveryDepth = koreResult.depth

@@ -155,7 +155,7 @@ data Env = Env
     }
 
 data SimplifierTrace = SimplifierTrace
-    { originalTerm :: TermLike RewritingVariableName
+    { originalTerm :: TermLike RewritingVariableName -- FIXME
     , equationId :: UniqueId
     , rewrittenTerm :: Pattern RewritingVariableName
     }

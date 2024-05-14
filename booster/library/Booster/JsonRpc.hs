@@ -787,20 +787,14 @@ mkLogEquationTrace
                 then
                     Just $
                         Simplification
-                            { originalTerm
-                            , originalTermIndex
-                            , origin
+                            { origin
                             , result =
                                 Success
-                                    { rewrittenTerm = Nothing
-                                    , substitution = Nothing
-                                    , ruleId = fromMaybe "UNKNOWN" _ruleId
+                                    { ruleId = fromMaybe "UNKNOWN" _ruleId
                                     }
                             }
                 else Nothing
           where
-            originalTerm = Nothing
-            originalTermIndex = Nothing
             origin = Booster
             _ruleId = fmap getUniqueId metadata.ruleId
         ApplyEquations.EquationNotApplied _subjectTerm metadata result ->
@@ -809,54 +803,42 @@ mkLogEquationTrace
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result = Failure{reason = "Failed match", _ruleId}
                                 }
                 ApplyEquations.IndeterminateMatch
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result = Failure{reason = "Indeterminate match", _ruleId}
                                 }
                 ApplyEquations.IndeterminateCondition{}
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result = Failure{reason = "Indeterminate side-condition", _ruleId}
                                 }
                 ApplyEquations.ConditionFalse{}
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result = Failure{reason = "Side-condition is false", _ruleId}
                                 }
                 ApplyEquations.RuleNotPreservingDefinedness
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result = Failure{reason = "The equation does not preserve definedness", _ruleId}
                                 }
                 ApplyEquations.MatchConstraintViolated _ varName
                     | logFailedSimplifications ->
                         Just $
                             Simplification
-                                { originalTerm
-                                , originalTermIndex
-                                , origin
+                                { origin
                                 , result =
                                     Failure
                                         { reason = "Symbolic/concrete constraint violated for variable: " <> Text.decodeUtf8 varName
@@ -865,8 +847,6 @@ mkLogEquationTrace
                                 }
                 _ -> Nothing
           where
-            originalTerm = Nothing
-            originalTermIndex = Nothing
             origin = Booster
             _ruleId = fmap getUniqueId metadata.ruleId
 
@@ -886,9 +866,7 @@ mkLogRewriteTrace
                             Kore.JsonRpc.Types.Log.Rewrite
                                 { result =
                                     Success
-                                        { rewrittenTerm = Nothing
-                                        , substitution = Nothing
-                                        , ruleId = maybe "UNKNOWN" getUniqueId uid
+                                        { ruleId = maybe "UNKNOWN" getUniqueId uid
                                         }
                                 , origin = Booster
                                 }
@@ -935,32 +913,24 @@ mkLogRewriteTrace
             RewriteSimplified equationTraces (Just failure)
                 | logFailedSimplifications -> do
                     let final = singleton $ case failure of
-                            ApplyEquations.IndexIsNone trm ->
+                            ApplyEquations.IndexIsNone _trm ->
                                 Simplification
-                                    { originalTerm = Just $ execStateToKoreJson $ toExecState (Pattern.Pattern_ trm) mempty mempty Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "No index found for term", _ruleId = Nothing}
                                     }
                             ApplyEquations.TooManyIterations i _ _ ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "Reached iteration depth limit " <> pack (show i), _ruleId = Nothing}
                                     }
                             ApplyEquations.EquationLoop _ ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "Loop detected", _ruleId = Nothing}
                                     }
                             ApplyEquations.TooManyRecursions stk ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result =
                                         Failure
                                             { reason =
@@ -971,23 +941,17 @@ mkLogRewriteTrace
                                     }
                             ApplyEquations.InternalError err ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "Internal error: " <> err, _ruleId = Nothing}
                                     }
                             ApplyEquations.SideConditionFalse _predicate ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "Side conditions false", _ruleId = Nothing}
                                     }
                             ApplyEquations.UndefinedTerm _t _err ->
                                 Simplification
-                                    { originalTerm = Nothing
-                                    , originalTermIndex = Nothing
-                                    , origin = Booster
+                                    { origin = Booster
                                     , result = Failure{reason = "Undefined term found", _ruleId = Nothing}
                                     }
                     (<> final) <$> mapM (mkLogEquationTrace equationLogOpts) equationTraces

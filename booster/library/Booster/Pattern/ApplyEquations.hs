@@ -283,27 +283,19 @@ equationTraceToLogEntry :: EquationTrace Term -> KoreRpcLog.LogEntry
 equationTraceToLogEntry = \case
     EquationApplied _subjectTerm metadata _rewritten ->
         KoreRpcLog.Simplification
-            { originalTerm
-            , originalTermIndex
-            , origin
+            { origin
             , result =
-                KoreRpcLog.Success Nothing Nothing _ruleId
+                KoreRpcLog.Success _ruleId
             }
       where
-        originalTerm = Nothing
-        originalTermIndex = Nothing
         origin = KoreRpcLog.Booster
         _ruleId = equationRuleIdWithFallbacks metadata
     EquationNotApplied _subjectTerm metadata failure ->
         KoreRpcLog.Simplification
-            { originalTerm
-            , originalTermIndex
-            , origin
+            { origin
             , result = KoreRpcLog.Failure (failureDescription failure) (Just _ruleId)
             }
       where
-        originalTerm = Nothing
-        originalTermIndex = Nothing
         origin = KoreRpcLog.Booster
         _ruleId = equationRuleIdWithFallbacks metadata
 

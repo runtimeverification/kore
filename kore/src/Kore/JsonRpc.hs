@@ -62,7 +62,7 @@ import Kore.JsonRpc.Server (
     jsonRpcServer,
  )
 import Kore.JsonRpc.Types
-import Kore.JsonRpc.Types.Log
+import Kore.JsonRpc.Types.Log qualified as RpcLog
 import Kore.Log.DebugContext qualified as Log
 import Kore.Log.DecidePredicateUnknown (
     DecidePredicateUnknown (..),
@@ -84,7 +84,6 @@ import Kore.Rewrite.RewriteStep (EnableAssumeInitialDefined (..))
 import Kore.Rewrite.RewritingVariable (
     RewritingVariableName,
     getRewritingPattern,
-    getRewritingTerm,
     getRewritingVariable,
     isSomeConfigVariable,
     isSomeEquationVariable,
@@ -209,29 +208,20 @@ respond serverState moduleName runSMT =
                         || fromMaybe False logSuccessfulRewrites
                         || fromMaybe False logSuccessfulSimplifications =
                         Just . concat $
-                            maybe [] (\t -> [ProcessingTime (Just KoreRpc) t]) mbDuration
-                                : [ [ Simplification
-                                        { originalTerm = Just $ PatternJson.fromTermLike $ getRewritingTerm originalTerm
-                                        , originalTermIndex = Nothing
-                                        , result =
-                                            Success
-                                                { rewrittenTerm = Just $ PatternJson.fromTermLike $ getRewritingTerm $ Pattern.term rewrittenTerm
-                                                , substitution = Nothing
-                                                , ruleId = fromMaybe "UNKNOWN" $ getUniqueId equationId
+                            maybe [] (\t -> [RpcLog.ProcessingTime (Just RpcLog.KoreRpc) t]) mbDuration
+                                : [ [ RpcLog.Simplification
+                                        { result =
+                                            RpcLog.Success
+                                                { ruleId = fromMaybe "UNKNOWN" $ getUniqueId equationId
                                                 }
-                                        , origin = KoreRpc
+                                        , origin = RpcLog.KoreRpc
                                         }
                                     | fromMaybe False logSuccessfulSimplifications
-                                    , SimplifierTrace{originalTerm, rewrittenTerm, equationId} <- toList simplifications
+                                    , SimplifierTrace{equationId} <- toList simplifications
                                     ]
-                                    ++ [ Rewrite
-                                        { result =
-                                            Success
-                                                { rewrittenTerm = Nothing
-                                                , substitution = Nothing
-                                                , ruleId = fromMaybe "UNKNOWN" $ getUniqueId ruleId
-                                                }
-                                        , origin = KoreRpc
+                                    ++ [ RpcLog.Rewrite
+                                        { result = RpcLog.Success{ruleId = fromMaybe "UNKNOWN" $ getUniqueId ruleId}
+                                        , origin = RpcLog.KoreRpc
                                         }
                                        | fromMaybe False logSuccessfulRewrites
                                        ]
@@ -449,8 +439,8 @@ respond serverState moduleName runSMT =
                     let simplLogs = mkSimplifierLogs logSuccessfulSimplifications logs
                     stop <- liftIO $ getTime Monotonic
                     let timeLog =
-                            ProcessingTime
-                                (Just KoreRpc)
+                            RpcLog.ProcessingTime
+                                (Just RpcLog.KoreRpc)
                                 (fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9)
                         allLogs =
                             if (fromMaybe False logTiming)
@@ -530,8 +520,8 @@ respond serverState moduleName runSMT =
                     let simplLogs = mkSimplifierLogs logSuccessfulSimplifications logs
                     stop <- liftIO $ getTime Monotonic
                     let timeLog =
-                            ProcessingTime
-                                (Just KoreRpc)
+                            RpcLog.ProcessingTime
+                                (Just RpcLog.KoreRpc)
                                 (fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9)
                         allLogs =
                             if (fromMaybe False logTiming)
@@ -727,23 +717,16 @@ respond serverState moduleName runSMT =
             PatternVerifier.verifyStandalonePattern Nothing $
                 PatternJson.toParsedPattern (PatternJson.term state)
 
-    mkSimplifierLogs :: Maybe Bool -> Seq SimplifierTrace -> Maybe [LogEntry]
+    mkSimplifierLogs :: Maybe Bool -> Seq SimplifierTrace -> Maybe [RpcLog.LogEntry]
     mkSimplifierLogs Nothing _ = Nothing
     mkSimplifierLogs (Just False) _ = Nothing
     mkSimplifierLogs (Just True) logs =
         Just
-            [ Simplification
-                { originalTerm = Just $ PatternJson.fromTermLike $ getRewritingTerm originalTerm
-                , originalTermIndex = Nothing
-                , result =
-                    Success
-                        { rewrittenTerm = Just $ PatternJson.fromTermLike $ getRewritingTerm $ Pattern.term rewrittenTerm
-                        , substitution = Nothing
-                        , ruleId = fromMaybe "UNKNOWN" $ getUniqueId equationId
-                        }
-                , origin = KoreRpc
+            [ RpcLog.Simplification
+                { result = RpcLog.Success{ruleId = fromMaybe "UNKNOWN" $ getUniqueId equationId}
+                , origin = RpcLog.KoreRpc
                 }
-            | SimplifierTrace{originalTerm, rewrittenTerm, equationId} <- toList logs
+            | SimplifierTrace{equationId} <- toList logs
             ]
 
     evalInSimplifierContext ::
