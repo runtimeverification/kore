@@ -533,18 +533,6 @@ data RewriteTrace pat
     | -- | Applied simplification to the pattern
       RewriteSimplified (Maybe EquationFailure)
 
-{- | For the given rewrite trace, construct a new one,
-     removing the heavy-weight information (the states),
-     but keeping the meta-data (rule labels).
--}
-eraseStates :: RewriteTrace Pattern -> RewriteTrace ()
-eraseStates = \case
-    RewriteSingleStep rule_label mUniqueId _preState _postState -> RewriteSingleStep rule_label mUniqueId () ()
-    RewriteBranchingStep _state branchMetadata -> RewriteBranchingStep () branchMetadata
-    RewriteStepFailed failureInfo -> RewriteStepFailed failureInfo
-    RewriteSimplified mbEquationFailure ->
-        RewriteSimplified mbEquationFailure
-
 instance Pretty (RewriteTrace Pattern) where
     pretty = \case
         RewriteSingleStep lbl _uniqueId pat rewritten ->
@@ -703,13 +691,19 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
     emitRewriteTrace t = do
         let prettyT = pack $ renderDefault $ pretty t
         logRewrite prettyT
-        case t of
-            RewriteSingleStep{} -> logRewriteSuccess prettyT
-            RewriteBranchingStep{} -> logRewriteSuccess prettyT
-            _other -> pure ()
+        erased <- case t of
+            -- NB re-creates the RewriteTrace () explicitly instead of (a thunk for) computing it
+            RewriteSingleStep txt uid _ _ ->
+                logRewriteSuccess prettyT >> pure (RewriteSingleStep txt uid () ())
+            RewriteBranchingStep _ branches ->
+                logRewriteSuccess prettyT >> pure (RewriteBranchingStep () branches)
+            RewriteStepFailed failure ->
+                pure (RewriteStepFailed failure) -- contains terms, but needed for fallback logging
+            RewriteSimplified mbFail ->
+                pure (RewriteSimplified mbFail)
         when (coerce doTracing) $
             modify $
-                \rss@RewriteStepsState{traces} -> rss{traces = traces |> eraseStates t}
+                \rss@RewriteStepsState{traces} -> rss{traces = traces |> erased}
     incrementCounter =
         modify $ \rss@RewriteStepsState{counter} -> rss{counter = counter + 1}
 
