@@ -9,7 +9,6 @@ set -euxo pipefail
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-
 PARALLEL=${PARALLEL:-$(nproc)}
 
 SERVER_OPTS=${SERVER_OPTS:-}
@@ -48,7 +47,7 @@ run_tarball(){
 export -f run_tarball
 export SCRIPT_DIR
 
-find $BUG_REPORT_DIR -name \*tar -print0 | xargs -0 -t -I {} -P $PARALLEL bash -c 'run_tarball "$@"' $(basename {}) {}
+find $BUG_REPORT_DIR -name \*tar -or -name \*tar.gz -print0 | xargs -0 -t -I {} -P $PARALLEL bash -c 'run_tarball "$@"' $(basename {}) {}
 
 # for tar in $(find $BUG_REPORT_DIR -name \*tar );
 # do
