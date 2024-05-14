@@ -154,11 +154,7 @@ data Env = Env
     , tracingEnabled :: Bool
     }
 
-data SimplifierTrace = SimplifierTrace
-    { originalTerm :: TermLike RewritingVariableName -- FIXME
-    , equationId :: UniqueId
-    , rewrittenTerm :: Pattern RewritingVariableName
-    }
+data SimplifierTrace = SimplifierTrace {equationId :: UniqueId}
     deriving stock (Eq, Show)
 
 {- | @Simplifier@ represents a simplification action.

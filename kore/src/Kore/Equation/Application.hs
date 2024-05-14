@@ -253,17 +253,16 @@ applySubstitutionAndSimplify
 
 applyEquation ::
     SideCondition RewritingVariableName ->
-    TermLike RewritingVariableName ->
     Equation RewritingVariableName ->
     Pattern RewritingVariableName ->
     Simplifier (OrPattern RewritingVariableName)
-applyEquation _ term equation result = do
+applyEquation _ equation result = do
     let results = OrPattern.fromPattern result
     debugApplyEquation equation result
     doTracing <- liftSimplifier $ asks Simplifier.tracingEnabled
     when doTracing $
         modify $
-            second (|> SimplifierTrace term (Attribute.uniqueId $ attributes equation) result)
+            second (|> SimplifierTrace (Attribute.uniqueId $ attributes equation))
     pure results
 
 {- | Use a 'MatchResult' to instantiate an 'Equation'.

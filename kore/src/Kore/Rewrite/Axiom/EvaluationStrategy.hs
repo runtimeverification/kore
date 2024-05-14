@@ -111,7 +111,7 @@ attemptEquationAndAccumulateErrors condition term equation =
                 term
                 equation
                 >>= either (return . Left . Just . Min) (fmap Right . apply)
-    apply = Equation.applyEquation condition term equation
+    apply = Equation.applyEquation condition equation
 
 attemptEquations ::
     Monoid error =>
@@ -137,7 +137,7 @@ simplificationEvaluation equation =
                 condition
                 term
                 equation
-        let apply = Equation.applyEquation condition term equation
+        let apply = Equation.applyEquation condition equation
         case result of
             Right applied -> do
                 results <- apply applied
