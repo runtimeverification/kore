@@ -967,9 +967,17 @@ applyEquation term rule = withRuleContext rule $ fmap (either Failure Success) $
                     renderOneLineText $
                         "Known true side conditions (won't check):" <+> hsep (intersperse "," $ map pretty knownTrue)
 
+            -- unclear conditions may have been simplified and
+            -- could now be syntactically present in the path constraints, check again
+            -- FIXME: factor this filtering out into a function ans use above
             unclearConditions' <- catMaybes <$> mapM (checkConstraint ConditionFalse) toCheck
+            let (newKnownTrue, stillUnclear) = partition (`Set.member` knownPredicates) unclearConditions'
+            unless (null newKnownTrue) $
+                logMessage $
+                    renderOneLineText $
+                        "Known true side conditions (won't check):" <+> hsep (intersperse "," $ map pretty knownTrue)
 
-            case unclearConditions' of
+            case stillUnclear of
                 [] -> do
                     -- check ensured conditions, filter any
                     -- true ones, prune if any is false
