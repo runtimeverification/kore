@@ -501,11 +501,9 @@ llvmSimplify term = do
                                 withTermContext result $
                                     emitEquationTrace t Nothing (Just "LLVM") Nothing $
                                         Success result
-                        toCache LLVM t result
                         pure result
         | otherwise = do
             result <- cb t
-            toCache LLVM t result
             pure result
 
 ----------------------------------------
