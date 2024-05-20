@@ -53,6 +53,8 @@ import Data.ByteString.Char8 qualified as BS
 import Data.Coerce (coerce)
 import Data.Data (Data)
 import Data.Foldable (toList, traverse_)
+import Data.IntMap (IntMap)
+import Data.IntMap qualified as IntMap
 import Data.List (intersperse, partition)
 import Data.Map (Map)
 import Data.Map qualified as Map
@@ -169,7 +171,7 @@ data EquationState = EquationState
     , cache :: SimplifierCache
     }
 
-data SimplifierCache = SimplifierCache {llvm, equations :: Map Term Term}
+data SimplifierCache = SimplifierCache {llvm, equations :: IntMap Term}
     deriving stock (Show)
 
 instance Semigroup SimplifierCache where
@@ -371,14 +373,14 @@ popRecursion = do
 toCache :: MonadLoggerIO io => CacheTag -> Term -> Term -> EquationT io ()
 toCache tag orig result = eqState . modify $ \s -> s{cache = updateCache tag s.cache}
   where
-    insertInto = Map.insert orig result
+    insertInto = IntMap.insert (getHash orig) result
     updateCache LLVM cache = cache{llvm = insertInto cache.llvm}
     updateCache Equations cache = cache{equations = insertInto cache.equations}
 
 fromCache :: MonadLoggerIO io => CacheTag -> Term -> EquationT io (Maybe Term)
-fromCache tag t = eqState $ Map.lookup t <$> gets (select tag . (.cache))
+fromCache tag t = eqState $ IntMap.lookup (getHash t) <$> gets (select tag . (.cache))
   where
-    select :: CacheTag -> SimplifierCache -> Map Term Term
+    select :: CacheTag -> SimplifierCache -> IntMap Term
     select LLVM = (.llvm)
     select Equations = (.equations)
 

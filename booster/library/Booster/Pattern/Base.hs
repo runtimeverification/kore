@@ -174,6 +174,9 @@ sortAndDeduplicate = Set.toAscList . Set.fromList
 getAttributes :: Term -> TermAttributes
 getAttributes (Term a _) = a
 
+getHash :: Term -> Int
+getHash = (.hash) . getAttributes
+
 unitSymbol, concatSymbol :: KCollectionMetadata -> Symbol
 unitSymbol def =
     Symbol
