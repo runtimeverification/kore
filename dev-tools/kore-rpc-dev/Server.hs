@@ -350,8 +350,8 @@ mkKoreServer loggerEnv@Log.LoggerEnv{logAction} CLOptions{definitionFile, mainMo
     KoreSMT.KoreSolverOptions{timeOut, retryLimit, tactic} = koreSolverOptions
     smtConfig :: KoreSMT.Config
     smtConfig =
-        KoreSMT.defaultConfig
-            { KoreSMT.executable = KoreSMT.defaultConfig.executable -- hack to shut up GHC field warning
+        KoreSMT.z3Config
+            { KoreSMT.executable = KoreSMT.z3Config.executable -- hack to shut up GHC field warning
             , KoreSMT.timeOut = timeOut
             , KoreSMT.retryLimit = retryLimit
             , KoreSMT.tactic = tactic

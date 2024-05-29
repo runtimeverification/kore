@@ -42,7 +42,7 @@ export PLUGIN_DIR=$(nix build github:runtimeverification/blockchain-k-plugin/$PL
 
 run_tarball(){
   echo "######## $1 ########";
-  $SCRIPT_DIR/run-with-tarball.sh "$1" -l Aborts --print-stats ${SERVER_OPTS} 2>&1 | tee "$LOG_DIR/$(basename "$1").out";
+  $SCRIPT_DIR/run-with-tarball.sh "$1" -l Aborts --print-stats ${SERVER_OPTS} --solver-transcript "$LOG_DIR/$(basename "$1").smt" 2>&1 | tee "$LOG_DIR/$(basename "$1").out";
 }
 
 export -f run_tarball

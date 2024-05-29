@@ -18,14 +18,14 @@
           inherit system;
           overlays = [ stacklock2nix.overlay self.overlay self.overlays.z3 ];
         };
-      withZ3 = pkgs: pkg: exe:
+      withSolvers = pkgs: pkg: exe:
         pkgs.stdenv.mkDerivation {
           name = exe;
           phases = [ "installPhase" ];
           buildInputs = with pkgs; [ makeWrapper ];
           installPhase = ''
             mkdir -p $out/bin
-            makeWrapper ${pkg}/bin/${exe} $out/bin/${exe} --prefix PATH : ${pkgs.z3}/bin
+            makeWrapper ${pkg}/bin/${exe} $out/bin/${exe} --prefix PATH : ${pkgs.z3}/bin --prefix PATH : ${pkgs.cvc5}/bin
           '';
         };
       # This should based on the compiler version from the resolver in stack.yaml.
@@ -96,6 +96,7 @@
               hlint
               final.haskell-language-server
               final.z3
+              final.cvc5
               final.secp256k1
             ];
           # nix expects all inputs downloaded from the internet to have a hash,
@@ -121,14 +122,14 @@
           hs-backend-booster-dev-tools = with pkgs;
             haskell.lib.justStaticExecutables haskell-backend.pkgSet.hs-backend-booster-dev-tools;
         in {
-          kore-exec = withZ3 pkgs kore "kore-exec";
-          kore-match-disjunction = withZ3 pkgs hs-backend-booster-dev-tools "kore-match-disjunction";
-          kore-parser = withZ3 pkgs hs-backend-booster-dev-tools "kore-parser";
-          kore-repl = withZ3 pkgs kore "kore-repl";
-          kore-rpc = withZ3 pkgs kore "kore-rpc";
-          kore-rpc-booster = withZ3 pkgs hs-backend-booster "kore-rpc-booster";
-          kore-rpc-client = withZ3 pkgs hs-backend-booster "kore-rpc-client";
-          booster-dev = withZ3 pkgs hs-backend-booster-dev-tools "booster-dev";
+          kore-exec = withSolvers pkgs kore "kore-exec";
+          kore-match-disjunction = withSolvers pkgs hs-backend-booster-dev-tools "kore-match-disjunction";
+          kore-parser = withSolvers pkgs hs-backend-booster-dev-tools "kore-parser";
+          kore-repl = withSolvers pkgs kore "kore-repl";
+          kore-rpc = withSolvers pkgs kore "kore-rpc";
+          kore-rpc-booster = withSolvers pkgs hs-backend-booster "kore-rpc-booster";
+          kore-rpc-client = withSolvers pkgs hs-backend-booster "kore-rpc-client";
+          booster-dev = withSolvers pkgs hs-backend-booster-dev-tools "booster-dev";
           inherit (pkgs.haskell-backend.pkgSet) haskell-language-server;
         });
 
@@ -156,6 +157,7 @@
               pkgs.jq
               pkgs.nix
               pkgs.z3
+              pkgs.cvc5
               pkgs.lsof
           ];
           shellHook = ''

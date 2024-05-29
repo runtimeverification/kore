@@ -31,7 +31,8 @@ module SMT (
     askRetryLimit,
     localTimeOut,
     Config (..),
-    defaultConfig,
+    z3Config,
+    cvc5Config,
     TimeOut (..),
     RetryLimit (..),
     RLimit (..),
@@ -427,6 +428,7 @@ data Config = Config
     , logFile :: !(Maybe FilePath)
     -- ^ optional log file name
     , timeOut :: !TimeOut
+    , timeOutOption :: !Text
     -- ^ query time limit
     , retryLimit :: !RetryLimit
     -- ^ query retry limit
@@ -439,8 +441,8 @@ data Config = Config
     }
 
 -- | Default configuration using the Z3 solver.
-defaultConfig :: Config
-defaultConfig =
+z3Config :: Config
+z3Config =
     Config
         { executable = "z3"
         , arguments =
@@ -450,6 +452,23 @@ defaultConfig =
         , prelude = Prelude Nothing
         , logFile = Nothing
         , timeOut = TimeOut (Limit 125)
+        , timeOutOption = "timeout"
+        , retryLimit = RetryLimit (Limit 3)
+        , rLimit = RLimit Unlimited
+        , resetInterval = ResetInterval 100
+        , tactic = Nothing
+        }
+
+-- | Default configuration using the CVC5 solver.
+cvc5Config :: Config
+cvc5Config =
+    Config
+        { executable = "cvc5"
+        , arguments = [ "--incremental", "--full-saturate-quant"]
+        , prelude = Prelude Nothing
+        , logFile = Nothing
+        , timeOut = TimeOut (Limit 125)
+        , timeOutOption = "tlimit-per"
         , retryLimit = RetryLimit (Limit 3)
         , rLimit = RLimit Unlimited
         , resetInterval = ResetInterval 100
@@ -719,12 +738,21 @@ askRetryLimitSMT =
 
 -- | Set the query time limit.
 setTimeOut :: MonadSMT m => TimeOut -> m ()
-setTimeOut TimeOut{getTimeOut} =
+setTimeOut TimeOut{getTimeOut} = do
+    timeOutOption <- liftSMT extractTimeOutOption
     case getTimeOut of
         Limit timeOut ->
-            setOption ":timeout" (SimpleSMT.int timeOut)
+            setOption (":" <> timeOutOption) (SimpleSMT.int timeOut)
         Unlimited ->
             return ()
+
+    where
+    extractTimeOutOption =
+        SMT $
+            pure . \case
+                Nothing -> ""
+                Just setup -> timeOutOption $ config setup
+
 
 -- | Set the query resource limit.
 setRLimit :: MonadSMT m => RLimit -> m ()

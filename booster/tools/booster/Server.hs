@@ -535,16 +535,23 @@ mkKoreServer loggerEnv@Log.LoggerEnv{logAction} CLOptions{definitionFile, mainMo
                 , loggerEnv
                 }
   where
-    KoreSMT.KoreSolverOptions{timeOut, retryLimit, tactic} = koreSolverOptions
+    KoreSMT.KoreSolverOptions{timeOut, retryLimit, tactic, solver} = koreSolverOptions
     smtConfig :: KoreSMT.Config
     smtConfig =
-        KoreSMT.defaultConfig
-            { KoreSMT.executable = KoreSMT.defaultConfig.executable
+        KoreSMT.cvc5Config
+            { KoreSMT.executable = KoreSMT.cvc5Config.executable
             , -- hack to shut up GHC field warning
               KoreSMT.timeOut = timeOut
             , KoreSMT.retryLimit = retryLimit
             , KoreSMT.tactic = tactic
             }
+        -- (if solver == CVC5 then KoreSMT.cvc5Config else KoreSMT.z3Config)
+        --     { KoreSMT.executable = (if solver == CVC5 then KoreSMT.cvc5Config else KoreSMT.z3Config).executable
+        --     , -- hack to shut up GHC field warning
+        --       KoreSMT.timeOut = timeOut
+        --     , KoreSMT.retryLimit = retryLimit
+        --     , KoreSMT.tactic = tactic
+        --     }
 
     -- SMT solver with user declared lemmas
     runSMT ::

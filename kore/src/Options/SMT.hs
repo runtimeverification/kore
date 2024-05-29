@@ -135,7 +135,7 @@ parseKoreSolverOptions =
         , resetInterval = defaultResetInterval
         , tactic = defaultTactic
         } =
-            SMT.defaultConfig
+            SMT.z3Config
 
     readTimeOut = readPositiveIntegral (SMT.TimeOut . Limit) "smt-timeout"
     readRetryLimit = readPositiveIntegral (SMT.RetryLimit . Limit) "smt-retry-limit"
@@ -178,7 +178,7 @@ unparseKoreSolverOptions
             ]
 
 -- | Available SMT solvers.
-data Solver = Z3 | None
+data Solver = Z3 | CVC5 | None
     deriving stock (Eq, Ord, Show)
     deriving stock (Enum, Bounded)
 
@@ -196,6 +196,7 @@ parseSolver =
 
 unparseSolver :: Solver -> String
 unparseSolver Z3 = "z3"
+unparseSolver CVC5 = "cvc5"
 unparseSolver None = "none"
 
 readSum :: String -> [(String, value)] -> Options.ReadM (String, value)

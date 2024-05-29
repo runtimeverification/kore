@@ -55,7 +55,7 @@ assertEqual' ::
 assertEqual' str expect = liftIO . assertEqual str expect
 
 runSMT :: SMT () -> SMT a -> IO a
-runSMT = runSMTWithConfig SMT.defaultConfig
+runSMT = runSMTWithConfig SMT.z3Config
 
 runSMTWithConfig :: SMT.Config -> SMT () -> SMT a -> IO a
 runSMTWithConfig config userInit = flip runLoggerT mempty . SMT.runSMT config userInit

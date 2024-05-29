@@ -565,24 +565,33 @@ execute ::
 execute options metadataTools lemmas worker =
     clockSomethingIO "Executing" $
         case solver of
-            Z3 -> withZ3
             None -> withoutSMT
+            Z3 -> withSMT z3Config
+            CVC5 -> withSMT cvc5Config
   where
-    withZ3 =
+    withSMT conf =
         SMT.runSMT
-            config
+            conf
             (declareSMTLemmas metadataTools lemmas)
             worker
     withoutSMT = SMT.runNoSMT worker
     KoreSolverOptions{timeOut, rLimit, resetInterval, prelude, solver} =
         options
-    config =
-        SMT.defaultConfig
+    z3Config =
+        SMT.z3Config
             { SMT.timeOut = timeOut
             , SMT.rLimit = rLimit
             , SMT.resetInterval = resetInterval
             , SMT.prelude = prelude
             }
+    cvc5Config =
+        SMT.cvc5Config
+            { SMT.timeOut = timeOut
+            , SMT.rLimit = rLimit
+            , SMT.resetInterval = resetInterval
+            , SMT.prelude = prelude
+            }
+    
 
 data SerializedDefinition = SerializedDefinition
     { serializedModule :: SerializedModule

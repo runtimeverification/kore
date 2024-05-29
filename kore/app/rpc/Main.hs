@@ -63,6 +63,7 @@ import Options.SMT (
     KoreSolverOptions (..),
     ensureSmtPreludeExists,
     parseKoreSolverOptions,
+    Solver(..),
  )
 import Prelude.Kore
 import SMT qualified
@@ -192,9 +193,9 @@ koreRpcServerRun GlobalMain.LocalOptions{execOptions} = do
     pure ExitSuccess
   where
     KoreRpcServerOptions{definitionFileName, mainModuleName, koreSolverOptions, port} = execOptions
-    KoreSolverOptions{timeOut, rLimit, resetInterval, prelude, tactic} = koreSolverOptions
+    KoreSolverOptions{timeOut, rLimit, resetInterval, prelude, solver, tactic} = koreSolverOptions
     smtConfig =
-        SMT.defaultConfig
+        (if solver == CVC5 then SMT.cvc5Config else SMT.z3Config)
             { SMT.timeOut = timeOut
             , SMT.rLimit = rLimit
             , SMT.resetInterval = resetInterval

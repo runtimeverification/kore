@@ -60,7 +60,7 @@ import SMT (
     Config (..),
     SMT,
     TimeOut (..),
-    defaultConfig,
+    z3Config,
  )
 import SMT qualified
 import Test.Kore (
@@ -179,7 +179,7 @@ getSmtResult
                     sequence_ actions
                     SMT.check
             runSMTWithConfig
-                defaultConfig{timeOut = TimeOut (Limit 100)}
+                z3Config{timeOut = TimeOut (Limit 100)}
                 preludeAction
                 smtResult
 

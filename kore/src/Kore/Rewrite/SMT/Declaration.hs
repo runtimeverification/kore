@@ -30,7 +30,7 @@ import Kore.Rewrite.SMT.AST (
 import Prelude.Kore
 import SMT (
     MonadSMT,
-    declareDatatypes,
+    -- declareDatatypes,
     declareFun_,
     declareSort,
  )
@@ -47,12 +47,12 @@ declareSymbols = traverse_ (declareSymbol . symbolDeclaration) . symbols
 -- | Sends all sorts in the given declarations to the SMT.
 declareSorts :: MonadSMT m => SmtDeclarations -> m ()
 declareSorts Declarations{sorts} = do
-    let (sortDecls, dataTypeDecls) =
+    let (sortDecls, _dataTypeDecls) =
             elems sorts
                 & mapMaybe (eitherDecl . sortDeclaration)
                 & partitionEithers
     traverse_ declareSort sortDecls
-    declareDatatypes dataTypeDecls
+    -- declareDatatypes dataTypeDecls
   where
     eitherDecl = \case
         SortDeclarationSort decl -> Just $ Left decl

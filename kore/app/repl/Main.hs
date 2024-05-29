@@ -243,7 +243,7 @@ mainWithOptions LocalOptions{execOptions} = do
                                 addExtraAxioms indexedModule specDefIndexedModule
 
                         let smtConfig =
-                                SMT.defaultConfig
+                                SMT.z3Config
                                     { SMT.timeOut = smtTimeOut
                                     , SMT.rLimit = smtRLimit
                                     , SMT.resetInterval = smtResetInterval

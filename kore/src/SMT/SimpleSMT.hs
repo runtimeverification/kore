@@ -1,7 +1,7 @@
 {- |
 Module      : SimpleSMT
 Description : Simple SMT-LIB 2 interface
-Copyright   : (c) Iavor S. Diatchki, 2014
+Copyright   : (c) Iavor Set. Diatchki, 2014
               (c) Runtime Verification, 2018-2021
 License     : BSD-3-Clause
 Maintainer  : thomas.tuegel@runtimeverification.com
@@ -237,6 +237,12 @@ import Text.Megaparsec qualified as Parser
 import Text.Read (
     readMaybe,
  )
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Function as Function
+import qualified Debug.Trace as Debug
+import qualified Data.Bool as Bool
+import Data.Maybe (maybeToList)
 
 -- ---------------------------------------------------------------------
 
@@ -548,80 +554,80 @@ declareDatatypes ::
     Solver ->
     [SmtDataTypeDeclaration] ->
     IO ()
-declareDatatypes solver datatypes = do
-    mapM_ declareDatatypeSort datatypes
-    mapM_ addSortConstructors datatypes
-  where
-    declareDatatypeSort :: SmtDataTypeDeclaration -> IO SExpr
-    declareDatatypeSort DataTypeDeclaration{name, typeArguments} =
-        declareSort
-            solver
-            SortDeclaration{name, arity = length typeArguments}
+-- declareDatatypes solver datatypes = do
+--     mapM_ declareDatatypeSort datatypes
+--     mapM_ addSortConstructors datatypes
+--   where
+--     declareDatatypeSort :: SmtDataTypeDeclaration -> IO SExpr
+--     declareDatatypeSort DataTypeDeclaration{name, typeArguments} =
+--         declareSort
+--             solver
+--             SortDeclaration{name, arity = length typeArguments}
 
-    addSortConstructors :: SmtDataTypeDeclaration -> IO ()
-    addSortConstructors
-        d@DataTypeDeclaration{constructors} =
-            do
-                declareConstructors d constructors
-                assert solver (noJunkAxiom d constructors)
-                return ()
+--     addSortConstructors :: SmtDataTypeDeclaration -> IO ()
+--     addSortConstructors
+--         d@DataTypeDeclaration{constructors} =
+--             do
+--                 declareConstructors d constructors
+--                 assert solver (noJunkAxiom d constructors)
+--                 return ()
 
-    declareConstructors :: SmtDataTypeDeclaration -> [SmtConstructor] -> IO ()
-    declareConstructors
-        DataTypeDeclaration{name, typeArguments = []}
-        constructors =
-            mapM_ (declareConstructor name) constructors
-    declareConstructors declaration constructors =
-        (error . unlines)
-            [ "Not implemented."
-            , "declaration = " ++ show declaration
-            , "constructors = " ++ show constructors
-            ]
+--     declareConstructors :: SmtDataTypeDeclaration -> [SmtConstructor] -> IO ()
+--     declareConstructors
+--         DataTypeDeclaration{name, typeArguments = []}
+--         constructors =
+--             mapM_ (declareConstructor name) constructors
+--     declareConstructors declaration constructors =
+--         (error . unlines)
+--             [ "Not implemented."
+--             , "declaration = " ++ show declaration
+--             , "constructors = " ++ show constructors
+--             ]
 
-    declareConstructor :: SExpr -> SmtConstructor -> IO SExpr
-    declareConstructor sort Constructor{name = symbol, arguments} =
-        declareFun
-            solver
-            FunctionDeclaration
-                { name = Atom symbol
-                , inputSorts = map argType arguments
-                , resultSort = sort
-                }
-            Nothing
+--     declareConstructor :: SExpr -> SmtConstructor -> IO SExpr
+--     declareConstructor sort Constructor{name = symbol, arguments} =
+--         declareFun
+--             solver
+--             FunctionDeclaration
+--                 { name = Atom symbol
+--                 , inputSorts = map argType arguments
+--                 , resultSort = sort
+--                 }
+--             Nothing
 
-    noJunkAxiom :: SmtDataTypeDeclaration -> [SmtConstructor] -> SExpr
-    noJunkAxiom
-        DataTypeDeclaration{name, typeArguments = []}
-        constructors =
-            forallQ
-                -- TODO(virgil): make sure that "x" is not used in any constructors
-                -- or sorts.
-                [List [Atom "x", name]]
-                (orMany (map (builtWithConstructor "x") constructors))
-    noJunkAxiom declaration constructors =
-        (error . unlines)
-            [ "Not implemented."
-            , "declaration = " ++ show declaration
-            , "constructors = " ++ show constructors
-            ]
+--     noJunkAxiom :: SmtDataTypeDeclaration -> [SmtConstructor] -> SExpr
+--     noJunkAxiom
+--         DataTypeDeclaration{name, typeArguments = []}
+--         constructors =
+--             forallQ
+--                 -- TODO(virgil): make sure that "x" is not used in any constructors
+--                 -- or sorts.
+--                 [List [Atom "x", name]]
+--                 (orMany (map (builtWithConstructor "x") constructors))
+--     noJunkAxiom declaration constructors =
+--         (error . unlines)
+--             [ "Not implemented."
+--             , "declaration = " ++ show declaration
+--             , "constructors = " ++ show constructors
+--             ]
 
-    builtWithConstructor :: Text -> SmtConstructor -> SExpr
-    builtWithConstructor
-        variable
-        Constructor{name, arguments = []} =
-            eq (Atom variable) (Atom name)
-    builtWithConstructor
-        variable
-        Constructor{name, arguments} =
-            existsQ
-                (map mkQuantifier arguments)
-                (eq (Atom variable) (fun name (map mkArg arguments)))
-          where
-            mkArg :: SmtConstructorArgument -> SExpr
-            mkArg ConstructorArgument{name = argName} = argName
-            mkQuantifier :: SmtConstructorArgument -> SExpr
-            mkQuantifier c@ConstructorArgument{argType} =
-                List [mkArg c, argType]
+--     builtWithConstructor :: Text -> SmtConstructor -> SExpr
+--     builtWithConstructor
+--         variable
+--         Constructor{name, arguments = []} =
+--             eq (Atom variable) (Atom name)
+--     builtWithConstructor
+--         variable
+--         Constructor{name, arguments} =
+--             existsQ
+--                 (map mkQuantifier arguments)
+--                 (eq (Atom variable) (fun name (map mkArg arguments)))
+--           where
+--             mkArg :: SmtConstructorArgument -> SExpr
+--             mkArg ConstructorArgument{name = argName} = argName
+--             mkQuantifier :: SmtConstructorArgument -> SExpr
+--             mkQuantifier c@ConstructorArgument{argType} =
+--                 List [mkArg c, argType]
 
 -- TODO(virgil): Currently using the code below to declare datatypes crashes
 -- z3 when testing that things can't be built out of them, e.g. things like
@@ -644,29 +650,102 @@ declareDatatypes solver datatypes = do
 -- We should switch to the proper way of declaring datatypes below
 -- whenever we think we can ask people to use a version of z3 that
 -- supports them.
-{-
-declareDatatypes proc datatypes =
-  ackCommand proc $
+
+declareDatatypes solver datatypes =
+  forM_ (Debug.trace (show datatypesClusters) $ Set.map Set.toList datatypesClusters) $ \dc' ->
+    let dc = concatMap (\k -> maybeToList $ Map.lookup k datatypesMap) dc' in
+    ackCommand solver Nothing $
     -- (declare-datatypes ((δ1 k1) · · · (δn kn)) (d1 · · · dn))
     -- where δs are datatype names, ks are number of arguments
     -- and if ki is 0, then di is of the form ((CName CArgs) ..)
-    fun "declare-datatypes"
-      [ List $ map typeRepresentation datatypes
-      , List $ map dataConstructorsRepresentation datatypes
-      ]
+        fun "declare-datatypes"
+            [ List $ map typeRepresentation dc
+            , List $ map dataConstructorsRepresentation dc
+            ]
  where
-  typeRepresentation (t, args, _) =
-    List [ Atom t, (Atom . Text.pack . show . length) args ]
-  dataConstructorsRepresentation (_, [], cs) =
-    List $ map constructorRepresentation cs
-  dataConstructorsRepresentation _ = error "Unimplemented"
-  constructorRepresentation (constructorName, []) = Atom constructorName
-  constructorRepresentation (constructorName, constructorArgs) =
-    List
-      ( Atom constructorName
-      : [ List [Atom s, argTy] | (s, argTy) <- constructorArgs ]
-      )
--}
+    datatypesMap = Map.fromList [(name, d) | d@DataTypeDeclaration{name} <- datatypes]
+
+    datatypesMapTC = transitiveClosure $ Map.fromList [(name, Set.fromList $ name:[ argType | Constructor{ arguments } <- constructors, ConstructorArgument  { argType } <- arguments]) | DataTypeDeclaration{name, constructors} <- datatypes]
+    
+    datatypesClusters = innerUnions $ Set.fromList $ Map.elems datatypesMapTC
+
+    
+    innerUnions :: Ord a =>  Set.Set (Set.Set a) -> Set.Set (Set.Set a)
+    innerUnions = innerUnion' Set.empty
+      where
+        innerUnion' :: Ord a =>  Set.Set (Set.Set a) -> Set.Set (Set.Set a) -> Set.Set (Set.Set a)
+        innerUnion' seta setb
+          | Set.null setb = seta
+          | otherwise   = 
+            let
+                (unioned,stripped) = Set.foldl f (minElem, setb') setb'
+                minElem = Set.findMin setb
+                setb' = Set.deleteMin setb
+            in
+                innerUnion' (Set.insert unioned seta) stripped
+          where
+
+            f :: Ord a => (Set.Set a, Set.Set (Set.Set a)) -> Set.Set a -> (Set.Set a, Set.Set (Set.Set a))
+            f (x,xs) y
+              | (Bool.not . Set.null) (x `Set.intersection` y) = (x `Set.union` y, Set.delete y xs)
+              | otherwise = (x,xs)
+
+    -- datatypeClosure :: Map.Map SExpr (SmtDataTypeDeclaration, Set.Set SExpr) -> SExpr -> ([SmtDataTypeDeclaration], Set.Set SExpr)
+    -- datatypeClosure m name = 
+    --     let (d, deps) = m Map.! name
+    --         (ds, depsClosure) = 
+    --             Set.fold (\name' (ds', depsClosure') -> 
+    --                 let (ds'', depsClosure'') = datatypeClosure m name' in 
+    --                     (ds' <> ds'', depsClosure' <> depsClosure'')) (mempty, mempty) deps
+    --     in (d:ds, deps <> depsClosure)
+
+    
+    -- datatypesClosure m
+    --     | null m = []
+    --     | otherwise = 
+    --         let name = head $ Map.keys m 
+    --             (ds, depsClosure) = datatypeClosure m name
+    --         in ds: datatypesClosure (Map.filterWithKey (\n _ -> Bool.not $ n `Set.member` depsClosure) m)
+
+
+
+    transitiveClosure :: forall k. Ord k => Map.Map k (Set.Set k) -> Map.Map k (Set.Set k)
+    transitiveClosure adjacencies = snd $ update adjacencies
+     where
+        allKeys = Map.keys adjacencies
+
+        update :: Map.Map k (Set.Set k) -> (Bool, Map.Map k (Set.Set k))
+        update m =
+            let result@(changed, newM) = foldl' updateKey (False, m) allKeys
+            in if changed then update newM else result
+
+        -- add all children's children for a key, mark if changed
+        updateKey :: (Bool, Map.Map k (Set.Set k)) -> k -> (Bool, Map.Map k (Set.Set k))
+        updateKey (changed, m) key = (changed || thisChanged, newM)
+          where
+            cs = children m key
+            new = cs <> foldMap (children m) cs
+            newM = Map.update (Just . Function.const new) key m
+            thisChanged = cs /= new
+
+        children :: Map.Map k (Set.Set k) -> k -> Set.Set k
+        children m k = fromMaybe Set.empty $ Map.lookup k m
+
+    typeRepresentation :: SmtDataTypeDeclaration -> SExpr
+    typeRepresentation DataTypeDeclaration{name, typeArguments} =
+        List [ name, (Atom . Text.pack . show . length) typeArguments ]
+    dataConstructorsRepresentation :: SmtDataTypeDeclaration -> SExpr
+    dataConstructorsRepresentation DataTypeDeclaration{typeArguments = [], constructors} =
+        List $ map constructorRepresentation constructors
+    dataConstructorsRepresentation _ = error "Unimplemented"
+    constructorRepresentation :: Constructor SExpr Text SExpr -> SExpr
+    constructorRepresentation Constructor{ name , arguments = [] } = Atom name
+    constructorRepresentation Constructor{ name = constructorName , arguments } =
+        List
+        ( Atom constructorName
+        : [ List [name, argType] | ConstructorArgument  { name, argType } <- arguments ]
+        )
+
 
 -- | Declare an ADT using the format introduced in SmtLib 2.6.
 declareDatatype :: Solver -> SmtDataTypeDeclaration -> IO ()
