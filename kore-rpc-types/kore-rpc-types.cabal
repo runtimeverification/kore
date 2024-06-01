@@ -75,6 +75,7 @@ common library
   build-depends: prettyprinter >=1.2
   build-depends: stm >=2.5
   build-depends: stm-conduit >= 4.0
+  build-depends: stm-chans
   build-depends: text >=1.2
   build-depends: unliftio >= 0.2
   build-depends: vector >= 0.12.3.1
