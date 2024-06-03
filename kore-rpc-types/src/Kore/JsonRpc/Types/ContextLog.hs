@@ -12,7 +12,7 @@ import Data.Aeson.Types (FromJSON (..), ToJSON (..), (.:))
 import Data.Aeson.Types qualified as JSON
 import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
-import Data.Text (Text, unpack)
+import Data.Text (Text, pack, unpack)
 import Data.Time
 import Deriving.Aeson
 import Numeric
@@ -68,11 +68,52 @@ data CLContext
     deriving stock (Generic, Show, Eq)
 
 instance ToJSON CLContext where
-    toJSON = JSON.genericToJSON options -- FIXME needs manual adjustments
+    -- nullary constructors encoded as simple strings
+    toJSON = \case
+        CtxBooster -> JSON.String $ camelToKebab "Booster"
+        CtxKore -> JSON.String $ camelToKebab "Kore"
+        CtxExecute -> JSON.String $ camelToKebab "Execute"
+        CtxSimplify -> JSON.String $ camelToKebab "Simplify"
+        CtxImplies -> JSON.String $ camelToKebab "Implies"
+        CtxGetModel -> JSON.String $ camelToKebab "GetModel"
+        CtxMatch -> JSON.String $ camelToKebab "Match"
+        CtxFailure -> JSON.String $ camelToKebab "Failure"
+        CtxAbort -> JSON.String $ camelToKebab "Abort"
+        CtxSuccess -> JSON.String $ camelToKebab "Success"
+        CtxKoreTerm -> JSON.String $ camelToKebab "KoreTerm"
+        CtxDetail -> JSON.String $ camelToKebab "Detail"
+        CtxError -> JSON.String $ camelToKebab "Error"
+        CtxWarn -> JSON.String $ camelToKebab "Warn"
+        CtxInfo -> JSON.String $ camelToKebab "Info"
+        Ctx txt-> JSON.String txt
+        -- entities with hex identifier
+        other -> JSON.genericToJSON options other
 
 instance FromJSON CLContext where
-    parseJSON = JSON.genericParseJSON options -- FIXME needs manual adjustments
+    parseJSON = \case
+        JSON.String "booster" -> pure CtxBooster
+        JSON.String "kore" -> pure CtxKore
+        JSON.String "execute" -> pure CtxExecute
+        JSON.String "simplify" -> pure CtxSimplify
+        JSON.String "implies" -> pure CtxImplies
+        JSON.String "get-model" -> pure CtxGetModel
+        JSON.String "match" -> pure CtxMatch
+        JSON.String "failure" -> pure CtxFailure
+        JSON.String "abort" -> pure CtxAbort
+        JSON.String "success" -> pure CtxSuccess
+        JSON.String "kore-term" -> pure CtxKoreTerm
+        JSON.String "detail" -> pure CtxDetail
+        JSON.String "error" -> pure CtxError
+        JSON.String "warn" -> pure CtxWarn
+        JSON.String "info" -> pure CtxInfo
+        JSON.String other -> pure $ Ctx other
 
+        obj -> JSON.genericParseJSON options obj
+
+camelToKebab :: String -> Text
+camelToKebab = pack . JSON.camelTo2 '-'
+
+options :: JSON.Options
 options =
     JSON.defaultOptions
     { JSON.sumEncoding = JSON.ObjectWithSingleField
@@ -84,33 +125,37 @@ options =
 data LogLine
     = LogLine
       { context :: [CLContext]
-      , message :: CLTextOrTerm
+      , message :: CLTextArrayOrTerm
       }
     deriving stock (Generic, Show, Eq)
     deriving
         (FromJSON, ToJSON)
         via CustomJSON '[] LogLine
 
-data CLTextOrTerm
+data CLTextArrayOrTerm
     = CLText Text
+    | CLArray [Text]
     | CLTerm KoreJson
     deriving stock (Generic, Show, Eq)
 
 -- a message is a term if it is an object with format: KORE
-instance FromJSON CLTextOrTerm where
+instance FromJSON CLTextArrayOrTerm where
     parseJSON obj@(JSON.Object o) = do
         _ :: KORE <- o .: "format" -- must be KORE
         CLTerm <$> parseJSON obj
     parseJSON (JSON.String msg) =
         pure $ CLText msg
+    parseJSON arr@JSON.Array{} =
+        CLArray <$> parseJSON arr
     parseJSON other =
         JSON.typeMismatch "KoreJson object or string" other
 
-instance ToJSON CLTextOrTerm where
+instance ToJSON CLTextArrayOrTerm where
     toJSON (CLText text) = toJSON text
+    toJSON (CLArray msgs) = toJSON msgs
     toJSON (CLTerm term) = toJSON term
 
-newtype Hex = Hex Int
+newtype Hex = Hex Integer
     deriving stock (Generic, Eq, Ord)
 
 instance Show Hex where
@@ -126,4 +171,4 @@ instance FromJSON Hex where
                 _otherwise -> JSON.parseFail $ "Bad hash value: " <> show hex
 
 instance ToJSON Hex where
-    toJSON = toJSON . show
+    toJSON (Hex x) = toJSON $ showHex x ""
