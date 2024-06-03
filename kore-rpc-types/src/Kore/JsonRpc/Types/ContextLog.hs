@@ -8,8 +8,10 @@ module Kore.JsonRpc.Types.ContextLog (
     module Kore.JsonRpc.Types.ContextLog,
 ) where
 
+import Control.Applicative ((<|>))
 import Data.Aeson.Types (FromJSON (..), ToJSON (..), (.:))
 import Data.Aeson.Types qualified as JSON
+import Data.Aeson.KeyMap qualified as JSON
 import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack, unpack)
@@ -46,10 +48,10 @@ data CLContext
     | CtxGetModel
     | CtxMatch
     -- entities with hex identifier
-    | CtxRewrite Hex
-    | CtxSimplification Hex
-    | CtxFunction Hex
-    | CtxTerm Hex
+    | CtxRewrite UniqueId
+    | CtxSimplification UniqueId
+    | CtxFunction UniqueId
+    | CtxTerm UniqueId
     -- entities with name
     | CtxHook Text
     -- results
@@ -125,50 +127,63 @@ options =
 data LogLine
     = LogLine
       { context :: [CLContext]
-      , message :: CLTextArrayOrTerm
+      , message :: CLMessage
       }
     deriving stock (Generic, Show, Eq)
     deriving
         (FromJSON, ToJSON)
         via CustomJSON '[] LogLine
 
-data CLTextArrayOrTerm
-    = CLText Text
-    | CLArray [Text]
-    | CLTerm KoreJson
+data CLMessage
+    = CLText Text  -- generic log message
+    | CLArray [Text] -- array of partial symbol names (ceil analysis)
+    | CLTerm KoreJson -- kore-term
+    | CLId JSON.Key UniqueId -- simplification/rewrite/match success
     deriving stock (Generic, Show, Eq)
 
 -- a message is a term if it is an object with format: KORE
-instance FromJSON CLTextArrayOrTerm where
-    parseJSON obj@(JSON.Object o) = do
-        _ :: KORE <- o .: "format" -- must be KORE
-        CLTerm <$> parseJSON obj
+instance FromJSON CLMessage where
+    parseJSON obj@(JSON.Object o) =
+        parseTerm <|> parseId
+      where
+        parseTerm = do
+            _ :: KORE <- o .: "format" -- must be KORE
+            CLTerm <$> parseJSON obj
+        parseId = case JSON.toList o of
+            [(aKey, uniqueId)] -> CLId aKey <$> parseJSON uniqueId
+            _other -> JSON.typeMismatch "Singleton object" obj
     parseJSON (JSON.String msg) =
         pure $ CLText msg
     parseJSON arr@JSON.Array{} =
         CLArray <$> parseJSON arr
     parseJSON other =
-        JSON.typeMismatch "KoreJson object or string" other
+        JSON.typeMismatch "Object, array, or string" other
 
-instance ToJSON CLTextArrayOrTerm where
+instance ToJSON CLMessage where
     toJSON (CLText text) = toJSON text
     toJSON (CLArray msgs) = toJSON msgs
     toJSON (CLTerm term) = toJSON term
+    toJSON (CLId key uniqueId) = JSON.Object $ JSON.singleton key (toJSON uniqueId)
 
-newtype Hex = Hex Integer
+data UniqueId
+    = Hex Integer
+    | UNKNOWN
     deriving stock (Generic, Eq, Ord)
 
-instance Show Hex where
+instance Show UniqueId where
     show (Hex i) = showHex i ""
+    show UNKNOWN = "UNKNOWN"
 
-instance FromJSON Hex where
+instance FromJSON UniqueId where
     parseJSON = JSON.withText "Hexadecimal Hash" parseHex
       where
-        parseHex :: Text -> JSON.Parser Hex
+        parseHex :: Text -> JSON.Parser UniqueId
+        parseHex "UNKNOWN" = pure UNKNOWN
         parseHex hex =
             case readHex $ unpack hex of
                 [(h, "")] -> pure  $ Hex h
                 _otherwise -> JSON.parseFail $ "Bad hash value: " <> show hex
 
-instance ToJSON Hex where
-    toJSON (Hex x) = toJSON $ showHex x ""
+instance ToJSON UniqueId where
+    toJSON (Hex x) = JSON.String . pack $ showHex x ""
+    toJSON UNKNOWN = JSON.String "UNKNOWN"
