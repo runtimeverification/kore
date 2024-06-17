@@ -67,7 +67,8 @@ instance Entry DebugAppliedRewriteRules where
         | null appliedRewriteRules = True
         | otherwise = False
     oneLineDoc DebugAppliedRewriteRules{appliedRewriteRules}
-        | null appliedRewriteRules = mempty
+        | null appliedRewriteRules =
+            "failed to apply " <> pretty (length appliedRewriteRules) <> " rewrite rules"
         | otherwise =
             "applied " <> pretty (length appliedRewriteRules) <> " rewrite rules"
     oneLineJson DebugAppliedRewriteRules{appliedRewriteRules}
