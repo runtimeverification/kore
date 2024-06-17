@@ -18,6 +18,7 @@ module Kore.Rewrite.RewriteStep (
 import Control.Monad.State.Strict qualified as State
 import Control.Monad.Trans.Class qualified as Monad.Trans
 import Data.Sequence qualified as Seq
+import Data.Text qualified as Text
 import Kore.Attribute.Label (
     Label (..),
  )
@@ -42,6 +43,7 @@ import Kore.Internal.TermLike as TermLike
 import Kore.Log.DebugAppliedRewriteRules (
     debugAppliedRewriteRules,
  )
+import Kore.Log.DebugContext
 import Kore.Log.DebugCreatedSubstitution (debugCreatedSubstitution)
 import Kore.Log.DebugRewriteRulesRemainder (debugRewriteRulesRemainder)
 import Kore.Log.DebugRewriteTrace (
@@ -85,6 +87,7 @@ import Kore.Simplify.Simplify (
     simplifyCondition,
  )
 import Kore.Substitute
+import Log
 import Logic (
     LogicT,
  )
@@ -308,7 +311,7 @@ finalizeRulesParallel
                 remainderPredicate = Remainder.remainder' unifications
             -- FIXME pass the actual unified rules, rather than their count, to the debug function
             debugRewriteRulesRemainder initial (length unifiedRules) remainderPredicate
-            liftIO $ print $ "combined-remainder " <> show remainderPredicate
+            inContext "combined-remainder" $ logInfo (Text.pack $ show remainderPredicate)
             -- evaluate the remainder predicate to make sure it is actually satisfiable
             SMT.evalPredicate
                 (ErrorDecidePredicateUnknown $srcLoc Nothing)
