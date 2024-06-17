@@ -66,7 +66,7 @@ class (Show entry, Typeable entry) => Entry entry where
 
     oneLineContextJson :: entry -> JSON.Value
     default oneLineContextJson :: entry -> JSON.Value
-    oneLineContextJson _ = JSON.Array mempty
+    oneLineContextJson entry = JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
 
     oneLineContextDoc :: entry -> [Text]
     default oneLineContextDoc :: entry -> [Text]
