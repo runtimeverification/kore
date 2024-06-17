@@ -352,6 +352,7 @@ library
     Kore.Log.DebugRewriteTrace
     Kore.Log.DebugSolver
     Kore.Log.DebugSubstitutionSimplifier
+    Kore.Log.DebugRewriteRulesRemainder
     Kore.Log.DebugTransition
     Kore.Log.DebugUnification
     Kore.Log.DebugUnifyBottom
