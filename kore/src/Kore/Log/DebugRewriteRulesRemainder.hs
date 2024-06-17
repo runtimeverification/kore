@@ -63,10 +63,11 @@ instance Entry DebugRewriteRulesRemainder where
     helpDoc _ = "log rewrite rules remainder"
 
     oneLineContextJson
-        DebugRewriteRulesRemainder{configuration, rules} =
+        entry@DebugRewriteRulesRemainder{configuration, rules} =
             Array $
                 fromList
-                    [ object
+                    [ object ["entry" JSON..= entryTypeText (toEntry entry)]
+                    , object
                         [ "term" .= showHashHex (hash configuration)
                         ]
                     , object
