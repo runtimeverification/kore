@@ -11,6 +11,9 @@ module Kore.Log.DebugRewriteRulesRemainder (
     debugRewriteRulesRemainder,
 ) where
 
+import Data.Aeson (Value (Array), object, toJSON, (.=))
+import Data.Text qualified as Text
+import Data.Vector (fromList)
 import Kore.Internal.Conditional qualified as Conditional
 import Kore.Internal.Pattern (
     Pattern,
@@ -18,13 +21,16 @@ import Kore.Internal.Pattern (
 import Kore.Internal.Predicate (
     Predicate,
  )
+import Kore.Internal.Predicate qualified as Predicate
 import Kore.Internal.TermLike qualified as TermLike
 import Kore.Internal.Variable (
     VariableName,
     toVariableName,
  )
 import Kore.Rewrite.RewritingVariable
+import Kore.Syntax.Json qualified as PatternJson
 import Kore.Unparser
+import Kore.Util (showHashHex)
 import Log
 import Prelude.Kore
 import Pretty (
@@ -56,17 +62,17 @@ instance Entry DebugRewriteRulesRemainder where
     entrySeverity _ = Debug
     helpDoc _ = "log rewrite rules remainder"
 
-    -- oneLineContextJson
-    --     DebugRewriteRulesRemainder{configuration, ruleId} =
-    --         Array $
-    --             fromList
-    --                 [ object
-    --                     [ "term" .= showHashHex (hash configuration)
-    --                     ]
-    --                 , object
-    --                     [ "rewrite" .= shortRuleIdTxt ruleId
-    --                     ]
-    --                 ]
+    oneLineContextJson
+        DebugRewriteRulesRemainder{configuration, rules} =
+            Array $
+                fromList
+                    [ object
+                        [ "term" .= showHashHex (hash configuration)
+                        ]
+                    , object
+                        [ "rules" .= Text.pack (show rules)
+                        ]
+                    ]
 
     oneLineDoc entry@(DebugRewriteRulesRemainder{rules, remainder}) =
         let context = map Pretty.brackets (pretty <$> oneLineContextDoc entry <> ["detail"])
@@ -78,8 +84,15 @@ instance Entry DebugRewriteRulesRemainder where
                 )
          in mconcat context <> logMsg
 
--- oneLineJson DebugRewriteRulesRemainder{label, attemptedRewriteRule} =
---     toJSON $ renderDefault $ maybe (Pretty.pretty attemptedRewriteRule) Pretty.pretty label
+    oneLineJson DebugRewriteRulesRemainder{remainder} =
+        toJSON
+            . PatternJson.fromPredicate sortBool
+            . Predicate.mapVariables (pure toVariableName)
+            $ remainder
+
+sortBool :: TermLike.Sort
+sortBool =
+    (TermLike.SortActualSort $ TermLike.SortActual (TermLike.Id "SortBool" TermLike.AstLocationNone) [])
 
 -- whileDebugAttemptRewriteRule ::
 --     MonadLog log =>
