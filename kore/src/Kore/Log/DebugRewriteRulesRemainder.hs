@@ -66,7 +66,7 @@ instance Entry DebugRewriteRulesRemainder where
         entry@DebugRewriteRulesRemainder{configuration, rules} =
             Array $
                 fromList
-                    [ object ["entry" JSON..= entryTypeText (toEntry entry)]
+                    [ object ["entry" .= entryTypeText (toEntry entry)]
                     , object
                         [ "term" .= showHashHex (hash configuration)
                         ]
