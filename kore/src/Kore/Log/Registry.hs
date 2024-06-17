@@ -63,6 +63,9 @@ import Kore.Log.DebugProven (
 import Kore.Log.DebugRetrySolverQuery (
     DebugRetrySolverQuery,
  )
+import Kore.Log.DebugRewriteRulesRemainder (
+    DebugRewriteRulesRemainder,
+ )
 import Kore.Log.DebugRewriteTrace (
     DebugFinalPatterns,
     DebugInitialClaim,
@@ -229,6 +232,7 @@ entryHelpDocsErr, entryHelpDocsNoErr :: [Pretty.Doc ()]
             , mk $ Proxy @DebugTransition
             , mk $ Proxy @DebugAppliedRewriteRules
             , mk $ Proxy @DebugAppliedLabeledRewriteRule
+            , mk $ Proxy @DebugRewriteRulesRemainder
             , mk $ Proxy @DebugAttemptedRewriteRules
             , mk $ Proxy @DebugSubstitutionSimplifier
             , mk $ Proxy @WarnFunctionWithoutEvaluators
