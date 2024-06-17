@@ -314,7 +314,7 @@ finalizeRulesParallel
             SMT.evalPredicate
                 (ErrorDecidePredicateUnknown $srcLoc Nothing)
                 remainderPredicate
-                (Just sideCondition)
+                (Just (SideCondition.addAssumption (predicate initial) sideCondition))
                 >>= \case
                     -- remainder condition is UNSAT: we prune the remainder branch early to avoid
                     -- jumping into the pit of function evaluation in the configuration under the
