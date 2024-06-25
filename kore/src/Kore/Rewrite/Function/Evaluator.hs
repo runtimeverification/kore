@@ -209,7 +209,7 @@ evaluatePattern
     !termLike
     !defaultValue =
         inContext "Function.Evaluator.evaluatePattern" $ do
-            BuiltinAndAxiomSimplifier evaluator <-
+            BuiltinAndAxiomSimplifier !evaluator <-
                 inContext "evaluatePattern.lookupAxiomSimplifier" $ lookupAxiomSimplifier termLike
             whileDebugTerm termLike $ do
                 merged <- do
