@@ -97,17 +97,18 @@ evaluateApplication ::
 evaluateApplication
     sideCondition
     childrenCondition
-    (evaluateSortInjection -> application) =
+    (evaluateSortInjection -> application) = inContext "evaluateApplication" $
         finishT $ do
             -- for_ canMemoize recallOrPattern
             results <-
-                evaluatePattern
-                    sideCondition
-                    childrenCondition
-                    termLike
-                    unevaluated
-                    & maybeT (unevaluated Nothing) return
-                    & lift
+                inContext "evaluateApplication.evaluatePattern" $
+                    evaluatePattern
+                        sideCondition
+                        childrenCondition
+                        termLike
+                        unevaluated
+                        & maybeT (unevaluated Nothing) return
+                        & lift
             -- for_ canMemoize (recordOrPattern results)
             let unexpectedBottomResult = Symbol.isTotal symbol && isBottom results
             when unexpectedBottomResult $
@@ -123,15 +124,16 @@ evaluateApplication
         termLike = synthesize (ApplySymbolF application)
 
         unevaluated ::
-            Monad m =>
+            MonadLog m =>
             Maybe SideCondition.Representation ->
             m (OrPattern RewritingVariableName)
         unevaluated maybeSideCondition =
-            return $
-                OrPattern.fromPattern $
-                    Pattern.withCondition
-                        (markSimplifiedIfChildren maybeSideCondition termLike)
-                        childrenCondition
+            inContext "evaluateApplication.unevaluated" $
+                return $
+                    OrPattern.fromPattern $
+                        Pattern.withCondition
+                            (markSimplifiedIfChildren maybeSideCondition termLike)
+                            childrenCondition
 
         markSimplifiedIfChildren ::
             Maybe SideCondition.Representation ->
