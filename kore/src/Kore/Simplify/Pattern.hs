@@ -140,5 +140,4 @@ makeEvaluate sideCondition =
                         >>= Logic.scatter
             let simplifiedPattern =
                     Conditional.andCondition simplifiedTerm simplifiedCondition
-            -- inContext "makeEvaluate.simplifyCondition-final" $ simplifyCondition sideCondition simplifiedPattern
-            pure simplifiedPattern
+            inContext "makeEvaluate.simplifyCondition-final" $ simplifyCondition sideCondition simplifiedPattern
