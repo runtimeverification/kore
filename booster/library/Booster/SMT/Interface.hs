@@ -16,7 +16,6 @@ module Booster.SMT.Interface (
 
 import Control.Exception (Exception, throw)
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
@@ -108,7 +107,7 @@ hardResetSolver :: forall io. Log.LoggerMIO io => SMTOptions -> SMT io ()
 hardResetSolver smtOptions = do
     Log.logMessage ("Starting new SMT solver" :: Text)
     ctxt <- SMT get
-    liftIO ctxt.solverClose
+    closeContext ctxt
     (solver, handle) <- connectToSolver
     SMT $ put ctxt{solver, solverClose = Backend.close handle}
     checkPrelude
@@ -132,7 +131,7 @@ checkPrelude = do
         Sat -> pure ()
         other -> do
             Log.logMessage $ "Initial SMT definition check returned " <> pack (show other)
-            SMT get >>= closeContext
+            SMT get >>= destroyContext
             throwSMT' $
                 "Aborting due to potentially-inconsistent SMT setup: Initial check returned " <> show other
 
@@ -143,7 +142,7 @@ runPrelude = do
     mapM_ runCmd prelude
 
 finaliseSolver :: Log.LoggerMIO io => SMT.SMTContext -> io ()
-finaliseSolver ctxt = do
+finaliseSolver ctxt = Log.withContext Log.CtxSMT $ do
     Log.logMessage ("Closing SMT solver" :: Text)
     destroyContext ctxt
 
