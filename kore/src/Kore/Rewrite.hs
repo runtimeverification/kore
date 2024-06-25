@@ -49,6 +49,7 @@ import Kore.Internal.Pattern (
  )
 import Kore.Internal.Predicate (Predicate)
 import Kore.Internal.Substitution (Substitution)
+import Kore.Log.DebugContext (inContext)
 import Kore.Log.DecidePredicateUnknown (srcLoc)
 import Kore.Rewrite.Result qualified as Result
 import Kore.Rewrite.RewriteStep qualified as Step
@@ -231,7 +232,7 @@ transitionRule rewriteGroups assumeInitialDefined = transitionRuleWorker
             then pure Bottom
             else prim <$> asum (pure <$> toList filteredConfigs)
 
-    transitionRewrite All patt = transitionAllRewrite patt
+    transitionRewrite All patt = inContext "transitionAllRewrite" $ transitionAllRewrite patt
     transitionRewrite Any patt = transitionAnyRewrite patt
 
     transitionAllRewrite config =
