@@ -225,7 +225,7 @@ transitionRule rewriteGroups assumeInitialDefined = transitionRuleWorker
     transitionRuleWorker _ Rewrite state@(Rewritten _ _) =
         pure state
 
-    transitionSimplify prim config = do
+    transitionSimplify prim config = inContext "transitionSimplify" $ do
         configs <- lift $ Pattern.simplifyTopConfiguration config
         filteredConfigs <- liftSimplifier $ SMT.Evaluator.filterMultiOr $srcLoc configs
         if isBottom filteredConfigs
