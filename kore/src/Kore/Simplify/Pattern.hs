@@ -40,6 +40,7 @@ import Kore.Internal.Substitution (
 import Kore.Internal.TermLike (
     pattern Exists_,
  )
+import Kore.Log.DebugContext (inContext)
 import Kore.Rewrite.RewritingVariable (
     RewritingVariableName,
  )
@@ -125,7 +126,7 @@ makeEvaluate sideCondition =
     worker pattern' =
         OrPattern.observeAllT $ do
             withSimplifiedCondition <-
-                simplifyCondition sideCondition pattern'
+                inContext "makeEvaluate.simplifyCondition-initial" $ simplifyCondition sideCondition pattern'
             let (term, simplifiedCondition) =
                     Conditional.splitTerm withSimplifiedCondition
                 term' = substitute (toMap $ substitution simplifiedCondition) term
@@ -134,8 +135,9 @@ makeEvaluate sideCondition =
                         simplifiedCondition
                         sideCondition
             simplifiedTerm <-
-                liftSimplifier (simplifyTerm termSideCondition term')
-                    >>= Logic.scatter
+                inContext "makeEvaluate.simplifyTerm" $
+                    liftSimplifier (simplifyTerm termSideCondition term')
+                        >>= Logic.scatter
             let simplifiedPattern =
                     Conditional.andCondition simplifiedTerm simplifiedCondition
-            simplifyCondition sideCondition simplifiedPattern
+            inContext "makeEvaluate.simplifyCondition-final" $ simplifyCondition sideCondition simplifiedPattern
