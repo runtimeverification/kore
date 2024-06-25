@@ -117,17 +117,19 @@ evaluateApplicationFunction
     sideCondition
     expandedApp@Conditional{term, predicate, substitution}
         | SideCondition.isSimplifiedFunction term sideCondition =
-            let applicationPattern =
-                    synthesize . ApplySymbolF <$> expandedApp
-             in applicationPattern
-                    & Pattern.markSimplified
-                    & OrPattern.fromPattern
-                    & return
+            inContext "evaluateApplicationFunction.one" $
+                let applicationPattern =
+                        synthesize . ApplySymbolF <$> expandedApp
+                 in applicationPattern
+                        & Pattern.markSimplified
+                        & OrPattern.fromPattern
+                        & return
         | otherwise =
-            evaluateApplication
-                sideCondition
-                Conditional{term = (), predicate, substitution}
-                term
+            inContext "evaluateApplicationFunction.two" $
+                evaluateApplication
+                    sideCondition
+                    Conditional{term = (), predicate, substitution}
+                    term
 
 makeExpandedApplication ::
     SideCondition RewritingVariableName ->
