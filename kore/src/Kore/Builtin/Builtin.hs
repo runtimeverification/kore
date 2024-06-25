@@ -104,6 +104,7 @@ import Kore.Internal.SideCondition (
 import Kore.Internal.SideCondition qualified as SideCondition
 import Kore.Internal.Symbol (symbolHook)
 import Kore.Internal.TermLike as TermLike
+import Kore.Log.DebugContext (inContext)
 import Kore.Rewrite.RewritingVariable (
     RewritingVariableName,
  )
@@ -225,7 +226,7 @@ binaryOperator extractVal asPattern ctx op =
     get = extractVal ctx
 
     binaryOperator0 :: Function
-    binaryOperator0 _ resultSort children =
+    binaryOperator0 _ resultSort children = inContext "binaryOperator0" $
         case children of
             [get -> Just a, get -> Just b] -> do
                 -- Apply the operator to two domain values
