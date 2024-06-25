@@ -52,6 +52,7 @@ import Kore.Internal.SideCondition.SideCondition qualified as SideCondition (
 import Kore.Internal.Symbol (isDeclaredFunction)
 import Kore.Internal.Symbol qualified as Symbol
 import Kore.Internal.TermLike as TermLike
+import Kore.Log.DebugContext (inContext)
 import Kore.Log.ErrorBottomTotalFunction (
     errorBottomTotalFunction,
  )
@@ -209,7 +210,7 @@ evaluatePattern
             BuiltinAndAxiomSimplifier evaluator <- lookupAxiomSimplifier termLike
             whileDebugTerm termLike $ do
                 merged <- do
-                    result <- liftSimplifier $ evaluator termLike sideCondition
+                    result <- inContext "evaluatePattern.evaluator" $ liftSimplifier $ evaluator termLike sideCondition
                     flattened <- case result of
                         AttemptedAxiom.Applied
                             AttemptedAxiomResults
