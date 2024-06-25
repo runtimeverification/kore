@@ -99,7 +99,7 @@ evaluateApplication
     childrenCondition
     (evaluateSortInjection -> application) =
         finishT $ do
-            for_ canMemoize recallOrPattern
+            -- for_ canMemoize recallOrPattern
             results <-
                 evaluatePattern
                     sideCondition
@@ -108,7 +108,7 @@ evaluateApplication
                     unevaluated
                     & maybeT (unevaluated Nothing) return
                     & lift
-            for_ canMemoize (recordOrPattern results)
+            -- for_ canMemoize (recordOrPattern results)
             let unexpectedBottomResult = Symbol.isTotal symbol && isBottom results
             when unexpectedBottomResult $
                 lift $
