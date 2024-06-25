@@ -42,6 +42,7 @@ import Kore.Internal.TermLike as TermLike
 import Kore.Log.DebugAppliedRewriteRules (
     debugAppliedRewriteRules,
  )
+import Kore.Log.DebugContext (inContext)
 import Kore.Log.DebugCreatedSubstitution (debugCreatedSubstitution)
 import Kore.Log.DebugRewriteRulesRemainder (debugRewriteRulesRemainder)
 import Kore.Log.DebugRewriteTrace (
@@ -405,7 +406,7 @@ applyWithFinalizer ::
     Pattern RewritingVariableName ->
     Simplifier (Results rule)
 applyWithFinalizer sideCondition finalize rules initial = do
-    results <- unifyRules sideCondition initial rules
+    results <- inContext "unify-rules" $ unifyRules sideCondition initial rules
     debugAppliedRewriteRules initial (locations <$> results)
     let initialVariables = freeVariables initial
     finalizedResults <- finalize initialVariables initial results
