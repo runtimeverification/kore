@@ -114,7 +114,7 @@ evaluateApplication
             when unexpectedBottomResult $
                 lift $
                     errorBottomTotalFunction termLike
-            return results
+            inContext "evaluateApplication.return" $ return results
       where
         finishT :: ExceptT r Simplifier r -> Simplifier r
         finishT = exceptT return return
@@ -204,12 +204,13 @@ evaluatePattern ::
     ) ->
     MaybeT simplifier (OrPattern RewritingVariableName)
 evaluatePattern
-    sideCondition
-    childrenCondition
-    termLike
-    defaultValue =
-        do
-            BuiltinAndAxiomSimplifier evaluator <- lookupAxiomSimplifier termLike
+    !sideCondition
+    !childrenCondition
+    !termLike
+    !defaultValue =
+        inContext "Function.Evaluator.evaluatePattern" $ do
+            BuiltinAndAxiomSimplifier evaluator <-
+                inContext "evaluatePattern.lookupAxiomSimplifier" $ lookupAxiomSimplifier termLike
             whileDebugTerm termLike $ do
                 merged <- do
                     result <- inContext "evaluatePattern.evaluator" $ liftSimplifier $ evaluator termLike sideCondition
