@@ -29,6 +29,7 @@ import Kore.Internal.SideCondition (
  )
 import Kore.Internal.SideCondition qualified as SideCondition
 import Kore.Internal.TermLike
+import Kore.Log.DebugContext (inContext)
 import Kore.Rewrite.Function.Evaluator (
     evaluateApplication,
  )
@@ -62,7 +63,7 @@ simplify ::
     SideCondition RewritingVariableName ->
     Application Symbol (OrPattern RewritingVariableName) ->
     Simplifier (OrPattern RewritingVariableName)
-simplify sideCondition application = do
+simplify sideCondition application = inContext "simplifyApplication" $ do
     evaluated <- OrPattern.observeAllT $ do
         Application{applicationChildren = result} <-
             Logic.scatter childrenCrossProduct
