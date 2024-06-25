@@ -29,7 +29,7 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text as Text (Text, pack, unlines, unwords)
 import Prettyprinter (Pretty, hsep, pretty)
-import SMTLIB.Backends.Process qualified as Backend
+import SMTLIB.Backends.Z3 qualified as Backend
 
 import Booster.Definition.Base
 import Booster.Log qualified as Log

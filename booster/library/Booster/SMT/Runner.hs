@@ -31,7 +31,7 @@ import Data.ByteString.Builder qualified as BS
 import Data.ByteString.Char8 qualified as BS
 import Data.Text (Text, pack)
 import SMTLIB.Backends qualified as Backend
-import SMTLIB.Backends.Process qualified as Backend
+import SMTLIB.Backends.Z3 qualified as Backend
 import System.IO (
     BufferMode (..),
     Handle,

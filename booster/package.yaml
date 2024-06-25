@@ -91,7 +91,7 @@ library:
   - regex-base
   - regex-pcre-builtin
   - smtlib-backends
-  - smtlib-backends-process
+  - smtlib-backends-z3
   - stm
   - stm-conduit
   - syb
