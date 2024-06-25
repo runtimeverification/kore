@@ -399,6 +399,7 @@ logLevelToKoreLogEntryMap =
                 , "DebugAppliedRewriteRules"
                 , "DebugRewriteRulesRemainder"
                 , "DebugTerm"
+                , "WhileDebugUnification"
                 ]
             )
         , (LevelOther "SimplifySuccess", ["DebugTerm"])
