@@ -211,7 +211,7 @@ evaluatePattern
             whileDebugTerm termLike $ do
                 merged <- do
                     result <- inContext "evaluatePattern.evaluator" $ liftSimplifier $ evaluator termLike sideCondition
-                    flattened <- case result of
+                    flattened <- inContext "evaluatePattern.flatten" $ case result of
                         AttemptedAxiom.Applied
                             AttemptedAxiomResults
                                 { results = orResults
@@ -227,11 +227,12 @@ evaluatePattern
                                             }
                                     )
                         _ -> return result
-                    liftSimplifier $
-                        mergeWithConditionAndSubstitution
-                            sideCondition
-                            childrenCondition
-                            flattened
+                    inContext "evaluatePattern.merge" $
+                        liftSimplifier $
+                            mergeWithConditionAndSubstitution
+                                sideCondition
+                                childrenCondition
+                                flattened
                 case merged of
                     AttemptedAxiom.NotApplicable ->
                         defaultValue Nothing
