@@ -386,7 +386,7 @@ unifyTerms ::
     TermLike RewritingVariableName ->
     SideCondition RewritingVariableName ->
     NewUnifier (Condition RewritingVariableName)
-unifyTerms first second sideCondition =
+unifyTerms first second sideCondition = whileDebugUnification first second $ do
     let vars = Set.fromDistinctAscList $ map variableName $ FreeVariables.toList $ freeVariables (first, second)
      in unifyTerms'
             (termLikeSort first)
@@ -450,7 +450,7 @@ unifyTerms' rootSort sideCondition origVars vars [] bindings constraints acEquat
         let (solutions, newVars) = solveAcEquations tools bindings vars' sort eqs
          in (Map.insert sort solutions accum, newVars)
 unifyTerms' rootSort sideCondition origVars vars ((first, second) : rest) bindings constraints acEquations =
-    whileDebugUnification first second $ do
+    do
         tools <- askMetadataTools
         injSimplifier <- askInjSimplifier
         overloadSimplifier <- askOverloadSimplifier
