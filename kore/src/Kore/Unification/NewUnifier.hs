@@ -593,16 +593,16 @@ unifyTerms' rootSort sideCondition origVars vars ((first, second) : rest) bindin
                 | isOverloaded secondHead ->
                     failUnify "Cannot unify sort injection with overloaded symbol it does not overload with"
             (Inj_ _, Inj_ _) -> failUnify "Distinct sort injections"
-            (InternalMap_ map1, InternalMap_ map2) -> unifyMaps map1 map2
-            (InternalMap_ map1, _) ->
+            (InternalMap_ map1, InternalMap_ map2) -> inContext "unifyTerms'.InternalMap" $ unifyMaps map1 map2
+            (InternalMap_ map1, _) -> inContext "unifyTerms'.InternalMap" $
                 case Ac.toNormalized second of
                     Ac.Bottom -> failUnify "Duplicate elements in normalized map"
                     Ac.Normalized map2 -> unifyMaps map1 $ Ac.asInternalBuiltin tools sort map2
-            (_, InternalMap_ map2) ->
+            (_, InternalMap_ map2) -> inContext "unifyTerms'.InternalMap" $
                 case Ac.toNormalized first of
                     Ac.Bottom -> failUnify "Duplicate elements in normalized map"
                     Ac.Normalized map1 -> unifyMaps (Ac.asInternalBuiltin tools sort map1) map2
-            (_, _) | Just True <- isMapSort tools sort ->
+            (_, _) | Just True <- isMapSort tools sort -> inContext "unifyTerms'.InternalMap" $
                 case (Ac.toNormalized first, Ac.toNormalized second) of
                     (Ac.Bottom, _) -> failUnify "Duplicate elements in normalized map"
                     (_, Ac.Bottom) -> failUnify "Duplicate elements in normalized map"
