@@ -437,7 +437,9 @@ unifyTerms' rootSort sideCondition origVars vars [] bindings constraints acEquat
             pure $
                 Map.foldrWithKey' (solveAcEquations' tools) (Map.empty, vars) acEquations
     let freeBindings = Map.mapMaybe fromFree bindings
-    (newEqs, newBindings) <- combineTheories (Map.elems acSolutions) freeBindings origVars
+    (newEqs, newBindings) <-
+        trace ("AcSolutions: " <> show $ length acSolutions) $
+            combineTheories (Map.elems acSolutions) freeBindings origVars
     unifyTerms' rootSort sideCondition origVars newVars newEqs newBindings constraints Map.empty
   where
     solveAcEquations' ::
