@@ -302,8 +302,17 @@ combineTheories ::
         , Map (SomeVariable RewritingVariableName) Binding
         )
 combineTheories acBindings freeBindings origVars = do
+    liftIO . putStrLn $
+        "combineTheories.origVars" <> (show . length $ origVars)
+    liftIO . putStrLn $
+        "combineTheories.freeBindings" <> (show . length $ freeBindings)
+    liftIO . putStrLn $
+        "combineTheories.acBindings" <> (show . length $ acBindings)
     let withoutPureImproperBindings = map (map preprocessTheory) acBindings
         combinations = sequence withoutPureImproperBindings
+    liftIO . putStrLn $
+        "combineTheories.withoutPureImproperBindings" <> (show . length $ withoutPureImproperBindings)
+    liftIO . putStrLn $ "combineTheories.combinations" <> (show . length $ combinations)
     solution <- Logic.scatter combinations
     return $ varRep (freeBindings : solution) Map.empty [] origVars
   where
@@ -438,9 +447,11 @@ unifyTerms' rootSort sideCondition origVars vars [] bindings constraints acEquat
                 Map.foldrWithKey' (solveAcEquations' tools) (Map.empty, vars) acEquations
     let freeBindings = Map.mapMaybe fromFree bindings
     (newEqs, newBindings) <-
-        trace ("AcSolutions: " <> show $ length acSolutions) $
+        inContext "unifyTerms'-combineTheories" $
             combineTheories (Map.elems acSolutions) freeBindings origVars
-    unifyTerms' rootSort sideCondition origVars newVars newEqs newBindings constraints Map.empty
+    trace ("newEqs: " <> (show $ length newEqs)) $
+        trace ("newBindings: " <> (show $ length newBindings)) $
+            unifyTerms' rootSort sideCondition origVars newVars newEqs newBindings constraints Map.empty
   where
     solveAcEquations' ::
         SmtMetadataTools Attribute.Symbol ->
@@ -1100,14 +1111,25 @@ solveAcEquations tools bindings vars sort acEquations =
         constrainedIndices =
             IntSet.fromList $
                 map (flip Set.findIndex $ Set.mapMonotonic variableName u) (Set.toAscList constrainedVars)
-        system = Matrix.matrix p n (defect' newAcEquations u_vec)
+        system =
+            trace ("Solving Diophantine Equations : " <> (show $ length newAcEquations)) $
+                Matrix.matrix p n (defect' newAcEquations u_vec)
         solved = solveDiophantineEquations system
-        (newVars, vars') = mkVars sort (length solved) [] vars
+        (newVars, vars') =
+            mkVars sort (length solved) [] vars
         basis = zip solved newVars
-        suitable = allSuitableSolutions basis constrainedIndices n
-        acSubst = map (makeAcSubstitution sort u) suitable
+        suitable =
+            trace ("solveAcEuations.basis : " <> (show $ length basis)) $
+                trace ("solveAcEuations.constrainedIndices : " <> (show $ IntSet.size constrainedIndices)) $
+                    trace ("solveAcEuations.n : " <> (show $ n)) $
+                        allSuitableSolutions basis constrainedIndices n
+        acSubst =
+            trace ("solveAcEquations.suitable : " <> (show $ length suitable)) $
+                map (makeAcSubstitution sort u) suitable
         acBindings = Map.mapMaybe (fromAc >=> \acTerm -> acTerm <$ guard (acSort acTerm == sort)) bindings
-        allAcBindings = map (union acBindings) acSubst
+        allAcBindings =
+            trace ("solveAcEquations.acBindings : " <> (show $ length acBindings)) $
+                map (union acBindings) acSubst
      in (map (Map.map (remakeMapTerms tools)) allAcBindings, vars')
   where
     defect' eqs u_vec (i, j) = defect (eqs ! (i - 1)) (u_vec ! (j - 1))
