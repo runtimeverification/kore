@@ -139,6 +139,7 @@ import Kore.Internal.SideCondition (
 import Kore.Internal.Substitution qualified as Substitution
 import Kore.Internal.Symbol qualified as Symbol
 import Kore.Internal.TermLike
+import Kore.Log.DebugContext (inContext)
 import Kore.Log.DebugUnification (
     debugUnificationSolved,
     whileDebugUnification,
@@ -431,8 +432,11 @@ unifyTerms' rootSort sideCondition origVars _ [] bindings constraints acEquation
     isOrigVar v = const $ Set.member (variableName v) origVars
 unifyTerms' rootSort sideCondition origVars vars [] bindings constraints acEquations = do
     tools <- askMetadataTools
-    let (acSolutions, newVars) = Map.foldrWithKey' (solveAcEquations' tools) (Map.empty, vars) acEquations
-        freeBindings = Map.mapMaybe fromFree bindings
+    (acSolutions, newVars) <-
+        inContext "unifyTerms'-solveAc" $
+            pure $
+                Map.foldrWithKey' (solveAcEquations' tools) (Map.empty, vars) acEquations
+    let freeBindings = Map.mapMaybe fromFree bindings
     (newEqs, newBindings) <- combineTheories (Map.elems acSolutions) freeBindings origVars
     unifyTerms' rootSort sideCondition origVars newVars newEqs newBindings constraints Map.empty
   where

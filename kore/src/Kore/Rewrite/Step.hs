@@ -167,15 +167,18 @@ unifyRule sideCondition initial rule = do
     whileDebugAttemptRewriteRule initial ruleId maybeLabel location $ do
         ruleMarker "Init"
         let (initialTerm, initialCondition) = Pattern.splitTerm initial
-            sideCondition' =
-                sideCondition
-                    & SideCondition.addConditionWithReplacements initialCondition
+        sideCondition' <-
+            inContext "unifyRule-init" $
+                pure $
+                    sideCondition
+                        & SideCondition.addConditionWithReplacements initialCondition
         -- Unify the left-hand side of the rule with the term of the initial
         -- configuration.
         let ruleLeft = matchingPattern rule
         ruleMarker "Unify"
         unification <-
-            unificationProcedure sideCondition' initialTerm ruleLeft
+            inContext "unifyRule-unify" $
+                unificationProcedure sideCondition' initialTerm ruleLeft
         -- Combine the unification solution with the rule's requirement clause,
         ruleMarker "CheckSide"
         let ruleRequires = precondition rule
