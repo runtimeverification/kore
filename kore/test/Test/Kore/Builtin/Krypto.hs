@@ -5,6 +5,7 @@ module Test.Kore.Builtin.Krypto (
     test_ecdsaRecover,
     test_secp256k1EcdsaRecover,
     test_keccak256,
+    test_keccak256Raw,
     test_hashKeccak256,
     test_sha256,
     test_hashSha256,
@@ -16,12 +17,14 @@ module Test.Kore.Builtin.Krypto (
 
 import Control.Lens qualified as Lens
 import Data.ByteString.Char8 qualified as BS
+import Data.Char (chr)
 import Data.Generics.Sum.Constructors
 import Data.Proxy
 import Data.Text (
     Text,
  )
 import Data.Text qualified as Text
+import Data.Text.Encoding qualified as Text
 import GHC.TypeLits qualified as TypeLits
 import Kore.Attribute.Symbol qualified as Attribute
 import Kore.Builtin.InternalBytes qualified as InternalBytes
@@ -135,6 +138,36 @@ test_keccak256 =
             actual <-
                 keccak256Krypto (InternalBytes.asInternal bytesSort (BS.pack input))
                     & evaluate "KRYPTO.keccak256"
+            assertEqual "" expect actual
+
+test_keccak256Raw :: [TestTree]
+test_keccak256Raw =
+    [ -- from the blockchain-k-plugin tests:
+      test
+        "foo"
+        "A\xb1\xa0\&d\x97R\xaf\x1b(\xb3\xdc)\xa1Un\xeex\x1eJL:\x1f\x7fS\xf9\x0f\xa8\&4\xde\t\x8cM"
+    , -- from above:
+      test
+        "\249\SOH\245\160\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\160\GS\204M\232\222\199]z\171\133\181g\182\204\212\SUB\211\DC2E\ESC\148\138t\DC3\240\161B\253@\212\147G\148*\220%fP\CAN\170\US\224\230\188fm\172\143\194i\DEL\249\186\160h\172|e\163\163\ESC}\139\230!\217\157/\"w\SOHX]\232s\219\218\162\181\248\215K\225Z\241\178\160V\232\US\ETB\ESC\204U\166\255\131E\230\146\192\248n[H\224\ESC\153l\173\192\SOHb/\181\227c\180!\160V\232\US\ETB\ESC\204U\166\255\131E\230\146\192\248n[H\224\ESC\153l\173\192\SOHb/\181\227c\180!\185\SOH\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\131\STX\NUL\NUL\128\131\SIB@\128\130\ETX\182B\160V\232\US\ETB\ESC\204U\166\255\131E\230\146\192\248n[H\224\ESC\153l\173\192\SOHb/\181\227c\180!\136\SOH\STX\ETX\EOT\ENQ\ACK\a\b"
+        (asBytes "417ece6e4175ae7f1bf6b8ed90b4ea22206353a7450aa10bdd5e2ba3cb2bd953")
+    , -- from above:
+      test
+        "testing"
+        (asBytes "5f16f4c7f149ac4f9510d9cf8cf384038ad348b3bcdc01915f95de12df9d1b02")
+    ]
+  where
+    asBytes = Text.decodeLatin1 . BS.pack . map (chr . read . ("0x" <>)) . groupEach2
+      where
+        groupEach2 [] = []
+        groupEach2 [_] = error "odd number of characters in input"
+        groupEach2 (a : b : rest) = [a, b] : groupEach2 rest
+
+    test input result =
+        testCase (show input) $ do
+            let expect = String.asPattern bytesSort result
+            actual <-
+                keccak256RawKrypto (InternalBytes.asInternal bytesSort (BS.pack input))
+                    & evaluate "KRYPTO.keccak256raw"
             assertEqual "" expect actual
 
 test_hashKeccak256 :: [TestTree]

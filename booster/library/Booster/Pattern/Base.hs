@@ -27,13 +27,10 @@ import Booster.Definition.Attributes.Base (
     pattern IsNotIdem,
     pattern IsNotMacroOrAlias,
  )
-import Booster.Prettyprinter qualified as KPretty
 
-import Booster.Util (decodeLabel')
 import Control.DeepSeq (NFData (..))
 import Data.Bifunctor (second)
 import Data.ByteString.Char8 (ByteString)
-import Data.ByteString.Char8 qualified as BS
 import Data.Data (Data)
 import Data.Functor.Foldable
 import Data.Hashable (Hashable)
@@ -41,12 +38,8 @@ import Data.Hashable qualified as Hashable
 import Data.List as List (foldl', foldl1', sort)
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text qualified as Text
-import Data.Text.Encoding qualified as Text
 import GHC.Generics (Generic)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prettyprinter (Pretty (..), (<+>))
-import Prettyprinter qualified as Pretty
 
 type VarName = ByteString
 type SymbolName = ByteString
@@ -781,82 +774,6 @@ pattern Pattern_ :: Term -> Pattern
 pattern Pattern_ t <- Pattern t _ _
     where
         Pattern_ t = Pattern t mempty mempty
-
--- used for printing the string as it appears (with codepoints)
-prettyBS :: ByteString -> Pretty.Doc a
-prettyBS = Pretty.pretty . Text.decodeUtf8
-
-instance Pretty Term where
-    pretty = \case
-        AndTerm t1 t2 ->
-            pretty t1 <+> "/\\" <+> pretty t2
-        SymbolApplication symbol _sortParams args ->
-            pretty (Text.replace "Lbl" "" $ Text.decodeUtf8 $ decodeLabel' symbol.name)
-                <> KPretty.argumentsP args
-        DotDotDot -> "..."
-        DomainValue _sort bs -> pretty . show . Text.decodeLatin1 . shortenBS $ bs
-        Var var -> pretty var
-        Injection _source _target t' -> pretty t'
-        KMap _attrs keyVals rest ->
-            Pretty.braces . Pretty.hsep . Pretty.punctuate Pretty.comma $
-                [pretty k <+> "->" <+> pretty v | (k, v) <- keyVals]
-                    ++ maybe [] ((: []) . pretty) rest
-        KList _meta heads (Just (mid, tails)) ->
-            Pretty.hsep $
-                Pretty.punctuate
-                    " +"
-                    [renderList heads, pretty mid, renderList tails]
-        KList _meta [] Nothing ->
-            "[]"
-        KList _meta heads Nothing ->
-            renderList heads
-        KSet _meta [] Nothing -> "{}"
-        KSet _meta [] (Just rest) -> pretty rest
-        KSet _meta es rest ->
-            (Pretty.braces . Pretty.hsep . Pretty.punctuate Pretty.comma $ map pretty es)
-                Pretty.<+> maybe mempty ((" ++ " <>) . pretty) rest
-      where
-        renderList l
-            | null l = mempty
-            | otherwise =
-                Pretty.brackets . Pretty.hsep . Pretty.punctuate Pretty.comma $
-                    map pretty l
-
-        -- shorten domain value ByteString to a readable length
-        shortenBS dv =
-            let cutoff = 16
-             in if BS.length dv < cutoff then dv else BS.take cutoff dv <> "...truncated"
-
-instance Pretty Sort where
-    pretty (SortApp name params) =
-        prettyBS name <> KPretty.parametersP params
-    pretty (SortVar name) =
-        prettyBS name
-
-instance Pretty Variable where
-    pretty var =
-        prettyBS (decodeLabel' var.variableName)
-            <> Pretty.colon
-            <> pretty var.variableSort
-
-instance Pretty Predicate where
-    pretty (Predicate t) = pretty t
-
-instance Pretty Ceil where
-    pretty (Ceil t) =
-        "\\ceil"
-            <> KPretty.noParameters
-            <> KPretty.argumentsP [t]
-
-instance Pretty Pattern where
-    pretty patt =
-        Pretty.vsep $
-            [ "Term:"
-            , Pretty.indent 4 $ pretty patt.term
-            , "Conditions:"
-            ]
-                <> fmap (Pretty.indent 4 . pretty) (Set.toList patt.constraints)
-                <> fmap (Pretty.indent 4 . pretty) patt.ceilConditions
 
 pattern ConsApplication :: Symbol -> [Sort] -> [Term] -> Term
 pattern ConsApplication sym sorts args <-

@@ -31,6 +31,7 @@ import Booster.Definition.Base
 import Booster.Definition.Ceil (ComputeCeilSummary (..))
 import Booster.Pattern.Base
 import Booster.Pattern.Index (CellIndex (..), TermIndex (..))
+import Booster.Pattern.Pretty
 import Booster.Prettyprinter
 import Booster.Util
 
@@ -92,7 +93,8 @@ prettySummary :: Bool -> Summary -> String
 prettySummary veryVerbose summary@Summary{computeCeilsSummary} =
     Pretty.renderString . layoutPrettyUnbounded $
         Pretty.vcat $
-            pretty summary : if veryVerbose then map pretty computeCeilsSummary else []
+            pretty summary
+                : if veryVerbose then map (pretty' @['Decoded, 'Truncated] $) computeCeilsSummary else []
 
 instance Pretty Summary where
     pretty summary =
@@ -146,7 +148,8 @@ instance Pretty Summary where
         prettyCellIndex None = "None"
 
         prettyCeilRule :: RewriteRule r -> Doc a
-        prettyCeilRule RewriteRule{lhs, rhs} = "#Ceil(" <+> pretty lhs <+> ") =>" <+> pretty rhs
+        prettyCeilRule RewriteRule{lhs, rhs} =
+            "#Ceil(" <+> pretty' @['Decoded, 'Truncated] lhs <+> ") =>" <+> pretty' @['Decoded, 'Truncated] rhs
 
 sourceRefText :: HasSourceRef a => a -> Text
 sourceRefText = renderOneLineText . pretty . sourceRef

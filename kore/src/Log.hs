@@ -47,47 +47,28 @@ import Control.Monad.Catch (
     MonadMask,
     MonadThrow (throwM),
  )
-import Control.Monad.Counter (
-    CounterT,
- )
-import Control.Monad.Except (
-    ExceptT,
- )
-import Control.Monad.Morph (
-    MFunctor,
- )
+import Control.Monad.Counter (CounterT)
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Morph (MFunctor)
 import Control.Monad.Morph qualified as Monad.Morph
-import Control.Monad.RWS.Strict (
-    RWST,
- )
+import Control.Monad.RWS.Strict (RWST)
 import Control.Monad.Trans.Accum (
     AccumT,
     mapAccumT,
  )
 import Control.Monad.Trans.Control (MonadBaseControl (..))
-import Control.Monad.Trans.Identity (
-    IdentityT,
- )
-import Control.Monad.Trans.Maybe (
-    MaybeT,
- )
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict qualified as Strict (
-    StateT,
- )
+import Control.Monad.Trans.State.Strict qualified as Strict (StateT)
 import Data.Aeson qualified as JSON
-import Data.Text (
-    Text,
-    pack,
- )
+import Data.Text (Text)
 import GHC.Generics qualified as GHC
 import GHC.Stack qualified as GHC
 import Log.Entry
 import Logic
 import Prelude.Kore
-import Pretty (
-    Pretty,
- )
+import Pretty (Pretty)
 import Pretty qualified
 import Prof
 
@@ -107,9 +88,8 @@ data LogMessage = LogMessage
 instance Entry LogMessage where
     entrySeverity LogMessage{severity} = severity
     oneLineDoc LogMessage{message} = Pretty.pretty message
-    oneLineContextDoc LogMessage{severity} = [pack $ show severity]
+    oneLineContextDoc LogMessage{severity} = [severityToContext severity]
     oneLineJson LogMessage{message} = JSON.toJSON message
-    oneLineContextJson LogMessage{severity} = JSON.toJSON $ show severity
 
 instance Pretty LogMessage where
     pretty LogMessage{message, callstack} =

@@ -43,4 +43,5 @@ instance Pretty InfoJsonRpcProcessRequest where
 instance Entry InfoJsonRpcProcessRequest where
     entrySeverity _ = Info
     oneLineDoc = Pretty.pretty
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "log valid requests to the JSON RPC server"

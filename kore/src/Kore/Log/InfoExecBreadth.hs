@@ -39,6 +39,7 @@ instance Entry InfoExecBreadth where
     entrySeverity _ = Info
     oneLineDoc (InfoExecBreadth (ExecBreadth execBreadth)) =
         Pretty.pretty execBreadth
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "log number of concurrent branches"
 
 infoExecBreadth :: MonadLog log => ExecBreadth -> log ()

@@ -104,8 +104,7 @@ instance Entry DecidePredicateUnknown where
             Pretty.pretty loc_module <> ":" <> Pretty.pretty row <> ":" <> Pretty.pretty col
     oneLineDoc (DecidePredicateUnknown{message, predicates}) =
         Pretty.hsep
-            [ Pretty.brackets "smt"
-            , Pretty.pretty description
+            [ Pretty.pretty description
             , unparse
                 ( Predicate.fromPredicate
                     sortBool
@@ -119,6 +118,11 @@ instance Entry DecidePredicateUnknown where
                 <> message
                 <> " for predicate "
 
+    oneLineContextDoc DecidePredicateUnknown{action} =
+        let level = case action of
+                ErrorDecidePredicateUnknown{} -> CtxError
+                WarnDecidePredicateUnknown{} -> CtxWarn
+         in map CLNullary [CtxSMT, level]
     helpDoc _ =
         "error or a warning when the solver cannot decide the satisfiability of a formula"
 

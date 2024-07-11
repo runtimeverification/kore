@@ -26,8 +26,10 @@ import Log (
     Entry (..),
     LogAction (..),
     Severity (Debug),
+    SimpleContext (CtxSMT),
     SomeEntry (..),
     logWith,
+    single,
  )
 import Options.Applicative (
     Parser,
@@ -66,11 +68,13 @@ instance Entry DebugSolverSend where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugSolverSend"
     helpDoc _ = "log commands sent to SMT solver"
+    oneLineContextDoc _ = single CtxSMT
 
 instance Entry DebugSolverRecv where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugSolverRecv"
     helpDoc _ = "log responses received from SMT solver"
+    oneLineContextDoc _ = single CtxSMT
 
 logDebugSolverSendWith ::
     LogAction m SomeEntry ->

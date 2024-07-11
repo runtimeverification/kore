@@ -38,6 +38,7 @@ instance Entry WarnClaimRHSIsBottom where
     entrySeverity _ = Warning
     helpDoc _ = "warn when the right-hand side of a claim is bottom"
     oneLineDoc WarnClaimRHSIsBottom{claim} = prettySourceLocation claim
+    oneLineContextDoc _ = single CtxWarn
 
 prettySourceLocation :: ClaimPattern -> Pretty.Doc ann
 prettySourceLocation = Pretty.pretty @SourceLocation . from
@@ -64,6 +65,7 @@ instance Entry WarnConfigIsBottom where
     entrySeverity _ = Warning
     helpDoc _ = "warn when the configuration is bottom"
     oneLineDoc _ = "A configuration has been simplified to bottom."
+    oneLineContextDoc _ = single CtxWarn
 
 warnConfigIsBottom ::
     MonadLog log =>

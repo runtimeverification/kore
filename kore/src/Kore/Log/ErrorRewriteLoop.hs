@@ -63,6 +63,7 @@ instance Pretty ErrorRewriteLoop where
 
 instance Entry ErrorRewriteLoop where
     oneLineDoc ErrorRewriteLoop{rule} = pretty @SourceLocation $ from rule
+    oneLineContextDoc _ = single CtxError
     entrySeverity _ = Error
 
 errorRewriteLoop ::

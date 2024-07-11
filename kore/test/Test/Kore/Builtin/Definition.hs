@@ -852,6 +852,10 @@ keccak256Symbol :: Internal.Symbol
 keccak256Symbol =
     builtinSymbol "keccak256Krypto" stringSort [bytesSort]
         & hook "KRYPTO.keccak256"
+keccak256RawSymbol :: Internal.Symbol
+keccak256RawSymbol =
+    builtinSymbol "keccak256RawKrypto" bytesSort [bytesSort]
+        & hook "KRYPTO.keccak256raw"
 sha256Symbol :: Internal.Symbol
 sha256Symbol =
     builtinSymbol "sha256Krypto" stringSort [bytesSort]
@@ -874,6 +878,9 @@ ecdsaRecoverKrypto m v r s = mkApplySymbol ecdsaRecoverSymbol [m, v, r, s]
 keccak256Krypto ::
     TermLike RewritingVariableName -> TermLike RewritingVariableName
 keccak256Krypto message = mkApplySymbol keccak256Symbol [message]
+keccak256RawKrypto ::
+    TermLike RewritingVariableName -> TermLike RewritingVariableName
+keccak256RawKrypto message = mkApplySymbol keccak256RawSymbol [message]
 sha256Krypto ::
     TermLike RewritingVariableName -> TermLike RewritingVariableName
 sha256Krypto message = mkApplySymbol sha256Symbol [message]

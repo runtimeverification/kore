@@ -55,6 +55,7 @@ instance Exception ErrorBottomTotalFunction where
 instance Entry ErrorBottomTotalFunction where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorBottomTotalFunction"
+    oneLineContextDoc _ = single CtxError
     helpDoc _ = "errors raised when a total function is undefined"
 
 instance SQL.Table ErrorBottomTotalFunction

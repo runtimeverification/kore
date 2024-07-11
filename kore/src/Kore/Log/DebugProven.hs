@@ -30,4 +30,5 @@ instance Pretty DebugProven where
 instance Entry DebugProven where
     entrySeverity _ = Debug
     oneLineDoc DebugProven{claim} = pretty @SourceLocation $ from claim
+    oneLineContextDoc _ = single CtxDetail
     helpDoc _ = "log proven claims"

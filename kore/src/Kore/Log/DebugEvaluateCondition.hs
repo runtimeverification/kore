@@ -61,6 +61,10 @@ instance Entry DebugEvaluateCondition where
     contextDoc _ = Just "while evaluating predicate"
     oneLineDoc (DebugEvaluateCondition _) = "DebugEvaluateCondition _"
     oneLineDoc result = pretty (show result)
+    oneLineContextDoc DebugEvaluateCondition{} =
+        map CLNullary [CtxConstraint, CtxSMT]
+    oneLineContextDoc DebugEvaluateConditionResult{} =
+        map CLNullary [CtxConstraint, CtxSMT]
     helpDoc _ = "log every predicate evaluated by the SMT solver"
 
 instance SQL.Table DebugEvaluateCondition

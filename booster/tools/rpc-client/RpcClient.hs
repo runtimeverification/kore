@@ -52,12 +52,14 @@ import Text.Read (readMaybe)
 
 import Booster.JsonRpc (rpcJsonConfig)
 import Booster.JsonRpc.Utils (
+    DiffResult (DifferentType),
     KoreRpcJson (RpcRequest),
     decodeKoreRpc,
     diffJson,
     isIdentical,
     methodOfRpcCall,
     renderResult,
+    rpcTypeOf,
  )
 import Booster.Prettyprinter (renderDefault)
 import Booster.Syntax.Json qualified as Syntax
@@ -85,8 +87,8 @@ handleRunOptions common@CommonOptions{dryRun} s = \case
     [] -> case s of
         Just sock -> shutdown sock ShutdownReceive
         Nothing -> pure ()
-    (RunTarball tarFile keepGoing runOnly : xs) -> do
-        runTarball common s tarFile keepGoing runOnly
+    (RunTarball tarFile keepGoing runOnly noDetails : xs) -> do
+        runTarball common s tarFile keepGoing runOnly (not noDetails)
         handleRunOptions common s xs
     (RunSingle mode optionFile options processingOptions : xs) -> do
         let ProcessingOptions{postProcessing, prettify, time} = processingOptions
@@ -246,7 +248,8 @@ data RunOptions
       RunTarball
         FilePath -- tar file
         Bool -- do not stop on first diff if set to true
-        [Kore.JsonRpc.Types.APIMethod] -- only run specified types of requests. run all if empty
+        [Kore.JsonRpc.Types.APIMethod] -- only run specified types of requests. Run all if empty.
+        Bool -- omit detailed comparison with expected output
     deriving stock (Show)
 
 data ProcessingOptions = ProcessingOptions
@@ -448,6 +451,10 @@ parseMode =
                             ( long "run-only"
                                 <> help "Only run the specified request(s), e.g. --run-only \"add-module implies\""
                             )
+                        <*> switch
+                            ( long "omit-details"
+                                <> help "only compare response types, not contents"
+                            )
                         <**> helper
                     )
                     (progDesc "Run all requests and compare responses from a bug report tarball")
@@ -476,12 +483,18 @@ parseMode =
         maybeReader $ \s -> case split (== '=') s of [k, v] -> Just (k, v); _ -> Nothing
 
 ----------------------------------------
--- Running all requests contained in the `rpc_*` directory of a tarball
+-- Running all requests contained in the subdirectories of the tarball
 
 runTarball ::
-    CommonOptions -> Maybe Socket -> FilePath -> Bool -> [Kore.JsonRpc.Types.APIMethod] -> IO ()
-runTarball _ Nothing _ _ _ = pure ()
-runTarball common (Just sock) tarFile keepGoing runOnly = do
+    CommonOptions ->
+    Maybe Socket ->
+    FilePath ->
+    Bool ->
+    [Kore.JsonRpc.Types.APIMethod] ->
+    Bool ->
+    IO ()
+runTarball _ Nothing _ _ _ _ = pure ()
+runTarball common (Just sock) tarFile keepGoing runOnly compareDetails = do
     -- unpack tar files, determining type from extension(s)
     let unpackTar
             | ".tar" == takeExtension tarFile = Tar.read
@@ -509,6 +522,7 @@ runTarball common (Just sock) tarFile keepGoing runOnly = do
             -- we should not rely on the requests being returned in a sorted order and
             -- should therefore sort them explicitly
             let requests = sort $ mapMaybe (stripSuffix "_request.json") jsonFiles
+                successMsg = if compareDetails then "matches expected" else "has expected type"
             results <-
                 forM requests $ \r -> do
                     mbError <- runRequest skt tmp jsonFiles r
@@ -519,7 +533,7 @@ runTarball common (Just sock) tarFile keepGoing runOnly = do
                                 liftIO $
                                     shutdown skt ShutdownReceive >> exitWith (ExitFailure 2)
                         Nothing ->
-                            logInfo_ $ "Response to " <> r <> " matched with expected"
+                            logInfo_ $ unwords ["Response to", r, successMsg]
                     pure mbError
             liftIO $ shutdown skt ShutdownReceive
             liftIO $ exitWith (if all isNothing results then ExitSuccess else ExitFailure 2)
@@ -528,27 +542,25 @@ runTarball common (Just sock) tarFile keepGoing runOnly = do
     throwAnyError :: Either Tar.FormatError Tar.FileNameError -> IO a
     throwAnyError = either throwIO throwIO
 
-    -- unpack all rpc_*/*.json files into dir and return their names
+    -- unpack all */*.json files into dir and return their names
     unpackIfRpc :: FilePath -> Tar.Entry -> IO [FilePath] -> IO [FilePath]
     unpackIfRpc tmpDir entry acc = do
         case splitFileName (Tar.entryPath entry) of
-            -- unpack all directories "rpc_<something>" containing "*.json" files
+            -- unpack all directories "<something>" containing "*.json" files
             (dir, "") -- directory
-                | Tar.Directory <- Tar.entryContent entry
-                , "rpc_" `isPrefixOf` dir -> do
-                    createDirectoryIfMissing False dir -- create rpc dir so we can unpack files there
+                | Tar.Directory <- Tar.entryContent entry -> do
+                    createDirectoryIfMissing True dir -- create rpc dir so we can unpack files there
                     acc -- no additional file to return
                 | otherwise ->
                     acc -- skip other directories and top-level files
             (dir, file)
-                | "rpc_" `isPrefixOf` dir
-                , ".json" `isSuffixOf` file
+                | ".json" `isSuffixOf` file
                 , not ("." `isPrefixOf` file)
                 , Tar.NormalFile bs _size <- Tar.entryContent entry -> do
                     -- unpack json files into tmp directory
                     let newPath = dir </> file
                     -- current tarballs do not have dir entries, create dir here
-                    createDirectoryIfMissing False $ tmpDir </> dir
+                    createDirectoryIfMissing True $ tmpDir </> dir
                     BS.writeFile (tmpDir </> newPath) bs
                     (newPath :) <$> acc
                 | otherwise ->
@@ -569,13 +581,22 @@ runTarball common (Just sock) tarFile keepGoing runOnly = do
             request <- liftIO . BS.readFile $ tmpDir </> basename <> "_request.json"
             expected <- liftIO . BS.readFile $ tmpDir </> basename <> "_response.json"
 
+            let showResult =
+                    renderResult "expected response" "actual response"
             makeRequest False basename (Just skt) request pure runOnly >>= \case
                 Nothing -> pure Nothing -- should not be reachable
-                Just actual -> do
-                    let diff = diffJson expected actual
-                    if isIdentical diff
-                        then pure Nothing
-                        else pure . Just $ renderResult "expected response" "actual response" diff
+                Just actual
+                    | compareDetails -> do
+                        let diff = diffJson expected actual
+                        if isIdentical diff
+                            then pure Nothing
+                            else pure . Just $ showResult diff
+                    | otherwise -> do
+                        let expectedType = rpcTypeOf (decodeKoreRpc expected)
+                            actualType = rpcTypeOf (decodeKoreRpc actual)
+                        if expectedType == actualType
+                            then pure Nothing
+                            else pure . Just $ showResult (DifferentType expectedType actualType)
 
 noServerError :: MonadLoggerIO m => CommonOptions -> IOException -> m ()
 noServerError common e@IOError{ioe_type = NoSuchThing} = do

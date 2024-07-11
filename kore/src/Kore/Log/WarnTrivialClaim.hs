@@ -57,6 +57,7 @@ instance Entry WarnTrivialClaim where
             , Pretty.colon
             , Pretty.pretty @SourceLocation $ from claim
             ]
+    oneLineContextDoc _ = single CtxWarn
     helpDoc _ = "warn when a claim is proven without taking any steps"
 
 warnProvenClaimZeroDepth ::

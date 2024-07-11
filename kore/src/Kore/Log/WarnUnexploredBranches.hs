@@ -36,6 +36,7 @@ instance Entry WarnUnexploredBranches where
     oneLineDoc (WarnUnexploredBranches count) =
         Pretty.pretty count
             Pretty.<+> "branches were still unexplored when the action failed."
+    oneLineContextDoc _ = single CtxWarn
     helpDoc _ =
         "indicate whether and how many unexplored branches existed when failing."
 

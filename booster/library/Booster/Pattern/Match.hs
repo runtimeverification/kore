@@ -35,6 +35,7 @@ import Prettyprinter
 import Booster.Definition.Attributes.Base (KListDefinition, KMapDefinition)
 import Booster.Definition.Base
 import Booster.Pattern.Base
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (
     checkSymbolIsAc,
     freeVariables,
@@ -82,40 +83,40 @@ data FailReason
       SubjectVariableMatch Term Variable
     deriving stock (Eq, Show)
 
-instance Pretty FailReason where
-    pretty = \case
+instance FromModifiersT mods => Pretty (PrettyWithModifiers mods FailReason) where
+    pretty (PrettyWithModifiers f) = case f of
         DifferentValues t1 t2 ->
-            "Values differ:" <> align (sep [pretty t1, pretty t2])
+            "Values differ:" <> align (sep [pretty' @mods t1, pretty' @mods t2])
         DifferentSymbols t1 t2 ->
-            hsep ["Symbols differ:", pretty t1, pretty t2] -- shorten?
+            hsep ["Symbols differ:", pretty' @mods t1, "=/=", pretty' @mods t2] -- shorten?
         DifferentSorts t1 t2 ->
-            hsep ["Sorts differ:", pretty t1, pretty t2] -- shorten?
+            hsep ["Sorts differ:", pretty' @mods t1, "=/=", pretty' @mods t2] -- shorten?
         VariableRecursion v t ->
-            "Variable recursion found: " <> pretty v <> " in " <> pretty t
+            "Variable recursion found: " <> pretty' @mods v <> " in " <> pretty' @mods t
         VariableConflict v t1 t2 ->
             hsep
-                [ "Variable conflict for " <> pretty v
-                , pretty t1
-                , pretty t2
+                [ "Variable conflict for " <> pretty' @mods v
+                , pretty' @mods t1
+                , pretty' @mods t2
                 ]
         KeyNotFound k m ->
             hsep
-                [ "Key " <> pretty k <> " not found in map"
-                , pretty m
+                [ "Key " <> pretty' @mods k <> " not found in map"
+                , pretty' @mods m
                 ]
         DuplicateKeys k m ->
             hsep
-                [ "Key " <> pretty k <> " appears more than once in map"
-                , pretty m
+                [ "Key " <> pretty' @mods k <> " appears more than once in map"
+                , pretty' @mods m
                 ]
         SharedVariables vs ->
-            "Shared variables:" <+> hsep (map pretty $ Set.toList vs)
+            "Shared variables:" <+> hsep (map (pretty' @mods) $ Set.toList vs)
         SubsortingError err ->
             pretty $ show err
         ArgLengthsDiffer t1 t2 ->
-            hsep ["Argument length differ", pretty t1, pretty t2]
+            hsep ["Argument length differ", pretty' @mods t1, pretty' @mods t2]
         SubjectVariableMatch t v ->
-            hsep ["Cannot match variable in subject:", pretty v, pretty t]
+            hsep ["Cannot match variable in subject:", pretty' @mods v, pretty' @mods t]
 
 type Substitution = Map Variable Term
 
@@ -805,7 +806,7 @@ data SortError
     | FoundUnknownSort Sort
     deriving (Eq, Show)
 
-instance Pretty SortError where
-    pretty = \case
+instance FromModifiersT mods => Pretty (PrettyWithModifiers mods SortError) where
+    pretty (PrettyWithModifiers e) = case e of
         FoundSortVariable v -> "Found sort variable" <+> pretty (show v)
-        FoundUnknownSort s -> "FOund unknown sort" <+> pretty s
+        FoundUnknownSort s -> "Found unknown sort" <+> pretty' @mods s

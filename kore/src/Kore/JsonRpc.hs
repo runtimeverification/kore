@@ -162,24 +162,22 @@ respond reqId serverState moduleName runSMT =
                         traversalResult <-
                             liftIO
                                 ( runSMT (Exec.metadataTools serializedModule) lemmas $
-                                    Log.logWhile (Log.DebugContext $ Text.pack $ "request " <> reqId) $
-                                        Log.logWhile (Log.DebugContext "kore") $
-                                            Log.logWhile (Log.DebugContext "execute") $
-                                                Exec.rpcExec
-                                                    (maybe Unlimited (\(Depth n) -> Limit n) maxDepth)
-                                                    (coerce stepTimeout)
-                                                    ( if fromMaybe False movingAverageStepTimeout
-                                                        then EnableMovingAverage
-                                                        else DisableMovingAverage
-                                                    )
-                                                    ( if fromMaybe False assumeStateDefined
-                                                        then EnableAssumeInitialDefined
-                                                        else DisableAssumeInitialDefined
-                                                    )
-                                                    tracingEnabled
-                                                    serializedModule
-                                                    (toStopLabels cutPointRules terminalRules)
-                                                    verifiedPattern
+                                    withContextLog Log.CtxExecute $
+                                        Exec.rpcExec
+                                            (maybe Unlimited (\(Depth n) -> Limit n) maxDepth)
+                                            (coerce stepTimeout)
+                                            ( if fromMaybe False movingAverageStepTimeout
+                                                then EnableMovingAverage
+                                                else DisableMovingAverage
+                                            )
+                                            ( if fromMaybe False assumeStateDefined
+                                                then EnableAssumeInitialDefined
+                                                else DisableAssumeInitialDefined
+                                            )
+                                            tracingEnabled
+                                            serializedModule
+                                            (toStopLabels cutPointRules terminalRules)
+                                            verifiedPattern
                                 )
 
                         stop <- liftIO $ getTime Monotonic
@@ -433,9 +431,7 @@ respond reqId serverState moduleName runSMT =
                     result <-
                         liftIO
                             . runSMT (Exec.metadataTools serializedModule) lemmas
-                            . Log.logWhile (Log.DebugContext $ Text.pack $ "request " <> reqId)
-                            . Log.logWhile (Log.DebugContext "kore")
-                            . Log.logWhile (Log.DebugContext "implies")
+                            . withContextLog Log.CtxImplies
                             . evalInSimplifierContext serializedModule
                             . runExceptT
                             $ Claim.checkSimpleImplication
@@ -518,9 +514,7 @@ respond reqId serverState moduleName runSMT =
                     result <-
                         liftIO
                             . runSMT (Exec.metadataTools serializedModule) lemmas
-                            . Log.logWhile (Log.DebugContext $ Text.pack $ "request " <> reqId)
-                            . Log.logWhile (Log.DebugContext "kore")
-                            . Log.logWhile (Log.DebugContext "simplify")
+                            . withContextLog Log.CtxSimplify
                             . evalInSimplifierContext serializedModule
                             $ SMT.Evaluator.filterMultiOr $srcLoc =<< Pattern.simplify patt
 
@@ -616,9 +610,7 @@ respond reqId serverState moduleName runSMT =
                         serializedModule <-
                             liftIO
                                 . runSMT metadataTools lemmas
-                                . Log.logWhile (Log.DebugContext $ Text.pack $ "request " <> reqId)
-                                . Log.logWhile (Log.DebugContext "kore")
-                                . Log.logWhile (Log.DebugContext "add-module")
+                                . withContextLog Log.CtxAddModule
                                 $ Exec.makeSerializedModule newModule
                         internedTextCacheHash <- liftIO $ readIORef globalInternedTextCache
 
@@ -677,9 +669,7 @@ respond reqId serverState moduleName runSMT =
                                 else
                                     liftIO
                                         . runSMT tools lemmas
-                                        . Log.logWhile (Log.DebugContext $ Text.pack $ "request " <> reqId)
-                                        . Log.logWhile (Log.DebugContext "kore")
-                                        . Log.logWhile (Log.DebugContext "get-model")
+                                        . withContextLog Log.CtxGetModel
                                         . SMT.Evaluator.getModelFor tools
                                         $ NonEmpty.fromList preds
 
@@ -706,6 +696,12 @@ respond reqId serverState moduleName runSMT =
         -- this case is only reachable if the cancel appeared as part of a batch request
         Cancel -> pure $ Left cancelUnsupportedInBatchMode
   where
+    withContextLog :: Log.SimpleContext -> SMT.SMT a -> SMT.SMT a
+    withContextLog method =
+        Log.logWhile (Log.DebugContext $ Log.CLWithId $ Log.CtxRequest $ Text.pack reqId)
+            . Log.inContext Log.CtxKore
+            . Log.inContext method
+
     withMainModule module' act = do
         let mainModule = fromMaybe moduleName module'
         ServerState{serializedModules} <- liftIO $ MVar.readMVar serverState

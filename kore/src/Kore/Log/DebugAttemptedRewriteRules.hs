@@ -12,10 +12,9 @@ module Kore.Log.DebugAttemptedRewriteRules (
     whileDebugAttemptRewriteRule,
 ) where
 
-import Data.Aeson (Value (Array), object, toJSON, (.=))
+import Data.Aeson (object, (.=))
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Data.Vector (fromList)
 import Kore.Attribute.Axiom (
     SourceLocation,
     UniqueId (..),
@@ -32,7 +31,7 @@ import Kore.Internal.Variable (
 import Kore.Rewrite.RewritingVariable
 import Kore.Unparser
 import Kore.Util (showHashHex)
-import Log
+import Log hiding (UniqueId)
 import Prelude.Kore
 import Pretty (
     Pretty (..),
@@ -72,23 +71,12 @@ instance Entry DebugAttemptedRewriteRules where
 
     oneLineContextDoc = \case
         DebugAttemptedRewriteRules{configuration, ruleId} ->
-            [ "term " <> (showHashHex $ hash configuration)
-            , "rewrite " <> shortRuleIdTxt ruleId
+            [ CtxTerm `withShortId` showHashHex (hash configuration)
+            , CtxRewrite `withId` fromMaybe "UNKNOWN" (getUniqueId ruleId)
             ]
-    oneLineContextJson
-        DebugAttemptedRewriteRules{configuration, ruleId} =
-            Array $
-                fromList
-                    [ object
-                        [ "term" .= showHashHex (hash configuration)
-                        ]
-                    , object
-                        [ "rewrite" .= shortRuleIdTxt ruleId
-                        ]
-                    ]
 
     oneLineDoc entry@(DebugAttemptedRewriteRules{configuration, label, ruleId, attemptedRewriteRule}) =
-        let context = map Pretty.brackets (pretty <$> oneLineContextDoc entry <> ["detail"])
+        let context = map Pretty.brackets (pretty . show <$> oneLineContextDoc entry <> single CtxDetail)
             logMsg =
                 ( Pretty.hsep . concat $
                     [ ["attempting to apply rewrite rule", Pretty.pretty (shortRuleIdTxt ruleId), Pretty.pretty label]
@@ -99,7 +87,12 @@ instance Entry DebugAttemptedRewriteRules where
          in mconcat context <> logMsg
 
     oneLineJson DebugAttemptedRewriteRules{label, attemptedRewriteRule} =
-        toJSON $ renderDefault $ maybe (Pretty.pretty attemptedRewriteRule) Pretty.pretty label
+        -- add the "detail" context here (floated out in BoosterAdaptor)
+        object
+            [ "context" .= CtxDetail
+            , "message"
+                .= renderDefault (maybe (Pretty.pretty attemptedRewriteRule) Pretty.pretty label)
+            ]
 
 whileDebugAttemptRewriteRule ::
     MonadLog log =>

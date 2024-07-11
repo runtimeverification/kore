@@ -46,6 +46,7 @@ instance Entry WarnSymbolSMTRepresentation where
     entrySeverity _ = Warning
     oneLineDoc (WarnSymbolSMTRepresentation Symbol{symbolAttributes}) =
         Pretty.pretty (sourceLocation symbolAttributes)
+    oneLineContextDoc _ = map CLNullary [CtxSMT, CtxWarn]
     helpDoc _ =
         "warn when a symbol cannot be translated for the SMT solver, despite being given an explicit translation"
 

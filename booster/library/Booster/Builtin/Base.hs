@@ -21,6 +21,7 @@ import Data.Text.Encoding qualified as Text
 import Prettyprinter (pretty)
 
 import Booster.Pattern.Base
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util
 import Booster.Prettyprinter
 
@@ -68,5 +69,5 @@ t `shouldHaveSort` s
         throwE $
             Text.unlines
                 [ "Argument term has unexpected sort (expected " <> Text.decodeLatin1 s <> "):"
-                , renderText (pretty t)
+                , renderText (pretty (PrettyWithModifiers @['Decoded, 'Truncated] t))
                 ]

@@ -75,6 +75,7 @@ instance Entry WarnStuckClaimState where
             , Pretty.colon
             , Pretty.pretty @SourceLocation $ from claim
             ]
+    oneLineContextDoc _ = single CtxWarn
 
     helpDoc _ = "distinguish the ways a proof can become stuck"
 

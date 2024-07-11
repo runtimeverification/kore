@@ -67,6 +67,7 @@ import Booster.Definition.Base (KoreDefinition (..), emptyKoreDefinition)
 import Booster.Log (LoggerMIO, logMessage, withKorePatternContext)
 import Booster.Pattern.Base qualified as Internal
 import Booster.Pattern.Bool qualified as Internal
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (freeVariables, sortOfTerm, substituteInSort)
 import Booster.Prettyprinter (renderDefault)
 import Booster.Syntax.Json (addHeader)
@@ -110,12 +111,16 @@ data InternalisedPredicates = InternalisedPredicates
     }
     deriving stock (Eq, Show)
 
-instance Pretty InternalisedPredicates where
-    pretty ps =
+instance FromModifiersT mods => Pretty (PrettyWithModifiers mods InternalisedPredicates) where
+    pretty (PrettyWithModifiers ps) =
         Pretty.vsep $
-            ("Bool predicates: " : map pretty (Set.toList ps.boolPredicates))
-                <> ("Ceil predicates: " : map pretty (Set.toList ps.ceilPredicates))
-                <> ("Substitution: " : map pretty (Map.assocs ps.substitution))
+            ("Bool predicates: " : map (pretty' @mods) (Set.toList ps.boolPredicates))
+                <> ("Ceil predicates: " : map (pretty' @mods) (Set.toList ps.ceilPredicates))
+                <> ( "Substitution: "
+                        : map
+                            (\(v, t) -> pretty' @mods v Pretty.<+> "->" Pretty.<+> pretty' @mods t)
+                            (Map.assocs ps.substitution)
+                   )
                 <> ("Unsupported predicates: " : map (pretty . show) ps.unsupported)
 
 data TermOrPredicates -- = Either Predicate Pattern
@@ -652,7 +657,7 @@ patternErrorToRpcError = \case
     NoTermFound p ->
         wrap "Pattern must contain at least one term" p
     PatternSortError p sortErr ->
-        wrap (renderSortError sortErr) p
+        wrap (renderSortError (PrettyWithModifiers @['Decoded, 'Truncated] sortErr)) p
     InconsistentPattern p ->
         wrap "Inconsistent pattern" p
     TermExpected p ->
@@ -708,8 +713,8 @@ data SortError
     | IncorrectSort Internal.Sort Internal.Sort
     deriving stock (Eq, Show)
 
-renderSortError :: SortError -> Text
-renderSortError = \case
+renderSortError :: forall mods. FromModifiersT mods => PrettyWithModifiers mods SortError -> Text
+renderSortError (PrettyWithModifiers e) = case e of
     UnknownSort sort ->
         "Unknown " <> render sort
     WrongSortArgCount sort expected ->
@@ -729,7 +734,7 @@ renderSortError = \case
             <> " but got "
             <> prettyText got
   where
-    prettyText = pack . renderDefault . pretty
+    prettyText = pack . renderDefault . pretty' @mods
 
     render = \case
         Syntax.SortVar (Syntax.Id n) ->

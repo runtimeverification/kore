@@ -39,6 +39,7 @@ import Booster.Definition.Attributes.Base
 import Booster.Definition.Base
 import Booster.Pattern.Base
 import Booster.Pattern.Bool (pattern TrueBool)
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (sortOfTerm)
 import Booster.Prettyprinter (renderDefault)
 
@@ -441,9 +442,9 @@ decodeBlock mbSize = do
                                 unless (sortOfTerm trm == srt) $
                                     fail $
                                         "Argument has incorrect sort. Expecting "
-                                            <> renderDefault (pretty srt)
+                                            <> renderDefault (pretty (PrettyWithModifiers @['Decoded, 'Truncated] srt))
                                             <> " but got "
-                                            <> renderDefault (pretty $ sortOfTerm trm)
+                                            <> renderDefault (pretty (PrettyWithModifiers @['Decoded, 'Truncated] $ sortOfTerm trm))
                                 pure argIdx
                             _ -> fail "Expecting term"
                         returnRegistered BTerm $

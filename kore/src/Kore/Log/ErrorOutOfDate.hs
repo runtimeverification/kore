@@ -34,6 +34,7 @@ instance Pretty ErrorOutOfDate where
 instance Entry ErrorOutOfDate where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorOutOfDate"
+    oneLineContextDoc _ = single CtxError
 
 errorOutOfDate :: MonadThrow log => String -> log a
 errorOutOfDate message =

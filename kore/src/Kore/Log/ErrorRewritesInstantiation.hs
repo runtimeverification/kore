@@ -94,6 +94,7 @@ instance Entry ErrorRewritesInstantiation where
             { problem = SubstitutionCoverageError{location}
             } =
             pretty location
+    oneLineContextDoc _ = single CtxError
     helpDoc _ = "log rewrite instantiation errors"
 
 instance Pretty ErrorRewritesInstantiation where

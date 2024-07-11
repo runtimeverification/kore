@@ -49,6 +49,7 @@ instance Pretty ErrorException where
 instance Entry ErrorException where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorException"
+    oneLineContextDoc _ = single CtxError
     helpDoc _ = "log internal errors"
 
 errorException :: MonadLog log => SomeException -> log ()

@@ -9,12 +9,22 @@ module Log.Entry (
     -- * Severity
     Severity (..),
     prettySeverity,
+    severityToContext,
 
     -- * Entry
     Entry (..),
     SomeEntry (..),
     someEntry,
     entryTypeText,
+
+    -- * re-exported ContextLog
+    CLContext (..),
+    IdContext (..),
+    SimpleContext (..),
+    UniqueId (UNKNOWN),
+    withId,
+    withShortId,
+    single,
 ) where
 
 import Colog (
@@ -45,6 +55,8 @@ import Pretty (
 import Pretty qualified
 import Type.Reflection qualified as Reflection
 
+import Kore.JsonRpc.Types.ContextLog
+
 class (Show entry, Typeable entry) => Entry entry where
     toEntry :: entry -> SomeEntry
     toEntry = SomeEntry []
@@ -64,13 +76,7 @@ class (Show entry, Typeable entry) => Entry entry where
     default oneLineJson :: entry -> JSON.Value
     oneLineJson entry = JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
 
-    oneLineContextJson :: entry -> JSON.Value
-    default oneLineContextJson :: entry -> JSON.Value
-    oneLineContextJson entry = JSON.object ["entry" JSON..= entryTypeText (toEntry entry)]
-
-    oneLineContextDoc :: entry -> [Text]
-    default oneLineContextDoc :: entry -> [Text]
-    oneLineContextDoc = (: []) . entryTypeText . toEntry
+    oneLineContextDoc :: entry -> [CLContext]
 
     contextDoc :: entry -> Maybe (Pretty.Doc ann)
     contextDoc = const Nothing
@@ -98,6 +104,7 @@ instance Entry SomeEntry where
     longDoc (SomeEntry _ entry) = longDoc entry
     oneLineDoc (SomeEntry _ entry) = oneLineDoc entry
     contextDoc (SomeEntry _ entry) = contextDoc entry
+    oneLineContextDoc (SomeEntry _ entry) = oneLineContextDoc entry
 
 someEntry :: (Entry e1, Entry e2) => Prism SomeEntry SomeEntry e1 e2
 someEntry = Lens.prism' toEntry fromEntry
@@ -108,3 +115,20 @@ entryTypeText (SomeEntry _ entry) =
 
 prettySeverity :: Severity -> Pretty.Doc ann
 prettySeverity = Pretty.pretty . show
+
+severityToContext :: Severity -> CLContext
+severityToContext =
+    CLNullary . \case
+        Debug -> CtxDetail
+        Info -> CtxInfo
+        Warning -> CtxWarn
+        Error -> CtxError
+
+withId :: (UniqueId -> IdContext) -> Text -> CLContext
+c `withId` i = CLWithId $ c $ LongId i
+
+withShortId :: (UniqueId -> IdContext) -> Text -> CLContext
+c `withShortId` i = CLWithId $ c $ ShortId i
+
+single :: SimpleContext -> [CLContext]
+single c = [CLNullary c]

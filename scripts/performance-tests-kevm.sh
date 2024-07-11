@@ -106,13 +106,13 @@ feature_shell "cd kevm-pyk && poetry run pytest src/tests/integration/test_prove
 
 mkdir -p $SCRIPT_DIR/logs
 
-feature_shell "make test-prove-pyk PYTEST_PARALLEL=$PYTEST_PARALLEL PYTEST_ARGS='--maxfail=0 --timeout 7200 -vv $BUG_REPORT --kompiled-targets-dir $PREKOMPILED_DIR' | tee $SCRIPT_DIR/logs/kevm-$KEVM_VERSION-$FEATURE_BRANCH_NAME.log"
+feature_shell "make test-prove-rules PYTEST_PARALLEL=$PYTEST_PARALLEL PYTEST_ARGS='--maxfail=0 --timeout 7200 -vv $BUG_REPORT --kompiled-targets-dir $PREKOMPILED_DIR' | tee $SCRIPT_DIR/logs/kevm-$KEVM_VERSION-$FEATURE_BRANCH_NAME.log"
 killall kore-rpc-booster || echo "No zombie processes found"
 
 
 if [ -z "$BUG_REPORT" ]; then
 if [ ! -e "$SCRIPT_DIR/logs/kevm-$KEVM_VERSION-master-$MASTER_COMMIT_SHORT.log" ]; then
-  master_shell "make test-prove-pyk PYTEST_PARALLEL=$PYTEST_PARALLEL PYTEST_ARGS='--maxfail=0 --timeout 7200 -vv --kompiled-targets-dir $PREKOMPILED_DIR' | tee $SCRIPT_DIR/logs/kevm-$KEVM_VERSION-master-$MASTER_COMMIT_SHORT.log"
+  master_shell "make test-prove-rules PYTEST_PARALLEL=$PYTEST_PARALLEL PYTEST_ARGS='--maxfail=0 --timeout 7200 -vv --kompiled-targets-dir $PREKOMPILED_DIR' | tee $SCRIPT_DIR/logs/kevm-$KEVM_VERSION-master-$MASTER_COMMIT_SHORT.log"
   killall kore-rpc-booster || echo "No zombie processes found"
 fi
 

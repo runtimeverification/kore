@@ -21,6 +21,7 @@ module Kore.Builtin.Krypto (
 
     -- * Constants
     keccak256Key,
+    keccak256RawKey,
     sha256Key,
     hashSha256Key,
     sha3256Key,
@@ -79,6 +80,7 @@ import Prelude.Kore
 import System.IO.Unsafe (unsafePerformIO)
 
 keccak256Key
+    , keccak256RawKey
     , ecdsaRecoverKey
     , ecdsaPubKey
     , sha256Key
@@ -87,6 +89,7 @@ keccak256Key
     , ripemd160Key ::
         IsString s => s
 keccak256Key = "KRYPTO.keccak256"
+keccak256RawKey = "KRYPTO.keccak256raw"
 ecdsaRecoverKey = "KRYPTO.ecdsaRecover"
 ecdsaPubKey = "KRYPTO.ecdsaPubKey"
 sha256Key = "KRYPTO.sha256"
@@ -123,6 +126,7 @@ symbolVerifiers :: Builtin.SymbolVerifiers
 symbolVerifiers =
     HashMap.fromList
         [ (keccak256Key, verifyHashFunction)
+        , (keccak256RawKey, verifyHashFunctionRaw)
         , (hashKeccak256Key, verifyHashFunction)
         , (sha256Key, verifyHashFunction)
         , (hashSha256Key, verifyHashFunction)
@@ -158,6 +162,7 @@ symbolVerifiers =
 builtinFunctions :: Text -> Maybe BuiltinAndAxiomSimplifier
 builtinFunctions key
     | key == keccak256Key = Just evalKeccak
+    | key == keccak256RawKey = Just evalKeccakRaw
     | key == hashKeccak256Key = Just evalKeccak
     | key == sha256Key = Just evalSha256
     | key == hashSha256Key = Just evalSha256
@@ -226,6 +231,9 @@ evalHashFunctionRaw context algorithm =
 
 evalKeccak :: BuiltinAndAxiomSimplifier
 evalKeccak = evalHashFunction keccak256Key Keccak_256
+
+evalKeccakRaw :: BuiltinAndAxiomSimplifier
+evalKeccakRaw = evalHashFunctionRaw keccak256RawKey Keccak_256
 
 evalSha256 :: BuiltinAndAxiomSimplifier
 evalSha256 = evalHashFunction sha256Key SHA256

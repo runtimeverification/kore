@@ -33,6 +33,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcessWithExitCode)
 
 import Booster.Definition.Base qualified as Internal
+import Booster.Pattern.Pretty
 import Booster.Prettyprinter
 import Booster.Syntax.Json.Internalise
 import Data.Binary.Builder (fromLazyByteString, toLazyByteString)
@@ -246,11 +247,24 @@ diffBy def pat1 pat2 =
         ( BS.pack . renderDefault . Pretty.vsep $
             concat
                 [ "Conditions:"
-                    : fmap (Pretty.indent 4 . pretty) (Set.toList ps.boolPredicates)
+                    : fmap
+                        (Pretty.indent 4 . pretty . PrettyWithModifiers @['Decoded, 'Truncated])
+                        (Set.toList ps.boolPredicates)
                 , "Ceil conditions:"
-                    : map (Pretty.indent 4 . pretty) (Set.toList ps.ceilPredicates)
+                    : map
+                        (Pretty.indent 4 . pretty . PrettyWithModifiers @['Decoded, 'Truncated])
+                        (Set.toList ps.ceilPredicates)
                 , "Substitutions:"
-                    : fmap (Pretty.indent 4) (map (\(k, v) -> pretty k <+> "=" <+> pretty v) (Map.toList ps.substitution))
+                    : fmap
+                        (Pretty.indent 4)
+                        ( map
+                            ( \(k, v) ->
+                                pretty (PrettyWithModifiers @['Decoded, 'Truncated] k)
+                                    <+> "="
+                                    <+> pretty (PrettyWithModifiers @['Decoded, 'Truncated] v)
+                            )
+                            (Map.toList ps.substitution)
+                        )
                 ]
         )
             <> if null ps.unsupported
@@ -258,7 +272,16 @@ diffBy def pat1 pat2 =
                 else BS.unlines ("Unsupported parts:" : map Json.encode ps.unsupported)
     renderBS (TermAndPredicates p m u) =
         ( BS.pack . renderDefault $
-            pretty p <+> vsep (map (\(k, v) -> pretty k <+> "=" <+> pretty v) (Map.toList m))
+            pretty (PrettyWithModifiers @['Decoded, 'Truncated] p)
+                <+> vsep
+                    ( map
+                        ( \(k, v) ->
+                            pretty (PrettyWithModifiers @['Decoded, 'Truncated] k)
+                                <+> "="
+                                <+> pretty (PrettyWithModifiers @['Decoded, 'Truncated] v)
+                        )
+                        (Map.toList m)
+                    )
         )
             <> if null u then "" else BS.unlines ("Unsupported parts: " : map Json.encode u)
     internalise =

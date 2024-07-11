@@ -89,7 +89,7 @@ import Kore.Internal.TermLike (
     TermLike,
  )
 import Kore.Internal.TermLike qualified as TermLike
-import Kore.Log.DebugContext (inContext)
+import Kore.Log.DebugContext (SimpleContext (CtxConstraint), inContext)
 import Kore.Log.DecidePredicateUnknown (
     OnDecidePredicateUnknown (..),
     srcLoc,
@@ -362,7 +362,7 @@ checkRequires ::
     Predicate RewritingVariableName ->
     ExceptT (CheckRequiresError RewritingVariableName) Simplifier ()
 checkRequires onUnknown sideCondition predicate requires =
-    inContext "constraint" $
+    inContext CtxConstraint $
         do
             let requires' = makeAndPredicate predicate requires
                 -- The condition to refute:

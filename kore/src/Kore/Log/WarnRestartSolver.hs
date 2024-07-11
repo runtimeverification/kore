@@ -35,6 +35,7 @@ instance Pretty WarnRestartSolver where
 instance Entry WarnRestartSolver where
     entrySeverity _ = Warning
     oneLineDoc _ = "WarnRestartSolver"
+    oneLineContextDoc _ = single CtxWarn
     helpDoc _ =
         "warning raised to notify the user that the solver has\
         \ crashed and the backend will attempt to restart it,\

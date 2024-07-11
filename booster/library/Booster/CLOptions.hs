@@ -28,6 +28,7 @@ import Text.Read (readMaybe)
 
 import Booster.GlobalState (EquationOptions (..))
 import Booster.Log.Context (ContextFilter, ctxt, readContextFilter)
+import Booster.Pattern.Pretty
 import Booster.SMT.Interface (SMTOptions (..), defaultSMTOptions)
 import Booster.SMT.LowLevelCodec qualified as SMT (parseSExpr)
 import Booster.Trace (CustomUserEventType)
@@ -48,6 +49,7 @@ data CLOptions = CLOptions
     , smtOptions :: Maybe SMTOptions
     , equationOptions :: EquationOptions
     , indexCells :: [Text]
+    , prettyPrintOptions :: [ModifierT]
     , -- developer options below
       eventlogEnabledUserEvents :: [CustomUserEventType]
     }
@@ -162,6 +164,14 @@ clOptionsParser =
                 <> help "Names of configuration cells to index rewrite rules with (default: 'k')"
                 <> value []
             )
+        <*> option
+            (eitherReader $ mapM (readModifierT . trim) . splitOn ",")
+            ( metavar "PRETTY_PRINT"
+                <> value [Decoded, Truncated]
+                <> long "pretty-print"
+                <> help "Prety print options for kore terms: decode, infix, truncated"
+                <> showDefault
+            )
         -- developer options below
         <*> many
             ( option
@@ -200,6 +210,13 @@ clOptionsParser =
         "standard" -> Right Standard
         "json" -> Right Json
         other -> Left $ other <> ": Unsupported log format"
+
+    readModifierT :: String -> Either String ModifierT
+    readModifierT = \case
+        "truncated" -> Right Truncated
+        "infix" -> Right Infix
+        "decoded" -> Right Decoded
+        other -> Left $ other <> ": Unsupported prettry printer option"
 
     readTimeStampFormat :: String -> Either String TimestampFormat
     readTimeStampFormat = \case

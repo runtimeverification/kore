@@ -48,6 +48,7 @@ instance Pretty InfoExecDepth where
 instance Entry InfoExecDepth where
     entrySeverity _ = Info
     oneLineDoc (InfoExecDepth (ExecDepth execDepth)) = Pretty.pretty execDepth
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "log depth of execution graph"
 
 infoExecDepth :: MonadLog log => ExecDepth -> log ()

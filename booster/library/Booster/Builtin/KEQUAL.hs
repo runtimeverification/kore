@@ -22,6 +22,7 @@ import Prettyprinter
 import Booster.Builtin.Base
 import Booster.Pattern.Base
 import Booster.Pattern.Bool
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (isConstructorSymbol, sortOfTerm)
 import Booster.Prettyprinter (renderText)
 
@@ -40,8 +41,8 @@ iteHook args
         unless (sortOfTerm thenVal == sortOfTerm elseVal) $
             throwE . Text.unlines $
                 [ "Different sorts in alternatives:"
-                , renderText $ pretty thenVal
-                , renderText $ pretty elseVal
+                , renderText $ pretty (PrettyWithModifiers @['Decoded, 'Truncated] thenVal)
+                , renderText $ pretty (PrettyWithModifiers @['Decoded, 'Truncated] elseVal)
                 ]
         case cond of
             TrueBool -> pure $ Just thenVal

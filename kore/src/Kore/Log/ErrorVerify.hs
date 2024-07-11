@@ -38,6 +38,7 @@ instance Pretty ErrorVerify where
 instance Entry ErrorVerify where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorVerify"
+    oneLineContextDoc _ = single CtxError
 
 errorVerify :: MonadThrow log => Kore.Error VerifyError -> log a
 errorVerify koreError =

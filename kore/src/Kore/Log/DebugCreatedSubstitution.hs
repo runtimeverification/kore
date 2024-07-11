@@ -47,6 +47,7 @@ instance Entry DebugCreatedSubstitution where
             . layoutPrettyUnbounded
             . Pretty.group
             . pretty
+    oneLineContextDoc _ = single CtxSubstitution
     helpDoc _ = "log every substitution created when applying semantic rules"
 
 debugCreatedSubstitution ::

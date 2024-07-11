@@ -27,7 +27,9 @@ import Log (
     Entry (..),
     MonadLog,
     Severity (Warning),
+    SimpleContext (CtxWarn),
     logEntry,
+    single,
  )
 import Prelude.Kore
 import Pretty (
@@ -65,6 +67,7 @@ instance Entry WarnFunctionWithoutEvaluators where
     entrySeverity _ = Warning
     oneLineDoc (WarnFunctionWithoutEvaluators Symbol{symbolAttributes}) =
         Pretty.pretty $ sourceLocation symbolAttributes
+    oneLineContextDoc _ = single CtxWarn
     helpDoc _ = "warn when encountering a function with no definition"
 
 instance SQL.Table WarnFunctionWithoutEvaluators

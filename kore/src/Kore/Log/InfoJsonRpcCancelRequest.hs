@@ -35,4 +35,5 @@ instance Pretty InfoJsonRpcCancelRequest where
 instance Entry InfoJsonRpcCancelRequest where
     entrySeverity _ = Info
     oneLineDoc = Pretty.pretty
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "log cancelled request to the JSON RPC server"

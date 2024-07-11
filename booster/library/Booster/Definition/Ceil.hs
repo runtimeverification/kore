@@ -16,6 +16,7 @@ import Booster.Pattern.Base
 import Booster.LLVM as LLVM (API, simplifyBool)
 import Booster.Log
 import Booster.Pattern.Bool
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (isConcrete, sortOfTerm)
 import Booster.Util (Flag (..))
 import Control.DeepSeq (NFData)
@@ -43,20 +44,20 @@ data ComputeCeilSummary = ComputeCeilSummary
     deriving stock (Eq, Ord, Show, GHC.Generic)
     deriving anyclass (NFData)
 
-instance Pretty ComputeCeilSummary where
-    pretty ComputeCeilSummary{rule, ceils} =
+instance FromModifiersT mods => Pretty (PrettyWithModifiers mods ComputeCeilSummary) where
+    pretty (PrettyWithModifiers ComputeCeilSummary{rule, ceils}) =
         Pretty.vsep $
             [ "\n\n----------------------------\n"
             , pretty $ sourceRef rule
-            , pretty rule.lhs
+            , pretty' @mods rule.lhs
             , "=>"
-            , pretty rule.rhs
+            , pretty' @mods rule.rhs
             ]
                 <> ( if null rule.requires
                         then []
                         else
                             [ "requires"
-                            , Pretty.indent 2 . Pretty.vsep $ map pretty $ Set.toList rule.requires
+                            , Pretty.indent 2 . Pretty.vsep $ map (pretty' @mods) $ Set.toList rule.requires
                             ]
                    )
                 <> [ Pretty.line
@@ -69,7 +70,9 @@ instance Pretty ComputeCeilSummary where
                         [ Pretty.line
                         , "computed ceils:"
                         , Pretty.indent 2 . Pretty.vsep $
-                            map (either pretty (\t -> "#Ceil(" Pretty.<+> pretty t Pretty.<+> ")")) (Set.toList ceils)
+                            map
+                                (either (pretty' @mods) (\t -> "#Ceil(" Pretty.<+> pretty' @mods t Pretty.<+> ")"))
+                                (Set.toList ceils)
                         ]
 
 computeCeilsDefinition ::
@@ -98,7 +101,7 @@ computeCeilRule ::
 computeCeilRule mllvm def r@RewriteRule.RewriteRule{lhs, requires, rhs, attributes, computedAttributes}
     | null computedAttributes.notPreservesDefinednessReasons = pure Nothing
     | otherwise = do
-        (res, _) <- runEquationT def mllvm Nothing mempty $ do
+        (res, _) <- runEquationT def mllvm Nothing mempty mempty $ do
             lhsCeils <- Set.fromList <$> computeCeil lhs
             requiresCeils <- Set.fromList <$> concatMapM (computeCeil . coerce) (Set.toList requires)
             let subtractLHSAndRequiresCeils = (Set.\\ (lhsCeils `Set.union` requiresCeils)) . Set.fromList
@@ -209,7 +212,7 @@ mkInKeys inKeysSymbols k m =
         Nothing ->
             error $
                 "in_keys for key sort '"
-                    <> show (pretty $ sortOfTerm k)
+                    <> show (pretty $ PrettyWithModifiers @'[Decoded, Truncated] $ sortOfTerm k)
                     <> "' and map sort '"
-                    <> show (pretty $ sortOfTerm m)
+                    <> show (pretty $ PrettyWithModifiers @'[Decoded, Truncated] $ sortOfTerm m)
                     <> "' does not exist."

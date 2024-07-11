@@ -75,7 +75,7 @@ import Kore.Log.DebugAppliedRewriteRules (
 import Kore.Log.DebugAttemptedRewriteRules (
     whileDebugAttemptRewriteRule,
  )
-import Kore.Log.DebugContext (inContext)
+import Kore.Log.DebugContext (SimpleContext (CtxConstraint, CtxRemainder), inContext)
 import Kore.Log.DecidePredicateUnknown (srcLoc)
 import Kore.Rewrite.Result qualified as Result
 import Kore.Rewrite.Result qualified as Results
@@ -181,7 +181,7 @@ unifyRule sideCondition initial rule = do
         let ruleRequires = precondition rule
             requires' = Condition.fromPredicate ruleRequires
         unification' <-
-            inContext "constraint" $
+            inContext CtxConstraint $
                 Simplifier.simplifyCondition
                     sideCondition'
                     (unification <> requires')
@@ -297,7 +297,7 @@ applyInitialConditions ::
     -- | Unification conditions
     Condition RewritingVariableName ->
     LogicT Simplifier (Condition RewritingVariableName)
-applyInitialConditions sideCondition initial unification = inContext "apply-initial-condition" $ do
+applyInitialConditions sideCondition initial unification = inContext CtxConstraint $ do
     -- Combine the initial conditions and the unification conditions. The axiom
     -- requires clause is already included in the unification conditions, and
     -- the conjunction has already been simplified with respect to the initial
@@ -323,7 +323,7 @@ applyRemainder ::
     -- | Remainder
     Condition RewritingVariableName ->
     LogicT Simplifier (Pattern RewritingVariableName)
-applyRemainder sideCondition initial remainder = inContext "apply-remainder" $ do
+applyRemainder sideCondition initial remainder = inContext CtxRemainder $ do
     -- Simplify the remainder predicate under the initial conditions. We must
     -- ensure that functions in the remainder are evaluated using the top-level
     -- side conditions because we will not re-evaluate them after they are added

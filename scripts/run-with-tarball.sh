@@ -135,7 +135,7 @@ server_port=$($LSOF -a -p${server_pid} -sTCP:LISTEN -iTCP | grep ${server_pid} |
 echo "Server listening on port ${server_port}"
 
 
-echo "Running requests from $tarball against the server: $client run-tarball '$tarball' --keep-going -p ${server_port} -h 127.0.0.1"
-$client run-tarball "$tarball" --keep-going -p ${server_port} -h 127.0.0.1
+echo "Running requests from $tarball against the server: $client run-tarball '$tarball' --keep-going --omit-details -p ${server_port} -h 127.0.0.1"
+$client run-tarball "$tarball" --keep-going --omit-details -p ${server_port} -h 127.0.0.1
 
 echo "Done with '$tarball'"

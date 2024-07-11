@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 
 {- |
 Module      : Booster.JsonRpc
@@ -26,9 +27,11 @@ import Crypto.Hash (SHA256 (..), hashWith)
 import Data.Bifunctor (second)
 import Data.Foldable
 import Data.List (singleton)
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import Data.Proxy qualified
 import Data.Sequence (Seq)
 import Data.Set qualified as Set
 import Data.Text (Text, pack)
@@ -36,7 +39,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import GHC.Records
 import Numeric.Natural
-import Prettyprinter (pretty)
+import Prettyprinter (comma, hsep, punctuate, (<+>))
 import System.Clock (Clock (Monotonic), diffTimeSpec, getTime, toNanoSecs)
 
 import Booster.Definition.Attributes.Base (UniqueId, getUniqueId, uniqueId)
@@ -49,6 +52,7 @@ import Booster.Pattern.Base (Pattern (..), Sort (SortApp), Term, Variable)
 import Booster.Pattern.Base qualified as Pattern
 import Booster.Pattern.Bool (pattern TrueBool)
 import Booster.Pattern.Match (FailReason (..), MatchResult (..), MatchType (..), matchTerms)
+import Booster.Pattern.Pretty
 import Booster.Pattern.Rewrite (
     RewriteFailed (..),
     RewriteResult (..),
@@ -97,222 +101,136 @@ respond ::
     LoggerMIO m =>
     MVar ServerState ->
     Respond (RpcTypes.API 'RpcTypes.Req) m (RpcTypes.API 'RpcTypes.Res)
-respond stateVar =
-    \case
-        RpcTypes.Execute req
-            | isJust req.stepTimeout -> pure $ Left $ RpcError.unsupportedOption ("step-timeout" :: String)
-            | isJust req.movingAverageStepTimeout ->
-                pure $ Left $ RpcError.unsupportedOption ("moving-average-step-timeout" :: String)
-        RpcTypes.Execute req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxExecute $ do
-            start <- liftIO $ getTime Monotonic
-            -- internalise given constrained term
-            let internalised = runExcept $ internalisePattern DisallowAlias CheckSubsorts Nothing def req.state.term
+respond stateVar request =
+    getPrettyModifiers >>= \case
+        ModifiersRep (_ :: FromModifiersT mods => Data.Proxy.Proxy mods) -> case request of
+            RpcTypes.Execute req
+                | isJust req.stepTimeout -> pure $ Left $ RpcError.unsupportedOption ("step-timeout" :: String)
+                | isJust req.movingAverageStepTimeout ->
+                    pure $ Left $ RpcError.unsupportedOption ("moving-average-step-timeout" :: String)
+            RpcTypes.Execute req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxExecute $ do
+                start <- liftIO $ getTime Monotonic
+                -- internalise given constrained term
+                let internalised = runExcept $ internalisePattern DisallowAlias CheckSubsorts Nothing def req.state.term
 
-            case internalised of
-                Left patternError -> do
-                    void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
-                    pure $
-                        Left $
-                            RpcError.backendError $
-                                RpcError.CouldNotVerifyPattern
-                                    [ patternErrorToRpcError patternError
-                                    ]
-                Right (pat, substitution, unsupported) -> do
-                    unless (null unsupported) $ do
-                        withKorePatternContext (KoreJson.KJAnd (externaliseSort $ sortOfPattern pat) unsupported) $
-                            logMessage ("ignoring unsupported predicate parts" :: Text)
-                    let cutPoints = fromMaybe [] req.cutPointRules
-                        terminals = fromMaybe [] req.terminalRules
-                        mbDepth = fmap RpcTypes.getNat req.maxDepth
-                        doTracing =
-                            Flag $
-                                any
-                                    (fromMaybe False)
-                                    [ req.logSuccessfulRewrites
-                                    , req.logFailedRewrites
-                                    , req.logFallbacks
-                                    ]
-                    -- apply the given substitution before doing anything else
-                    let substPat =
-                            Pattern
-                                { term = substituteInTerm substitution pat.term
-                                , constraints = Set.map (substituteInPredicate substitution) pat.constraints
-                                , ceilConditions = pat.ceilConditions
-                                }
+                case internalised of
+                    Left patternError -> do
+                        void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
+                        pure $
+                            Left $
+                                RpcError.backendError $
+                                    RpcError.CouldNotVerifyPattern
+                                        [ patternErrorToRpcError patternError
+                                        ]
+                    Right (pat, substitution, unsupported) -> do
+                        unless (null unsupported) $ do
+                            withKorePatternContext (KoreJson.KJAnd (externaliseSort $ sortOfPattern pat) unsupported) $
+                                logMessage ("ignoring unsupported predicate parts" :: Text)
+                        let cutPoints = fromMaybe [] req.cutPointRules
+                            terminals = fromMaybe [] req.terminalRules
+                            mbDepth = fmap RpcTypes.getNat req.maxDepth
+                            doTracing =
+                                Flag $
+                                    any
+                                        (fromMaybe False)
+                                        [ req.logSuccessfulRewrites
+                                        , req.logFailedRewrites
+                                        , req.logFallbacks
+                                        ]
+                        -- apply the given substitution before doing anything else
+                        let substPat =
+                                Pattern
+                                    { term = substituteInTerm substitution pat.term
+                                    , constraints = Set.map (substituteInPredicate substitution) pat.constraints
+                                    , ceilConditions = pat.ceilConditions
+                                    }
 
-                    solver <- traverse (SMT.initSolver def) mSMTOptions
-                    result <-
-                        performRewrite doTracing def mLlvmLibrary solver mbDepth cutPoints terminals substPat
-                    whenJust solver SMT.finaliseSolver
-                    stop <- liftIO $ getTime Monotonic
-                    let duration =
-                            if fromMaybe False req.logTiming
-                                then
-                                    Just $
-                                        fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9
-                                else Nothing
-                    pure $ execResponse duration req result substitution unsupported
-        RpcTypes.AddModule RpcTypes.AddModuleRequest{_module, nameAsId = nameAsId'} -> Booster.Log.withContext CtxAddModule $ runExceptT $ do
-            -- block other request executions while modifying the server state
-            state <- liftIO $ takeMVar stateVar
-            let nameAsId = fromMaybe False nameAsId'
-                moduleHash = Text.pack $ ('m' :) . show . hashWith SHA256 $ Text.encodeUtf8 _module
-                restoreStateAndRethrow err = do
-                    liftIO (putMVar stateVar state)
-                    throwE $ RpcError.backendError err
-                listNames :: (HasField "name" a b, HasField "getId" b Text) => [a] -> Text
-                listNames = Text.intercalate ", " . map (.name.getId)
+                        solver <- traverse (SMT.initSolver def) mSMTOptions
+                        result <-
+                            performRewrite doTracing def mLlvmLibrary solver mbDepth cutPoints terminals substPat
+                        whenJust solver SMT.finaliseSolver
+                        stop <- liftIO $ getTime Monotonic
+                        let duration =
+                                if fromMaybe False req.logTiming
+                                    then
+                                        Just $
+                                            fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9
+                                    else Nothing
+                        pure $ execResponse duration req result substitution unsupported
+            RpcTypes.AddModule RpcTypes.AddModuleRequest{_module, nameAsId = nameAsId'} -> Booster.Log.withContext CtxAddModule $ runExceptT $ do
+                -- block other request executions while modifying the server state
+                state <- liftIO $ takeMVar stateVar
+                let nameAsId = fromMaybe False nameAsId'
+                    moduleHash = Text.pack $ ('m' :) . show . hashWith SHA256 $ Text.encodeUtf8 _module
+                    restoreStateAndRethrow err = do
+                        liftIO (putMVar stateVar state)
+                        throwE $ RpcError.backendError err
+                    listNames :: (HasField "name" a b, HasField "getId" b Text) => [a] -> Text
+                    listNames = Text.intercalate ", " . map (.name.getId)
 
-            flip catchE restoreStateAndRethrow $ do
-                newModule <-
-                    withExceptT (RpcError.InvalidModule . RpcError.ErrorOnly . pack) $
-                        except $
-                            parseKoreModule "rpc-request" _module
+                flip catchE restoreStateAndRethrow $ do
+                    newModule <-
+                        withExceptT (RpcError.InvalidModule . RpcError.ErrorOnly . pack) $
+                            except $
+                                parseKoreModule "rpc-request" _module
 
-                unless (null newModule.sorts) $
-                    throwE $
-                        RpcError.InvalidModule . RpcError.ErrorOnly $
-                            "Module introduces new sorts: " <> listNames newModule.sorts
+                    unless (null newModule.sorts) $
+                        throwE $
+                            RpcError.InvalidModule . RpcError.ErrorOnly $
+                                "Module introduces new sorts: " <> listNames newModule.sorts
 
-                unless (null newModule.symbols) $
-                    throwE $
-                        RpcError.InvalidModule . RpcError.ErrorOnly $
-                            "Module introduces new symbols: " <> listNames newModule.symbols
+                    unless (null newModule.symbols) $
+                        throwE $
+                            RpcError.InvalidModule . RpcError.ErrorOnly $
+                                "Module introduces new symbols: " <> listNames newModule.symbols
 
-                -- check if we already received a module with this name
-                when nameAsId $
-                    case Map.lookup (getId newModule.name) state.addedModules of
-                        -- if a different module was already added, throw error
-                        Just m | _module /= m -> throwE $ RpcError.DuplicateModuleName $ getId newModule.name
+                    -- check if we already received a module with this name
+                    when nameAsId $
+                        case Map.lookup (getId newModule.name) state.addedModules of
+                            -- if a different module was already added, throw error
+                            Just m | _module /= m -> throwE $ RpcError.DuplicateModuleName $ getId newModule.name
+                            _ -> pure ()
+
+                    -- Check for a corner case when we send module M1 with the name "m<hash of M2>"" and name-as-id: true
+                    -- followed by adding M2. Should not happen in practice...
+                    case Map.lookup moduleHash state.addedModules of
+                        Just m | _module /= m -> throwE $ RpcError.DuplicateModuleName moduleHash
                         _ -> pure ()
 
-                -- Check for a corner case when we send module M1 with the name "m<hash of M2>"" and name-as-id: true
-                -- followed by adding M2. Should not happen in practice...
-                case Map.lookup moduleHash state.addedModules of
-                    Just m | _module /= m -> throwE $ RpcError.DuplicateModuleName moduleHash
-                    _ -> pure ()
+                    newDefinitions <-
+                        withExceptT (RpcError.InvalidModule . definitionErrorToRpcError) $
+                            except $
+                                runExcept $
+                                    addToDefinitions newModule{ParsedModule.name = Id moduleHash} state.definitions
 
-                newDefinitions <-
-                    withExceptT (RpcError.InvalidModule . definitionErrorToRpcError) $
-                        except $
-                            runExcept $
-                                addToDefinitions newModule{ParsedModule.name = Id moduleHash} state.definitions
-
-                liftIO $
-                    putMVar
-                        stateVar
-                        state
-                            { definitions =
-                                if nameAsId
-                                    then Map.insert (getId newModule.name) (newDefinitions Map.! moduleHash) newDefinitions
-                                    else newDefinitions
-                            , addedModules =
-                                (if nameAsId then Map.insert (getId newModule.name) _module else id) $
-                                    Map.insert moduleHash _module state.addedModules
-                            }
-                Booster.Log.logMessage $
-                    "Added a new module. Now in scope: " <> Text.intercalate ", " (Map.keys newDefinitions)
-                pure $ RpcTypes.AddModule $ RpcTypes.AddModuleResult moduleHash
-        RpcTypes.Simplify req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxSimplify $ do
-            start <- liftIO $ getTime Monotonic
-            let internalised =
-                    runExcept $ internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
-            let mkTraces duration
-                    | Just True <- req.logTiming =
-                        Just [ProcessingTime (Just Booster) duration]
-                    | otherwise =
-                        Nothing
-
-            solver <- traverse (SMT.initSolver def) mSMTOptions
-
-            result <- case internalised of
-                Left patternErrors -> do
-                    forM_ patternErrors $ \patternError ->
-                        void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
-                    pure $
-                        Left $
-                            RpcError.backendError $
-                                RpcError.CouldNotVerifyPattern $
-                                    map patternErrorToRpcError patternErrors
-                -- term and predicate (pattern)
-                Right (TermAndPredicates pat substitution unsupported) -> do
-                    unless (null unsupported) $ do
-                        withKorePatternContext (KoreJson.KJAnd (externaliseSort $ sortOfPattern pat) unsupported) $ do
-                            logMessage ("ignoring unsupported predicate parts" :: Text)
-                    -- apply the given substitution before doing anything else
-                    let substPat =
-                            Pattern
-                                { term = substituteInTerm substitution pat.term
-                                , constraints = Set.map (substituteInPredicate substitution) pat.constraints
-                                , ceilConditions = pat.ceilConditions
+                    liftIO $
+                        putMVar
+                            stateVar
+                            state
+                                { definitions =
+                                    if nameAsId
+                                        then Map.insert (getId newModule.name) (newDefinitions Map.! moduleHash) newDefinitions
+                                        else newDefinitions
+                                , addedModules =
+                                    (if nameAsId then Map.insert (getId newModule.name) _module else id) $
+                                        Map.insert moduleHash _module state.addedModules
                                 }
-                    ApplyEquations.evaluatePattern def mLlvmLibrary solver mempty substPat >>= \case
-                        (Right newPattern, _) -> do
-                            let (term, mbPredicate, mbSubstitution) = externalisePattern newPattern substitution
-                                tSort = externaliseSort (sortOfPattern newPattern)
-                                result = case catMaybes (mbPredicate : mbSubstitution : map Just unsupported) of
-                                    [] -> term
-                                    ps -> KoreJson.KJAnd tSort $ term : ps
-                            pure $ Right (addHeader result)
-                        (Left ApplyEquations.SideConditionFalse{}, _) -> do
-                            let tSort = externaliseSort $ sortOfPattern pat
-                            pure $ Right (addHeader $ KoreJson.KJBottom tSort)
-                        (Left (ApplyEquations.EquationLoop _terms), _) ->
-                            pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
-                        (Left other, _) ->
-                            pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
-                -- predicate only
-                Right (Predicates ps)
-                    | null ps.boolPredicates && null ps.ceilPredicates && null ps.substitution && null ps.unsupported ->
-                        pure $
-                            Right
-                                (addHeader $ Syntax.KJTop (fromMaybe (error "not a predicate") $ sortOfJson req.state.term))
-                    | otherwise -> do
-                        unless (null ps.unsupported) $ do
-                            withKorePatternContext (KoreJson.KJAnd (externaliseSort $ SortApp "SortBool" []) ps.unsupported) $ do
-                                logMessage ("ignoring unsupported predicate parts" :: Text)
-                        -- apply the given substitution before doing anything else
-                        let predicates = map (substituteInPredicate ps.substitution) $ Set.toList ps.boolPredicates
-                        withContext CtxConstraint $
-                            ApplyEquations.simplifyConstraints
-                                def
-                                mLlvmLibrary
-                                solver
-                                mempty
-                                predicates
-                                >>= \case
-                                    (Right newPreds, _) -> do
-                                        let predicateSort =
-                                                fromMaybe (error "not a predicate") $
-                                                    sortOfJson req.state.term
-                                            result =
-                                                map (externalisePredicate predicateSort) newPreds
-                                                    <> map (externaliseCeil predicateSort) (Set.toList ps.ceilPredicates)
-                                                    <> map (uncurry $ externaliseSubstitution predicateSort) (Map.toList ps.substitution)
-                                                    <> ps.unsupported
-
-                                        pure $ Right (addHeader $ Syntax.KJAnd predicateSort result)
-                                    (Left something, _) ->
-                                        pure . Left . RpcError.backendError $ RpcError.Aborted $ renderText $ pretty something
-            whenJust solver SMT.finaliseSolver
-            stop <- liftIO $ getTime Monotonic
-
-            let duration =
-                    fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9
-                mkSimplifyResponse state =
-                    RpcTypes.Simplify
-                        RpcTypes.SimplifyResult{state, logs = mkTraces duration}
-            pure $ second mkSimplifyResponse result
-        RpcTypes.GetModel req -> withModule req._module $ \case
-            (_, _, Nothing) -> do
-                withContext CtxGetModel $
-                    logMessage' ("get-model request, not supported without SMT solver" :: Text)
-                pure $ Left RpcError.notImplemented
-            (def, _, Just smtOptions) -> do
+                    Booster.Log.logMessage $
+                        "Added a new module. Now in scope: " <> Text.intercalate ", " (Map.keys newDefinitions)
+                    pure $ RpcTypes.AddModule $ RpcTypes.AddModuleResult moduleHash
+            RpcTypes.Simplify req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxSimplify $ do
+                start <- liftIO $ getTime Monotonic
                 let internalised =
-                        runExcept $
-                            internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
-                case internalised of
+                        runExcept $ internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
+                let mkTraces duration
+                        | Just True <- req.logTiming =
+                            Just [ProcessingTime (Just Booster) duration]
+                        | otherwise =
+                            Nothing
+
+                solver <- traverse (SMT.initSolver def) mSMTOptions
+
+                result <- case internalised of
                     Left patternErrors -> do
                         forM_ patternErrors $ \patternError ->
                             void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
@@ -321,175 +239,267 @@ respond stateVar =
                                 RpcError.backendError $
                                     RpcError.CouldNotVerifyPattern $
                                         map patternErrorToRpcError patternErrors
-                    -- various predicates obtained
-                    Right things -> do
-                        -- term and predicates were sent. Only work on predicates
-                        (boolPs, suppliedSubst) <-
-                            case things of
-                                TermAndPredicates pat substitution unsupported -> do
-                                    withContext CtxGetModel $
-                                        logMessage' ("ignoring supplied terms and only checking predicates" :: Text)
+                    -- term and predicate (pattern)
+                    Right (TermAndPredicates pat substitution unsupported) -> do
+                        unless (null unsupported) $ do
+                            withKorePatternContext (KoreJson.KJAnd (externaliseSort $ sortOfPattern pat) unsupported) $ do
+                                logMessage ("ignoring unsupported predicate parts" :: Text)
+                        -- apply the given substitution before doing anything else
+                        let substPat =
+                                Pattern
+                                    { term = substituteInTerm substitution pat.term
+                                    , constraints = Set.map (substituteInPredicate substitution) pat.constraints
+                                    , ceilConditions = pat.ceilConditions
+                                    }
+                        ApplyEquations.evaluatePattern def mLlvmLibrary solver mempty substPat >>= \case
+                            (Right newPattern, _) -> do
+                                let (term, mbPredicate, mbSubstitution) = externalisePattern newPattern substitution
+                                    tSort = externaliseSort (sortOfPattern newPattern)
+                                    result = case catMaybes (mbPredicate : mbSubstitution : map Just unsupported) of
+                                        [] -> term
+                                        ps -> KoreJson.KJAnd tSort $ term : ps
+                                pure $ Right (addHeader result)
+                            (Left ApplyEquations.SideConditionFalse{}, _) -> do
+                                let tSort = externaliseSort $ sortOfPattern pat
+                                pure $ Right (addHeader $ KoreJson.KJBottom tSort)
+                            (Left (ApplyEquations.EquationLoop _terms), _) ->
+                                pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
+                            (Left other, _) ->
+                                pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
+                    -- predicate only
+                    Right (Predicates ps)
+                        | null ps.boolPredicates && null ps.ceilPredicates && null ps.substitution && null ps.unsupported ->
+                            pure $
+                                Right
+                                    (addHeader $ Syntax.KJTop (fromMaybe (error "not a predicate") $ sortOfJson req.state.term))
+                        | otherwise -> do
+                            unless (null ps.unsupported) $ do
+                                withKorePatternContext (KoreJson.KJAnd (externaliseSort $ SortApp "SortBool" []) ps.unsupported) $ do
+                                    logMessage ("ignoring unsupported predicate parts" :: Text)
+                            -- apply the given substitution before doing anything else
+                            let predicates = map (substituteInPredicate ps.substitution) $ Set.toList ps.boolPredicates
+                            withContext CtxConstraint $
+                                ApplyEquations.simplifyConstraints
+                                    def
+                                    mLlvmLibrary
+                                    solver
+                                    mempty
+                                    predicates
+                                    >>= \case
+                                        (Right newPreds, _) -> do
+                                            let predicateSort =
+                                                    fromMaybe (error "not a predicate") $
+                                                        sortOfJson req.state.term
+                                                result =
+                                                    map (externalisePredicate predicateSort) newPreds
+                                                        <> map (externaliseCeil predicateSort) (Set.toList ps.ceilPredicates)
+                                                        <> map (uncurry $ externaliseSubstitution predicateSort) (Map.toList ps.substitution)
+                                                        <> ps.unsupported
 
-                                    unless (null unsupported) $ do
-                                        withContext CtxGetModel $ do
-                                            logMessage' ("ignoring unsupported predicates" :: Text)
-                                            withContext CtxDetail $
-                                                logMessage (Text.unwords $ map prettyPattern unsupported)
-                                    pure (Set.toList pat.constraints, substitution)
-                                Predicates ps -> do
-                                    unless (null ps.ceilPredicates && null ps.unsupported) $ do
-                                        withContext CtxGetModel $ do
-                                            logMessage' ("ignoring supplied ceils and unsupported predicates" :: Text)
-                                            withContext CtxDetail $
-                                                logMessage
-                                                    ( Text.unlines $
-                                                        map
-                                                            (renderText . ("#Ceil:" <>) . pretty)
-                                                            (Set.toList ps.ceilPredicates)
-                                                            <> map prettyPattern ps.unsupported
-                                                    )
-                                    pure (Set.toList ps.boolPredicates, ps.substitution)
+                                            pure $ Right (addHeader $ Syntax.KJAnd predicateSort result)
+                                        (Left something, _) ->
+                                            pure . Left . RpcError.backendError $ RpcError.Aborted $ renderText $ pretty' @mods something
+                whenJust solver SMT.finaliseSolver
+                stop <- liftIO $ getTime Monotonic
 
-                        smtResult <-
-                            if null boolPs && Map.null suppliedSubst
-                                then do
-                                    -- as per spec, no predicate, no answer
-                                    withContext CtxGetModel $
-                                        withContext CtxSMT $
-                                            logMessage ("No predicates or substitutions given, returning Unknown" :: Text)
-                                    pure $ Left SMT.Unknown
-                                else do
-                                    solver <- SMT.initSolver def smtOptions
-                                    result <- SMT.getModelFor solver boolPs suppliedSubst
-                                    SMT.finaliseSolver solver
-                                    case result of
-                                        Left err -> liftIO $ Exception.throw err -- fail hard on SMT errors
-                                        Right response -> pure response
-                        withContext CtxGetModel $
-                            withContext CtxSMT $
-                                logMessage $
-                                    "SMT result: " <> pack (either show (("Subst: " <>) . show . Map.size) smtResult)
-                        pure . Right . RpcTypes.GetModel $ case smtResult of
-                            Left SMT.Unsat ->
-                                RpcTypes.GetModelResult
-                                    { satisfiable = RpcTypes.Unsat
-                                    , substitution = Nothing
-                                    }
-                            Left SMT.ReasonUnknown{} ->
-                                RpcTypes.GetModelResult
-                                    { satisfiable = RpcTypes.Unknown
-                                    , substitution = Nothing
-                                    }
-                            Left SMT.Unknown ->
-                                RpcTypes.GetModelResult
-                                    { satisfiable = RpcTypes.Unknown
-                                    , substitution = Nothing
-                                    }
-                            Left other ->
-                                error $ "Unexpected result " <> show other <> " from getModelFor"
-                            Right subst ->
-                                let sort = fromMaybe (error "Unknown sort in input") $ sortOfJson req.state.term
-                                    substitution
-                                        | Map.null subst = Nothing
-                                        | [(var, term)] <- Map.assocs subst =
-                                            Just . addHeader $
-                                                KoreJson.KJEquals
-                                                    (externaliseSort var.variableSort)
-                                                    sort
-                                                    (externaliseTerm $ Pattern.Var var)
-                                                    (externaliseTerm term)
-                                        | otherwise =
-                                            Just . addHeader $
-                                                KoreJson.KJAnd
-                                                    sort
-                                                    [ KoreJson.KJEquals
+                let duration =
+                        fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1e9
+                    mkSimplifyResponse state =
+                        RpcTypes.Simplify
+                            RpcTypes.SimplifyResult{state, logs = mkTraces duration}
+                pure $ second mkSimplifyResponse result
+            RpcTypes.GetModel req -> withModule req._module $ \case
+                (_, _, Nothing) -> do
+                    withContext CtxGetModel $
+                        logMessage' ("get-model request, not supported without SMT solver" :: Text)
+                    pure $ Left RpcError.notImplemented
+                (def, _, Just smtOptions) -> do
+                    let internalised =
+                            runExcept $
+                                internaliseTermOrPredicate DisallowAlias CheckSubsorts Nothing def req.state.term
+                    case internalised of
+                        Left patternErrors -> do
+                            forM_ patternErrors $ \patternError ->
+                                void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
+                            pure $
+                                Left $
+                                    RpcError.backendError $
+                                        RpcError.CouldNotVerifyPattern $
+                                            map patternErrorToRpcError patternErrors
+                        -- various predicates obtained
+                        Right things -> do
+                            -- term and predicates were sent. Only work on predicates
+                            (boolPs, suppliedSubst) <-
+                                case things of
+                                    TermAndPredicates pat substitution unsupported -> do
+                                        withContext CtxGetModel $
+                                            logMessage' ("ignoring supplied terms and only checking predicates" :: Text)
+
+                                        unless (null unsupported) $ do
+                                            withContext CtxGetModel $ do
+                                                logMessage' ("ignoring unsupported predicates" :: Text)
+                                                withContext CtxDetail $
+                                                    logMessage (Text.unwords $ map prettyPattern unsupported)
+                                        pure (Set.toList pat.constraints, substitution)
+                                    Predicates ps -> do
+                                        unless (null ps.ceilPredicates && null ps.unsupported) $ do
+                                            withContext CtxGetModel $ do
+                                                logMessage' ("ignoring supplied ceils and unsupported predicates" :: Text)
+                                                withContext CtxDetail $
+                                                    logMessage
+                                                        ( Text.unlines $
+                                                            map
+                                                                (renderText . ("#Ceil:" <>) . pretty' @mods)
+                                                                (Set.toList ps.ceilPredicates)
+                                                                <> map prettyPattern ps.unsupported
+                                                        )
+                                        pure (Set.toList ps.boolPredicates, ps.substitution)
+
+                            smtResult <-
+                                if null boolPs && Map.null suppliedSubst
+                                    then do
+                                        -- as per spec, no predicate, no answer
+                                        withContext CtxGetModel $
+                                            withContext CtxSMT $
+                                                logMessage ("No predicates or substitutions given, returning Unknown" :: Text)
+                                        pure $ Left SMT.Unknown
+                                    else do
+                                        solver <- SMT.initSolver def smtOptions
+                                        result <- SMT.getModelFor solver boolPs suppliedSubst
+                                        SMT.finaliseSolver solver
+                                        case result of
+                                            Left err -> liftIO $ Exception.throw err -- fail hard on SMT errors
+                                            Right response -> pure response
+                            withContext CtxGetModel $
+                                withContext CtxSMT $
+                                    logMessage $
+                                        "SMT result: " <> pack (either show (("Subst: " <>) . show . Map.size) smtResult)
+                            pure . Right . RpcTypes.GetModel $ case smtResult of
+                                Left SMT.Unsat ->
+                                    RpcTypes.GetModelResult
+                                        { satisfiable = RpcTypes.Unsat
+                                        , substitution = Nothing
+                                        }
+                                Left SMT.ReasonUnknown{} ->
+                                    RpcTypes.GetModelResult
+                                        { satisfiable = RpcTypes.Unknown
+                                        , substitution = Nothing
+                                        }
+                                Left SMT.Unknown ->
+                                    RpcTypes.GetModelResult
+                                        { satisfiable = RpcTypes.Unknown
+                                        , substitution = Nothing
+                                        }
+                                Left other ->
+                                    error $ "Unexpected result " <> show other <> " from getModelFor"
+                                Right subst ->
+                                    let sort = fromMaybe (error "Unknown sort in input") $ sortOfJson req.state.term
+                                        substitution
+                                            | Map.null subst = Nothing
+                                            | [(var, term)] <- Map.assocs subst =
+                                                Just . addHeader $
+                                                    KoreJson.KJEquals
                                                         (externaliseSort var.variableSort)
                                                         sort
                                                         (externaliseTerm $ Pattern.Var var)
                                                         (externaliseTerm term)
-                                                    | (var, term) <- Map.assocs subst
-                                                    ]
-                                 in RpcTypes.GetModelResult
-                                        { satisfiable = RpcTypes.Sat
-                                        , substitution
-                                        }
-        RpcTypes.Implies req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxImplies $ do
-            -- internalise given constrained term
-            let internalised =
-                    runExcept . internalisePattern DisallowAlias CheckSubsorts Nothing def . fst . extractExistentials
+                                            | otherwise =
+                                                Just . addHeader $
+                                                    KoreJson.KJAnd
+                                                        sort
+                                                        [ KoreJson.KJEquals
+                                                            (externaliseSort var.variableSort)
+                                                            sort
+                                                            (externaliseTerm $ Pattern.Var var)
+                                                            (externaliseTerm term)
+                                                        | (var, term) <- Map.assocs subst
+                                                        ]
+                                     in RpcTypes.GetModelResult
+                                            { satisfiable = RpcTypes.Sat
+                                            , substitution
+                                            }
+            RpcTypes.Implies req -> withModule req._module $ \(def, mLlvmLibrary, mSMTOptions) -> Booster.Log.withContext CtxImplies $ do
+                -- internalise given constrained term
+                let internalised =
+                        runExcept . internalisePattern DisallowAlias CheckSubsorts Nothing def . fst . extractExistentials
 
-            case (internalised req.antecedent.term, internalised req.consequent.term) of
-                (Left patternError, _) -> do
-                    void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
-                    pure $
-                        Left $
-                            RpcError.backendError $
-                                RpcError.CouldNotVerifyPattern
-                                    [ patternErrorToRpcError patternError
-                                    ]
-                (_, Left patternError) -> do
-                    void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
-                    pure $
-                        Left $
-                            RpcError.backendError $
-                                RpcError.CouldNotVerifyPattern
-                                    [ patternErrorToRpcError patternError
-                                    ]
-                (Right (patL, substitutionL, unsupportedL), Right (patR, substitutionR, unsupportedR)) -> do
-                    unless (null unsupportedL && null unsupportedR) $ do
-                        logMessage'
-                            ("aborting due to unsupported predicate parts" :: Text)
-                        unless (null unsupportedL) $
-                            withContext CtxDetail $
-                                logMessage
-                                    (Text.unwords $ map prettyPattern unsupportedL)
-                        unless (null unsupportedR) $
-                            withContext CtxDetail $
-                                logMessage
-                                    (Text.unwords $ map prettyPattern unsupportedR)
-                    let
-                        -- apply the given substitution before doing anything else
-                        substPatL =
-                            Pattern
-                                { term = substituteInTerm substitutionL patL.term
-                                , constraints = Set.map (substituteInPredicate substitutionL) patL.constraints
-                                , ceilConditions = patL.ceilConditions
-                                }
-                        substPatR =
-                            Pattern
-                                { term = substituteInTerm substitutionR patR.term
-                                , constraints = Set.map (substituteInPredicate substitutionR) patR.constraints
-                                , ceilConditions = patR.ceilConditions
-                                }
+                case (internalised req.antecedent.term, internalised req.consequent.term) of
+                    (Left patternError, _) -> do
+                        void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
+                        pure $
+                            Left $
+                                RpcError.backendError $
+                                    RpcError.CouldNotVerifyPattern
+                                        [ patternErrorToRpcError patternError
+                                        ]
+                    (_, Left patternError) -> do
+                        void $ Booster.Log.withContext CtxInternalise $ logPatternError patternError
+                        pure $
+                            Left $
+                                RpcError.backendError $
+                                    RpcError.CouldNotVerifyPattern
+                                        [ patternErrorToRpcError patternError
+                                        ]
+                    (Right (patL, substitutionL, unsupportedL), Right (patR, substitutionR, unsupportedR)) -> do
+                        unless (null unsupportedL && null unsupportedR) $ do
+                            logMessage'
+                                ("aborting due to unsupported predicate parts" :: Text)
+                            unless (null unsupportedL) $
+                                withContext CtxDetail $
+                                    logMessage
+                                        (Text.unwords $ map prettyPattern unsupportedL)
+                            unless (null unsupportedR) $
+                                withContext CtxDetail $
+                                    logMessage
+                                        (Text.unwords $ map prettyPattern unsupportedR)
+                        let
+                            -- apply the given substitution before doing anything else
+                            substPatL =
+                                Pattern
+                                    { term = substituteInTerm substitutionL patL.term
+                                    , constraints = Set.map (substituteInPredicate substitutionL) patL.constraints
+                                    , ceilConditions = patL.ceilConditions
+                                    }
+                            substPatR =
+                                Pattern
+                                    { term = substituteInTerm substitutionR patR.term
+                                    , constraints = Set.map (substituteInPredicate substitutionR) patR.constraints
+                                    , ceilConditions = patR.ceilConditions
+                                    }
 
-                    case matchTerms Booster.Pattern.Match.Implies def substPatR.term substPatL.term of
-                        MatchFailed (SubsortingError sortError) ->
-                            pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
-                                show sortError
-                        MatchFailed{} ->
-                            doesNotImply (sortOfPattern substPatL) req.antecedent.term req.consequent.term
-                        MatchIndeterminate remainder ->
-                            pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
-                                "match remainder: "
-                                    <> renderDefault (pretty remainder)
-                        MatchSuccess subst -> do
-                            let filteredConsequentPreds =
-                                    Set.map (substituteInPredicate subst) substPatR.constraints `Set.difference` substPatL.constraints
-                            solver <- traverse (SMT.initSolver def) mSMTOptions
+                        case matchTerms Booster.Pattern.Match.Implies def substPatR.term substPatL.term of
+                            MatchFailed (SubsortingError sortError) ->
+                                pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
+                                    show sortError
+                            MatchFailed{} ->
+                                doesNotImply (sortOfPattern substPatL) req.antecedent.term req.consequent.term
+                            MatchIndeterminate remainder ->
+                                pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
+                                    "match remainder: "
+                                        <> renderDefault
+                                            ( hsep $
+                                                punctuate comma $
+                                                    map (\(t1, t2) -> pretty' @mods t1 <+> "==" <+> pretty' @mods t2) $
+                                                        NonEmpty.toList remainder
+                                            )
+                            MatchSuccess subst -> do
+                                let filteredConsequentPreds =
+                                        Set.map (substituteInPredicate subst) substPatR.constraints `Set.difference` substPatL.constraints
+                                solver <- traverse (SMT.initSolver def) mSMTOptions
 
-                            if null filteredConsequentPreds
-                                then implies (sortOfPattern substPatL) req.antecedent.term req.consequent.term subst
-                                else
-                                    ApplyEquations.evaluateConstraints def mLlvmLibrary solver mempty filteredConsequentPreds >>= \case
-                                        (Right newPreds, _) ->
-                                            if all (== Pattern.Predicate TrueBool) newPreds
-                                                then implies (sortOfPattern substPatL) req.antecedent.term req.consequent.term subst
-                                                else pure . Left . RpcError.backendError $ RpcError.Aborted "unknown constrains"
-                                        (Left other, _) ->
-                                            pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
+                                if null filteredConsequentPreds
+                                    then implies (sortOfPattern substPatL) req.antecedent.term req.consequent.term subst
+                                    else
+                                        ApplyEquations.evaluateConstraints def mLlvmLibrary solver mempty filteredConsequentPreds >>= \case
+                                            (Right newPreds, _) ->
+                                                if all (== Pattern.Predicate TrueBool) newPreds
+                                                    then implies (sortOfPattern substPatL) req.antecedent.term req.consequent.term subst
+                                                    else pure . Left . RpcError.backendError $ RpcError.Aborted "unknown constrains"
+                                            (Left other, _) ->
+                                                pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
 
-        -- this case is only reachable if the cancel appeared as part of a batch request
-        RpcTypes.Cancel -> pure $ Left RpcError.cancelUnsupportedInBatchMode
+            -- this case is only reachable if the cancel appeared as part of a batch request
+            RpcTypes.Cancel -> pure $ Left RpcError.cancelUnsupportedInBatchMode
   where
     withModule ::
         Maybe Text ->

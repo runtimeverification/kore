@@ -15,13 +15,13 @@ import Control.Monad.Trans.Except
 import Data.Bifunctor (first)
 import Data.List (isPrefixOf, partition)
 import Data.Text.IO qualified as Text
-import Prettyprinter
 import System.Directory
 import System.Environment
 import System.FilePath
 
 import Booster.Definition.Ceil (computeCeilsDefinition)
 import Booster.Definition.Util
+import Booster.Pattern.Pretty
 import Booster.Prettyprinter as Pretty
 import Booster.Syntax.ParsedKore as ParsedKore
 
@@ -57,7 +57,7 @@ testParse verbose veryVerbose file = do
 
     report = runExceptT $ do
         parsedDef <- liftIO (Text.readFile file) >>= except . parseKoreDefinition file
-        internalDef' <- except (first (renderDefault . pretty) $ internalise Nothing parsedDef)
+        internalDef' <- except (first (renderDefault . pretty' @'[Decoded]) $ internalise Nothing parsedDef)
         (internalDef, ceilSummary) <- runNoLoggingT $ computeCeilsDefinition Nothing internalDef'
         pure $ mkSummary file internalDef ceilSummary
 

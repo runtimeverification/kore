@@ -82,13 +82,8 @@ renderJson mTime e@(SomeEntry context actualEntry) =
         json
   where
     jsonContext =
-        foldr
-            ( \(SomeEntry _ c) cs -> case oneLineContextJson c of
-                JSON.Array cs' -> cs' <> cs
-                j -> Vec.cons j cs
-            )
-            mempty
-            (context <> [e])
+        Vec.fromList $
+            concatMap (\(SomeEntry _ c) -> map JSON.toJSON (oneLineContextDoc c)) (context <> [e])
 
     json = case oneLineJson actualEntry of
         JSON.Object o
@@ -112,7 +107,7 @@ renderOnelinePretty :: Maybe ByteString -> SomeEntry -> LogStr
 renderOnelinePretty mTime entry@(SomeEntry entryContext _actualEntry) =
     let cs =
             (entryContext <> [entry])
-                & concatMap (map Pretty.brackets . (\(SomeEntry _ e) -> Pretty.pretty <$> oneLineContextDoc e))
+                & concatMap (map Pretty.brackets . (\(SomeEntry _ e) -> Pretty.pretty . show <$> oneLineContextDoc e))
         leaf = oneLineDoc entry
      in maybe mempty ((<> " ") . toLogStr) mTime
             <> ( mconcat cs Pretty.<+> leaf

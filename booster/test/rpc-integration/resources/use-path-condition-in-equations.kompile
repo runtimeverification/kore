@@ -1,0 +1,4 @@
+echo "kompiling use-path-condition-in-equations.k"
+kompile --backend haskell use-path-condition-in-equations.k
+cp use-path-condition-in-equations-kompiled/definition.kore use-path-condition-in-equations.kore
+rm -r use-path-condition-in-equations-kompiled

@@ -38,6 +38,7 @@ instance Entry DebugSubstitutionSimplifier where
     entrySeverity _ = Debug
     contextDoc _ = Just "while simplifying substitution"
     oneLineDoc = pretty . show
+    oneLineContextDoc _ = single CtxSubstitution
     helpDoc _ = "log non-\\bottom results when normalizing unification solutions"
 
 instance SQL.Table DebugSubstitutionSimplifier

@@ -56,6 +56,7 @@ import Booster.Pattern.Base qualified as Def.Symbol (Symbol (..))
 import Booster.Pattern.Bool (foldAndBool)
 import Booster.Pattern.Bool qualified as Def
 import Booster.Pattern.Index as Idx
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util qualified as Util
 import Booster.Prettyprinter hiding (attributes)
 import Booster.Syntax.Json.Internalise
@@ -1333,8 +1334,8 @@ data DefinitionError
     | ElemSymbolNotFound Def.SymbolName
     deriving stock (Eq, Show)
 
-instance Pretty DefinitionError where
-    pretty = \case
+instance FromModifiersT mods => Pretty (PrettyWithModifiers mods DefinitionError) where
+    pretty (PrettyWithModifiers e) = case e of
         ParseError msg ->
             "Parse error: " <> pretty msg
         NoSuchModule name ->
@@ -1352,7 +1353,7 @@ instance Pretty DefinitionError where
         DefinitionAttributeError msg ->
             pretty $ "Attribute error: " <> msg
         DefinitionSortError sortErr ->
-            pretty $ "Sort error: " <> renderSortError sortErr
+            pretty $ "Sort error: " <> renderSortError @mods (PrettyWithModifiers sortErr)
         DefinitionPatternError ref patErr ->
             "Pattern error in " <> pretty ref <> ": " <> pretty (show patErr)
         -- TODO define a pretty instance?
@@ -1382,7 +1383,8 @@ definitionErrorToRpcError = \case
         let err@RpcError.ErrorWithTermAndContext{context} = patternErrorToRpcError patErr
          in err
                 { RpcError.context =
-                    Just $ "Pattern error at " <> render ref <> " in definition" : fromMaybe [] context
+                    Just $
+                        "Pattern error at " <> renderOneLineText (pretty ref) <> " in definition" : fromMaybe [] context
                 }
     DefinitionAxiomError (MalformedRewriteRule rule) ->
         "Malformed rewrite rule" `withContext` [renderOneLineText $ location rule]
@@ -1396,8 +1398,8 @@ definitionErrorToRpcError = \case
     withContext :: Text -> [Text] -> RpcError.ErrorWithTermAndContext
     withContext = RpcError.ErrorWithContext
 
-    render :: Pretty a => a -> Text
-    render = renderOneLineText . pretty
+    render :: forall a. Pretty (PrettyWithModifiers ['Decoded, 'Truncated] a) => a -> Text
+    render = renderOneLineText . pretty @(PrettyWithModifiers ['Decoded, 'Truncated] a) . PrettyWithModifiers
 
     location rule =
         either (const "unknown location") pretty $

@@ -41,6 +41,8 @@ instance Entry WarnStepTimeout where
 
     oneLineDoc _ = "WarnStepTimeout"
 
+    oneLineContextDoc _ = single CtxWarn
+
     helpDoc _ = "warn when a step has timed out"
 
 warnStepManualTimeout :: MonadLog log => Int -> log ()

@@ -8,6 +8,8 @@ module Kore.JsonRpc.Types.ContextLog (
     module Kore.JsonRpc.Types.ContextLog,
 ) where
 
+import Control.Applicative ((<|>))
+import Data.Aeson ((.:), (.:?), (.=))
 import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types (FromJSON (..), ToJSON (..), defaultOptions)
 import Data.Aeson.Types qualified as JSON
@@ -15,6 +17,9 @@ import Data.Data (Data, toConstr)
 import Data.Sequence (Seq)
 import Data.Text (Text, unpack)
 import Data.Text qualified as Text
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime, utcToSystemTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
+import Text.Read (readMaybe)
 
 data SimpleContext
     = -- component
@@ -30,11 +35,11 @@ data SimpleContext
     | -- mode/phase
       CtxInternalise
     | CtxMatch
+    | CtxUnify
     | CtxDefinedness
     | CtxConstraint
     | CtxSMT
     | CtxLlvm
-    | CtxCached
     | -- results
       CtxFailure
     | CtxIndeterminate
@@ -46,6 +51,7 @@ data SimpleContext
       CtxKoreTerm
     | CtxDetail
     | CtxSubstitution
+    | CtxRemainder
     | CtxDepth
     | CtxTiming
     | -- standard log levels
@@ -76,6 +82,7 @@ data IdContext
     | -- entities with name
       CtxHook Text
     | CtxRequest Text
+    | CtxCached Text
     deriving stock (Eq, Ord)
 
 instance Show IdContext where
@@ -86,6 +93,7 @@ instance Show IdContext where
     show (CtxTerm uid) = "term " <> show uid
     show (CtxHook name) = "hook " <> unpack name
     show (CtxRequest name) = "request " <> unpack name
+    show (CtxCached name) = "cached " <> unpack name
 
 getUniqueId :: IdContext -> Maybe UniqueId
 getUniqueId = \case
@@ -174,6 +182,7 @@ instance FromJSON CLMessage where
     parseJSON (JSON.String msg) = pure $ CLText msg
     parseJSON obj@JSON.Object{} = pure $ CLValue obj
     parseJSON arr@JSON.Array{} = pure $ CLValue arr
+    parseJSON JSON.Null = pure $ CLValue JSON.Null
     parseJSON other =
         JSON.typeMismatch "Object, array, or string" other
 
@@ -182,9 +191,50 @@ instance ToJSON CLMessage where
     toJSON (CLValue value) = value
 
 data LogLine = LogLine
-    { context :: Seq CLContext
+    { timestamp :: Maybe SystemTime
+    , context :: Seq CLContext
     , message :: CLMessage
     }
     deriving stock (Show, Eq)
 
-$(deriveJSON defaultOptions ''LogLine)
+instance FromJSON LogLine where
+    parseJSON = JSON.withObject "LogLine" $ \l ->
+        LogLine
+            <$> (l .:? "timestamp" >>= parseTimestamp)
+            <*> l .: "context"
+            <*> l .: "message"
+
+parseTimestamp :: Maybe JSON.Value -> JSON.Parser (Maybe SystemTime)
+parseTimestamp Nothing = pure Nothing
+parseTimestamp (Just x) =
+    JSON.withScientific "numeric timestamp" (pure . Just . fromNumeric) x
+        <|> JSON.withText "human-readable timestamp" fromString x
+        <|> JSON.withText "nanosecond timestamp" fromNanos x
+  where
+    -- fromNumeric :: Scientific -> SystemTime
+    fromNumeric n =
+        let seconds = truncate n
+            nanos = truncate $ 1e9 * (n - fromIntegral seconds) -- no leap seconds
+         in MkSystemTime seconds nanos
+    fromString s = do
+        utc <- parseTimeM False defaultTimeLocale timestampFormat (Text.unpack s)
+        pure . Just $ utcToSystemTime utc
+    fromNanos s =
+        case readMaybe (Text.unpack s) of
+            Nothing -> fail $ "bad number " <> show s
+            Just (n :: Integer) -> pure . Just $ fromNumeric (fromIntegral n :: Double)
+
+instance ToJSON LogLine where
+    toJSON LogLine{timestamp, context, message} =
+        JSON.object $
+            maybe
+                []
+                (\t -> ["timestamp" .= formatted t])
+                timestamp
+                <> ["context" .= context, "message" .= message]
+      where
+        formatted = formatTime defaultTimeLocale timestampFormat . systemToUTCTime
+
+-- similar to the one used in Booster.Util, but not setting a length for the sub-second digits
+timestampFormat :: String
+timestampFormat = "%Y-%m-%dT%H:%M:%S%Q"

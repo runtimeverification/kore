@@ -34,6 +34,7 @@ instance InternalVariable variable => Entry (WarnNotImplemented variable) where
     entrySeverity _ = Warning
     oneLineDoc (WarnNotImplemented (Application Symbol{symbolAttributes} _)) =
         Pretty.pretty $ sourceLocation symbolAttributes
+    oneLineContextDoc _ = single CtxWarn
     helpDoc _ = "warn when we try to evaluate a partial builtin function on unimplemented cases"
 
 warnNotImplemented ::

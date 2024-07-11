@@ -48,6 +48,7 @@ instance Pretty DebugRetrySolverQuery where
 instance Entry DebugRetrySolverQuery where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugRetrySolverQuery"
+    oneLineContextDoc _ = single CtxSMT
     helpDoc _ =
         "warning raised when the solver failed to decide\
         \ the satisfiability of a formula, indicating that\

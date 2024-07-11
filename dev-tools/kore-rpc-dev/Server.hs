@@ -19,6 +19,7 @@ import Control.Monad.Logger (
  )
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.Aeson.Types (Value (..))
+import Data.ByteString.Char8 qualified as BS
 import Data.Conduit.Network (serverSettings)
 import Data.IORef (writeIORef)
 import Data.InternedText (globalInternedTextCache)
@@ -41,6 +42,7 @@ import System.Log.FastLogger (newTimeCache)
 import Booster.CLOptions
 import Booster.Log
 import Booster.Log.Context qualified
+import Booster.Pattern.Pretty
 import Booster.SMT.Base qualified as SMT (SExpr (..), SMTId (..))
 import Booster.SMT.Interface (SMTOptions (..))
 import Booster.Trace
@@ -147,6 +149,7 @@ main = do
                     , eventlogEnabledUserEvents
                     , logFile
                     , logTimeStamps
+                    , prettyPrintOptions
                     }
             } = options
         (logLevel, customLevels) = adjustLogLevels logLevels
@@ -185,7 +188,7 @@ main = do
                     null logContextsWithcustomLevelContexts
                         || ( let contextStrs =
                                     concatMap
-                                        ( \(Log.SomeEntry _ c) -> Text.encodeUtf8 <$> Log.oneLineContextDoc c
+                                        ( \(Log.SomeEntry _ c) -> BS.pack . show <$> Log.oneLineContextDoc c
                                         )
                                         ctxt
                               in any (flip Booster.Log.Context.mustMatch contextStrs) logContextsWithcustomLevelContexts
@@ -221,7 +224,9 @@ main = do
                             in any (flip Booster.Log.Context.mustMatch ctxt) logContextsWithcustomLevelContexts
 
             runBoosterLogger :: Booster.Log.LoggerT IO a -> IO a
-            runBoosterLogger = flip runReaderT filteredBoosterContextLogger . Booster.Log.unLoggerT
+            runBoosterLogger =
+                flip runReaderT (filteredBoosterContextLogger, toModifiersRep prettyPrintOptions)
+                    . Booster.Log.unLoggerT
 
         liftIO $ void $ withBugReport (ExeName "kore-rpc-dev") BugReportOnError $ \_reportDirectory ->
             Kore.Log.BoosterAdaptor.withLogger koreLogOptions $ \actualLogAction -> do

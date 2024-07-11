@@ -58,6 +58,8 @@ mapUpdateHook args
                     pure Nothing -- have opaque part, no result
                 | any (not . isConstructorLike_ . fst) pairs ->
                     pure Nothing -- have unevaluated keys, no result
+                | not $ isConstructorLike_ key ->
+                    pure Nothing -- unevaluated update key, no result
                 | otherwise -> -- key certain to be absent, no rest: add pair
                     pure $ Just $ KMap def ((key, newValue) : pairs) Nothing
     | [_other, _, _] <- args =
@@ -126,6 +128,8 @@ mapRemoveHook args
                     pure Nothing -- have opaque part, no result
                 | any (not . isConstructorLike_ . fst) pairs ->
                     pure Nothing -- have unevaluated keys, no result
+                | not $ isConstructorLike_ key ->
+                    pure Nothing -- remove key unevaluated, no result
                 | otherwise -> -- key certain to be absent, no rest: map unchanged
                     pure $ Just m
     | [_other, _] <- args =
@@ -166,6 +170,8 @@ mapLookupOrDefaultHook args
                     pure Nothing -- have opaque part, no result
                 | any (not . isConstructorLike_ . fst) pairs ->
                     pure Nothing -- have unevaluated keys, no result
+                | not $ isConstructorLike_ key ->
+                    pure Nothing -- lookup key unevaluated, no result
                 | otherwise -> -- certain that the key is not in the map
                     pure $ Just defaultValue
     | [_other, _, _] <- args =
@@ -188,6 +194,7 @@ mapInKeysHook args
                 pure $ Just $ boolTerm True
             (False, False)
                 | Nothing <- mbRest -- no opaque rest
+                , isConstructorLike_ key -- key to search is evaluated
                 , null uneval'edKeys -> -- no keys unevaluated
                     pure $ Just $ boolTerm False
                 | otherwise -> -- key could be present once evaluated

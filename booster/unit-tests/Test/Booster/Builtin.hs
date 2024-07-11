@@ -260,6 +260,10 @@ testMapUpdateHook =
             result <- runUpdate [Fixture.functionKMapWithOneItemAndRest, keyG, value2]
             let expected = mapWith [(keyG, value2)] (Just restVar)
             Just expected @=? result
+        , testCase "cannot update map at unevaluated key if key not syntactically present" $ do
+            let keyG = [trm| g{}() |]
+            result <- runUpdate [Fixture.concreteKMapWithTwoItems, keyG, value2]
+            Nothing @=? result
         , testCase "cannot update map with symbolic rest if key not present" $ do
             result <- runUpdate [Fixture.concreteKMapWithOneItemAndRest, key2, value2]
             Nothing @=? result
@@ -376,6 +380,9 @@ testMapRemoveHook =
             Just Fixture.emptyKMap @=? result
             result2 <- runRemove [Fixture.functionKMapWithOneItemAndRest, [trm| g{}() |]]
             Just restVar @=? result2
+        , testCase "no result if removing non-concrete keys not syntactically equal" $ do
+            result <- runRemove [Fixture.concreteKMapWithTwoItems, [trm| g{}() |]]
+            Nothing @=? result
         , testCase "no result when map has non-concrete syntactically different keys" $ do
             result <- runRemove [Fixture.functionKMapWithOneItem, key]
             Nothing @=? result
@@ -449,6 +456,10 @@ testMapLookupHook =
         , testCase "returns item for a non-evaluated key when present" $ do
             result <- runLookup [Fixture.functionKMapWithOneItemAndRest, [trm| g{}() |]]
             Just [trm| \dv{SortTestKMapItem{}}("value") |] @=? result
+        , testProperty "no result for an unevaluated key not syntactically present" . property $ do
+            assocs <- forAll $ genAssocs (Range.linear 0 10)
+            result <- runLookup [mapWith assocs Nothing, [trm| g{}() |]]
+            Nothing === result
         , testCase "no result if map has non-evaluated keys when key not found" $ do
             result <- runLookup [Fixture.functionKMapWithOneItem, notAKey]
             Nothing @=? result
@@ -494,6 +505,10 @@ testMapLookupOrDefaultHook =
         , testCase "returns item for a non-evaluated key when present" $ do
             result <- runLookup [Fixture.functionKMapWithOneItemAndRest, [trm| g{}() |], defItem]
             Just [trm| \dv{SortTestKMapItem{}}("value") |] @=? result
+        , testProperty "no result for an unevaluated key not syntactically present" . property $ do
+            assocs <- forAll $ genAssocs (Range.linear 0 10)
+            result <- runLookup [mapWith assocs Nothing, [trm| g{}() |], defItem]
+            Nothing === result
         , testCase "no result if map has non-evaluated keys and key not found" $ do
             result <- runLookup [Fixture.functionKMapWithOneItemAndRest, notAKey, defItem]
             Nothing @=? result
@@ -532,11 +547,20 @@ testMapInKeysHook =
             Just (Builtin.boolTerm True) === result
             result2 <- runInKeys [key, mapWith assocs (Just restVar)]
             Just (Builtin.boolTerm True) === result2
+        , testCase "returns true when key syntactically present" $ do
+            result <- runInKeys [[trm| g{}() |], Fixture.functionKMapWithOneItem]
+            Just (Builtin.boolTerm True) @=? result
+            result2 <- runInKeys [[trm| g{}() |], Fixture.functionKMapWithOneItemAndRest]
+            Just (Builtin.boolTerm True) @=? result2
         , testCase "no result if unevaluated map keys present" $ do
             result <- runInKeys [notAKey, Fixture.functionKMapWithOneItem]
             Nothing @=? result
             result2 <- runInKeys [notAKey, Fixture.functionKMapWithOneItemAndRest]
             Nothing @=? result2
+        , testProperty "no result for an unevaluated key not present" . property $ do
+            assocs <- forAll $ genAssocs (Range.linear 0 42)
+            result <- runInKeys [[trm| g{}() |], mapWith assocs Nothing]
+            Nothing === result
         ]
   where
     runInKeys :: MonadFail m => [Term] -> m (Maybe Term)

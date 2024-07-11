@@ -41,7 +41,7 @@ instance Entry LogJsonRpcServer where
         _ -> Debug
     helpDoc _ = "log JSON RPC Server messages"
     oneLineDoc LogJsonRpcServer{msg} = pretty $ Text.replace "\n" " " $ Text.decodeUtf8 $ fromLogStr msg
-
+    oneLineContextDoc l = [severityToContext $ entrySeverity l]
     contextDoc LogJsonRpcServer{loc} =
         if isDefaultLoc loc
             then Nothing

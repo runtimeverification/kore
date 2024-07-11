@@ -47,6 +47,7 @@ instance Entry WarnNotAPredicate where
             . Pretty.renderString
             . Pretty.layoutOneLine
             . Pretty.pretty
+    oneLineContextDoc WarnNotAPredicate{severity} = [severityToContext severity]
     helpDoc _ =
         "warn when a predicate simplification produces a non-predicate"
 

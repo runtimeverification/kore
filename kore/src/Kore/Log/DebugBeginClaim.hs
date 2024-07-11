@@ -35,6 +35,7 @@ instance Entry DebugBeginClaim where
     helpDoc _ = "log starting claims"
     oneLineDoc DebugBeginClaim{claim} =
         pretty @SourceLocation $ from claim
+    oneLineContextDoc _ = single CtxDetail
 
 debugBeginClaim ::
     MonadLog log =>

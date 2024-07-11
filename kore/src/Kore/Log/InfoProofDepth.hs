@@ -58,6 +58,7 @@ instance Entry InfoProofDepth where
             , Pretty.pretty depth
             ]
 
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "log depth of proof graph"
 
 infoUnprovenDepth :: MonadLog log => ProofDepth -> log ()

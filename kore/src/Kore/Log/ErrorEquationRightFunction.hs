@@ -28,7 +28,9 @@ import Kore.Internal.TermLike (
 import Log (
     Entry (..),
     Severity (Error),
+    SimpleContext (CtxError),
     SomeEntry (SomeEntry),
+    single,
  )
 import Prelude.Kore
 import Pretty (
@@ -71,6 +73,7 @@ instance Entry ErrorEquationRightFunction where
                 Equation{attributes = Axiom{sourceLocation}}
             ) =
             pretty sourceLocation
+    oneLineContextDoc _ = single CtxError
     helpDoc _ = "errors raised when right-hand side of equation is not a function pattern"
 
 instance SQL.Table ErrorEquationRightFunction

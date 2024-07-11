@@ -28,7 +28,9 @@ import Kore.Internal.TermLike (
 import Log (
     Entry (..),
     Severity (Error),
+    SimpleContext (CtxError),
     SomeEntry (SomeEntry),
+    single,
  )
 import Prelude.Kore
 import Pretty (
@@ -83,6 +85,7 @@ instance Entry ErrorEquationsSameMatch where
                 , Pretty.comma
                 , pretty sourceLoc2
                 ]
+    oneLineContextDoc _ = single CtxError
 
 instance SQL.Table ErrorEquationsSameMatch
 

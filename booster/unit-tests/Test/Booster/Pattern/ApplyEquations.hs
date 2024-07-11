@@ -98,7 +98,7 @@ test_evaluateFunction =
         unsafePerformIO
             . runNoLoggingT
             . (fst <$>)
-            . evaluateTerm direction funDef Nothing Nothing
+            . evaluateTerm direction funDef Nothing Nothing mempty
 
     isTooManyIterations (Left (TooManyIterations _n _ _)) = pure ()
     isTooManyIterations (Left err) = assertFailure $ "Unexpected error " <> show err
@@ -129,7 +129,7 @@ test_simplify =
         unsafePerformIO
             . runNoLoggingT
             . (fst <$>)
-            . evaluateTerm direction simplDef Nothing Nothing
+            . evaluateTerm direction simplDef Nothing Nothing mempty
     a = var "A" someSort
 
 test_simplifyPattern :: TestTree
@@ -229,7 +229,7 @@ test_simplifyConstraint =
         unsafePerformIO
             . runNoLoggingT
             . (fst <$>)
-            . simplifyConstraint testDefinition Nothing Nothing mempty
+            . simplifyConstraint testDefinition Nothing Nothing mempty mempty
 
 test_errors :: TestTree
 test_errors =
@@ -242,7 +242,7 @@ test_errors =
                 loopTerms =
                     [f $ app con1 [a], f $ app con2 [a], f $ app con3 [a, a], f $ app con1 [a]]
             isLoop loopTerms . unsafePerformIO . runNoLoggingT $
-                fst <$> evaluateTerm TopDown loopDef Nothing Nothing subj
+                fst <$> evaluateTerm TopDown loopDef Nothing Nothing mempty subj
         ]
   where
     isLoop ts (Left (EquationLoop ts')) = ts @?= ts'

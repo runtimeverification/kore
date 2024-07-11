@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 {- |
 Copyright   : (c) Runtime Verification, 2023
 License     : BSD-3-Clause
@@ -36,6 +38,7 @@ import Booster.Definition.Attributes.Base
 import Booster.Definition.Base
 import Booster.Pattern.Base
 import Booster.Pattern.Bool
+import Booster.Pattern.Pretty
 import Booster.Pattern.Util (sortOfTerm)
 import Booster.Prettyprinter qualified as Pretty
 import Booster.SMT.Base as SMT
@@ -84,7 +87,7 @@ translateTerm t =
             | otherwise ->
                 throw $
                     "General \and not supported for SMT. Failed to translate "
-                        <> Pretty.renderText (pretty t)
+                        <> Pretty.renderText (pretty (PrettyWithModifiers @['Decoded, 'Truncated] t))
         SymbolApplication sym _sorts args ->
             case sym.attributes.smt of
                 Nothing -> asSMTVar t
@@ -198,7 +201,7 @@ equationToSMTLemma equation
         -- for detailed error messages:
         let prettyMappings m =
                 Pretty.vsep
-                    [ Pretty.pretty (show v) <> " <== " <> Pretty.pretty t
+                    [ Pretty.pretty (show v) <> " <== " <> Pretty.pretty (PrettyWithModifiers @['Decoded, 'Truncated] t)
                     | (t, v) <- Map.toList m
                     ]
             lemmaId =
@@ -241,10 +244,16 @@ equationToSMTLemma equation
                 ]
             prettyLemma =
                 Pretty.vsep
-                    ( pretty equation.lhs <> " == " <> pretty equation.rhs
+                    ( pretty (PrettyWithModifiers @['Decoded, 'Truncated] equation.lhs)
+                        <> " == "
+                        <> pretty (PrettyWithModifiers @['Decoded, 'Truncated] equation.rhs)
                         : if Set.null equation.requires
                             then []
-                            else "  requires" : map (Pretty.indent 4 . pretty) (Set.toList equation.requires)
+                            else
+                                "  requires"
+                                    : map
+                                        ((Pretty.indent 4 . pretty) . (PrettyWithModifiers @['Decoded, 'Truncated]))
+                                        (Set.toList equation.requires)
                     )
             lemmaComment = BS.pack (Pretty.renderDefault prettyLemma)
 

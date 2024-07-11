@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
@@ -15,10 +16,12 @@ module Booster.Log (
     logMessage,
     logMessage',
     logPretty,
+    logPretty',
     filterLogger,
     jsonLogger,
     textLogger,
     withContext,
+    withContext_,
     withContexts,
     withKorePatternContext,
     withPatternContext,
@@ -28,6 +31,7 @@ module Booster.Log (
     SimpleContext (..),
 ) where
 
+import Control.Arrow (first)
 import Control.Monad (when)
 import Control.Monad.IO.Class
 import Control.Monad.Logger qualified
@@ -41,6 +45,7 @@ import Data.Aeson (ToJSON (..), Value (..), (.=))
 import Data.Aeson.Encode.Pretty (Config (confIndent), Indent (Spaces), encodePretty')
 import Data.Aeson.Types (object)
 import Data.Coerce (coerce)
+import Data.Data (Proxy (..))
 import Data.Hashable qualified
 import Data.List (foldl', intercalate, intersperse)
 import Data.List.Extra (splitOn, takeEnd)
@@ -63,6 +68,7 @@ import Booster.Pattern.Base (
     TermAttributes (hash),
     pattern AndTerm,
  )
+import Booster.Pattern.Pretty
 import Booster.Prettyprinter (renderOneLineText)
 import Booster.Syntax.Json (KorePattern, addHeader, prettyPattern)
 import Booster.Syntax.Json.Externalise (externaliseTerm)
@@ -89,9 +95,9 @@ instance ToLogFormat String where
     toTextualLog = pack
     toJSONLog = String . pack
 
-instance ToLogFormat Term where
+instance ToLogFormat (PrettyWithModifiers mods Term) where
     toTextualLog t = renderOneLineText $ pretty t
-    toJSONLog t = toJSON $ addHeader $ externaliseTerm t
+    toJSONLog (PrettyWithModifiers t) = toJSON $ addHeader $ externaliseTerm t
 
 instance ToLogFormat (RewriteRule tag) where
     toTextualLog = shortRuleLocation
@@ -113,6 +119,10 @@ class MonadIO m => LoggerMIO m where
     default getLogger :: (Trans.MonadTrans t, LoggerMIO n, m ~ t n) => m (Logger LogMessage)
     getLogger = Trans.lift getLogger
 
+    getPrettyModifiers :: m ModifiersRep
+    default getPrettyModifiers :: (Trans.MonadTrans t, LoggerMIO n, m ~ t n) => m ModifiersRep
+    getPrettyModifiers = Trans.lift getPrettyModifiers
+
     withLogger :: (Logger LogMessage -> Logger LogMessage) -> m a -> m a
 
 instance LoggerMIO m => LoggerMIO (MaybeT m) where
@@ -128,6 +138,7 @@ instance LoggerMIO m => LoggerMIO (Strict.StateT s m) where
 
 instance MonadIO m => LoggerMIO (Control.Monad.Logger.NoLoggingT m) where
     getLogger = pure $ Logger $ \_ -> pure ()
+    getPrettyModifiers = pure $ ModifiersRep @'[Decoded, Truncated] Proxy
     withLogger _ = id
 
 logMessage :: (LoggerMIO m, ToLogFormat a) => a -> m ()
@@ -144,12 +155,19 @@ logMessage' a =
 logPretty :: (LoggerMIO m, Pretty a) => a -> m ()
 logPretty = logMessage . renderOneLineText . pretty
 
+logPretty' ::
+    forall mods m a.
+    (LoggerMIO m, Pretty (PrettyWithModifiers mods a), FromModifiersT mods) =>
+    a ->
+    m ()
+logPretty' = logMessage . renderOneLineText . pretty' @mods
+
 withContext :: LoggerMIO m => SimpleContext -> m a -> m a
 withContext c = withContext_ (CLNullary c)
 
 withContexts :: LoggerMIO m => [SimpleContext] -> m a -> m a
 withContexts [] m = m
-withContexts cs m = foldr withContext m cs
+withContexts cs m = foldr (withContext) m cs
 
 withContext_ :: LoggerMIO m => CLContext -> m a -> m a
 withContext_ c =
@@ -160,7 +178,10 @@ withContext_ c =
 withTermContext :: LoggerMIO m => Term -> m a -> m a
 withTermContext t@(Term attrs _) m =
     withContext_ (CLWithId . CtxTerm . ShortId $ showHashHex attrs.hash) $ do
-        withContext CtxKoreTerm $ logMessage t
+        withContext CtxKoreTerm $
+            getPrettyModifiers >>= \case
+                ModifiersRep (_ :: FromModifiersT mods => Proxy mods) ->
+                    logMessage (PrettyWithModifiers @mods t)
         m
 
 withPatternContext :: LoggerMIO m => Pattern -> m a -> m a
@@ -223,7 +244,7 @@ instance ContextFor Symbol where
     withContextFor s =
         withContext_ (CLWithId . CtxHook $ maybe "not-hooked" decodeUtf8 s.attributes.hook)
 
-instance ContextFor (JSONRPC.Id) where
+instance ContextFor JSONRPC.Id where
     withContextFor r =
         withContext_ (CLWithId . CtxRequest $ pack $ JSONRPC.fromId r)
 
@@ -237,7 +258,7 @@ instance ToLogFormat WithJsonMessage where
     toTextualLog (WithJsonMessage _ a) = toTextualLog a
     toJSONLog (WithJsonMessage v _) = v
 
-newtype LoggerT m a = LoggerT {unLoggerT :: ReaderT (Logger LogMessage) m a}
+newtype LoggerT m a = LoggerT {unLoggerT :: ReaderT (Logger LogMessage, ModifiersRep) m a}
     deriving newtype
         ( Applicative
         , Functor
@@ -249,8 +270,9 @@ newtype LoggerT m a = LoggerT {unLoggerT :: ReaderT (Logger LogMessage) m a}
         )
 
 instance MonadIO m => LoggerMIO (LoggerT m) where
-    getLogger = LoggerT ask
-    withLogger modL (LoggerT m) = LoggerT $ withReaderT modL m
+    getLogger = LoggerT (fst <$> ask)
+    getPrettyModifiers = LoggerT (snd <$> ask)
+    withLogger modL (LoggerT m) = LoggerT $ withReaderT (first modL) m
 
 textLogger :: ((Maybe FormattedTime -> Control.Monad.Logger.LogStr) -> IO ()) -> Logger LogMessage
 textLogger l = Logger $ \(LogMessage _ ctxts msg) ->

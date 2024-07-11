@@ -36,7 +36,6 @@ import Data.Text (
     Text,
  )
 import Data.Text qualified as Text
-import Data.Vector qualified as Vec
 import Debug
 import GHC.Generics qualified as GHC
 import Generics.SOP qualified as SOP
@@ -48,7 +47,7 @@ import Kore.Attribute.SourceLocation (
  )
 import Kore.Equation.Equation (Equation (..))
 import Kore.Internal.OrCondition (OrCondition)
-import Kore.Internal.Pattern (Conditional (..), Pattern)
+import Kore.Internal.Pattern (Conditional (..), Pattern, toTermLike)
 import Kore.Internal.Predicate (Predicate)
 import Kore.Internal.SideCondition (SideCondition)
 import Kore.Internal.TermLike (
@@ -294,10 +293,14 @@ instance Entry DebugAttemptEquation where
     helpDoc _ = "log equation application attempts"
 
     oneLineContextDoc = \case
-        _entry@DebugAttemptEquation{} -> ["detail"]
+        _entry@DebugAttemptEquation{} -> single CtxDetail
         (DebugAttemptEquationResult _ result) -> case result of
-            Right Conditional{term} -> ["success", "term " <> (showHashHex $ hash term), "kore-term"]
-            Left{} -> ["failure"]
+            Right Conditional{term} ->
+                [ CLNullary CtxSuccess
+                , CtxTerm `withShortId` showHashHex (hash term)
+                , CLNullary CtxKoreTerm
+                ]
+            Left{} -> single CtxFailure
 
     oneLineDoc (DebugAttemptEquation equation _term) =
         maybe
@@ -309,21 +312,6 @@ instance Entry DebugAttemptEquation where
     oneLineDoc (DebugAttemptEquationResult _ result) = case result of
         Right Conditional{term} -> " " <> unparse term
         Left failure -> " " <> Pretty.pretty (failureDescription failure)
-
-    oneLineContextJson = \case
-        _entry@DebugAttemptEquation{} -> JSON.String "detail"
-        _entry@(DebugAttemptEquationResult _equation result) ->
-            case result of
-                Right Conditional{term} ->
-                    JSON.Array $
-                        Vec.fromList
-                            [ JSON.String "success"
-                            , JSON.object
-                                [ "term" JSON..= showHashHex (hash term)
-                                ]
-                            , JSON.String "kore-term"
-                            ]
-                Left _failure -> JSON.String "failure"
 
     oneLineJson = \case
         _entry@(DebugAttemptEquation equation _term) ->
@@ -350,12 +338,7 @@ instance Entry DebugTermContext where
     oneLineDoc DebugTermContext{} = mempty
 
     oneLineContextDoc (DebugTermContext term) =
-        ["term " <> (showHashHex $ hash term)]
-
-    oneLineContextJson (DebugTermContext term) =
-        JSON.object
-            [ "term" JSON..= showHashHex (hash term)
-            ]
+        [CtxTerm `withShortId` showHashHex (hash term)]
 
     oneLineJson :: DebugTermContext -> JSON.Value
     oneLineJson DebugTermContext{} =
@@ -366,13 +349,7 @@ instance Entry DebugTerm where
 
     oneLineDoc (DebugTerm term) = unparse term
 
-    oneLineContextDoc DebugTerm{} =
-        ["kore-term"]
-
-    oneLineContextJson DebugTerm{} =
-        JSON.toJSON
-            [ "kore-term" :: Text
-            ]
+    oneLineContextDoc DebugTerm{} = single CtxKoreTerm
 
     oneLineJson (DebugTerm term) =
         JSON.toJSON $ Kore.Syntax.Json.fromTermLike (getRewritingTerm term)
@@ -383,18 +360,9 @@ instance Entry DebugEquation where
     oneLineDoc _ = mempty
 
     oneLineContextDoc (DebugEquation equation) =
-        let equationKindTxt = if isSimplification equation then "simplification" else "function"
-         in [ equationKindTxt <> " " <> shortRuleIdText equation
-            ]
-    oneLineContextJson (DebugEquation equation) =
-        let equationKindTxt = if isSimplification equation then "simplification" else "function"
-         in JSON.Array $
-                Vec.fromList
-                    [ JSON.object
-                        [ equationKindTxt
-                            JSON..= ruleIdText equation
-                        ]
-                    ]
+        let equationKind = if isSimplification equation then CtxSimplification else CtxFunction
+         in [equationKind `withId` ruleIdText equation]
+
     oneLineJson _ = JSON.Null
 
 whileDebugTerm ::
@@ -485,7 +453,16 @@ instance Entry DebugApplyEquation where
                 ]
     helpDoc _ = "log equation application successes"
 
-    oneLineJson _ = JSON.Null
+    oneLineContextDoc (DebugApplyEquation equation result) =
+        let equationKind = if isSimplification equation then CtxSimplification else CtxFunction
+         in [ equationKind `withId` ruleIdText equation
+            , CLNullary CtxSuccess
+            , CtxTerm `withShortId` showHashHex (hash result)
+            , CLNullary CtxKoreTerm
+            ]
+
+    oneLineJson (DebugApplyEquation _ result) =
+        JSON.toJSON $ Kore.Syntax.Json.fromTermLike . getRewritingTerm $ toTermLike result
 
 {- | Log when an 'Equation' is actually applied.
 

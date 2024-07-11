@@ -9,6 +9,7 @@ module Main (
     main,
 ) where
 
+import Booster.Pattern.Pretty
 import Booster.Prettyprinter (renderDefault)
 import Booster.Syntax.Json (KoreJson (..))
 import Booster.Syntax.Json.Internalise (
@@ -32,7 +33,7 @@ main = do
     [def, json] <- getArgs
     parsedDef <-
         either (error . renderDefault . pretty) id . parseKoreDefinition def <$> Text.readFile def
-    let internalDef = either (error . renderDefault . pretty) id $ internalise Nothing parsedDef
+    let internalDef = either (error . renderDefault . pretty' @'[Decoded]) id $ internalise Nothing parsedDef
 
     fileContent <- BS.readFile json
     case eitherDecode fileContent of
@@ -41,18 +42,18 @@ main = do
             case runExcept $ internalisePattern DisallowAlias CheckSubsorts Nothing internalDef term of
                 Right (trm, _subst, _unsupported) -> do
                     putStrLn "Pretty-printing pattern: "
-                    putStrLn $ renderDefault $ pretty trm
+                    putStrLn $ renderDefault $ pretty' @'[Decoded] trm
                 Left (NoTermFound _) ->
                     case runExcept $ internalisePredicates DisallowAlias CheckSubsorts Nothing internalDef [term] of
                         Left es -> error (show es)
                         Right ts -> do
                             putStrLn "Pretty-printing predicates: "
                             putStrLn "Bool predicates: "
-                            mapM_ (putStrLn . renderDefault . pretty) ts.boolPredicates
+                            mapM_ (putStrLn . renderDefault . pretty' @'[Decoded]) ts.boolPredicates
                             putStrLn "Ceil predicates: "
-                            mapM_ (putStrLn . renderDefault . pretty) ts.ceilPredicates
+                            mapM_ (putStrLn . renderDefault . pretty' @'[Decoded]) ts.ceilPredicates
                             putStrLn "Substitution: "
-                            mapM_ (putStrLn . renderDefault . pretty) ts.substitution
+                            mapM_ (putStrLn . renderDefault . pretty' @'[Decoded]) ts.substitution
                             putStrLn "Unsupported predicates: "
                             mapM_ print ts.unsupported
                 Left err -> error (show err)

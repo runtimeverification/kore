@@ -35,6 +35,7 @@ instance Pretty InfoUserLog where
 instance Entry InfoUserLog where
     entrySeverity _ = Info
     oneLineDoc (InfoUserLog userLog) = Pretty.pretty userLog
+    oneLineContextDoc _ = single CtxInfo
     helpDoc _ = "user-specified log message"
 
 infoUserLog :: MonadLog log => Text -> log ()

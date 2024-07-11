@@ -23,9 +23,11 @@ import Kore.Internal.TermLike (
 import Kore.Internal.TermLike qualified as TermLike
 import Kore.Unparser (unparse)
 import Log (
+    CLContext (CLNullary),
     Entry (..),
     MonadLog (..),
     Severity (..),
+    SimpleContext (CtxFailure, CtxUnify),
     logEntry,
  )
 import Logic (
@@ -59,6 +61,7 @@ instance Pretty DebugUnifyBottom where
 instance Entry DebugUnifyBottom where
     entrySeverity _ = Debug
     oneLineDoc _ = "DebugUnifyBottom"
+    oneLineContextDoc _ = map CLNullary [CtxUnify, CtxFailure]
     helpDoc _ = "log failed unification"
 
 mkDebugUnifyBottom ::

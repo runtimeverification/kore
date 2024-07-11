@@ -109,6 +109,7 @@ instance Entry DebugTransition where
     oneLineDoc
         (DebugBeforeTransition BeforeTransition{transition}) =
             "before " <> pretty transition
+    oneLineContextDoc _ = single CtxDetail
 
 debugBeforeTransition ::
     MonadLog log =>

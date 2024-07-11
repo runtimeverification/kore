@@ -121,7 +121,7 @@ import Kore.Simplify.OverloadSimplifier (OverloadSimplifier (..))
 import Kore.Syntax (Id)
 import Kore.Syntax.Application
 import Kore.Unparser
-import Log
+import Log hiding (UniqueId)
 import Logic
 import Prelude.Kore
 import Pretty qualified

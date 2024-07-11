@@ -27,7 +27,7 @@ import Kore.Internal.TermLike
 import Kore.Log.DebugAttemptUnification (
     debugAttemptUnification,
  )
-import Kore.Log.DebugContext (inContext)
+import Kore.Log.DebugContext (SimpleContext (CtxSimplify), inContext)
 import Kore.Log.DebugUnifyBottom (debugUnifyBottomAndReturnBottom)
 import Kore.Rewrite.RewritingVariable (
     RewritingVariableName,
@@ -72,7 +72,7 @@ unificationProcedure sideCondition p1 p2
         orCeil <- liftSimplifier $ makeEvaluateTermCeil sideCondition term
         marker "unify" "CombineCeil"
         ceil' <- Monad.Unify.scatter orCeil
-        inContext "ceil-simplify" . lowerLogicT . simplifyCondition sideCondition $
+        inContext CtxSimplify . lowerLogicT . simplifyCondition sideCondition $
             Conditional.andCondition ceil' condition
   where
     p1Sort = termLikeSort p1

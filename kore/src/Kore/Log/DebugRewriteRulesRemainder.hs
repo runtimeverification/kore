@@ -11,9 +11,7 @@ module Kore.Log.DebugRewriteRulesRemainder (
     debugRewriteRulesRemainder,
 ) where
 
-import Data.Aeson (Value (Array), object, toJSON, (.=))
-import Data.Text qualified as Text
-import Data.Vector (fromList)
+import Data.Aeson (object, (.=))
 import Kore.Internal.Conditional qualified as Conditional
 import Kore.Internal.Pattern (
     Pattern,
@@ -67,20 +65,8 @@ instance Entry DebugRewriteRulesRemainder where
     helpDoc _ = "log rewrite rules remainder"
 
     oneLineContextDoc
-        DebugRewriteRulesRemainder{} = [remainderContextName]
-
-    oneLineContextJson
-        DebugRewriteRulesRemainder{configuration, rulesCount} =
-            Array $
-                fromList
-                    [ toJSON remainderContextName
-                    , object
-                        [ "term" .= showHashHex (hash configuration)
-                        ]
-                    , object
-                        [ "rules-count" .= Text.pack (show rulesCount)
-                        ]
-                    ]
+        DebugRewriteRulesRemainder{configuration} =
+            [CLNullary CtxRemainder, CtxTerm `withShortId` showHashHex (hash configuration)]
 
     oneLineDoc (DebugRewriteRulesRemainder{rulesCount, remainder}) =
         let context = [Pretty.brackets "detail"]
@@ -95,14 +81,14 @@ instance Entry DebugRewriteRulesRemainder where
                 )
          in mconcat context <> logMsg
 
-    oneLineJson DebugRewriteRulesRemainder{remainder} =
-        toJSON
-            . PatternJson.fromPredicate sortBool
-            . Predicate.mapVariables (pure toVariableName)
-            $ remainder
-
-remainderContextName :: Text.Text
-remainderContextName = "remainder"
+    oneLineJson DebugRewriteRulesRemainder{remainder, rulesCount} =
+        object
+            [ "remainder"
+                .= PatternJson.fromPredicate
+                    sortBool
+                    (Predicate.mapVariables (pure toVariableName) remainder)
+            , "rules-count" .= rulesCount
+            ]
 
 sortBool :: TermLike.Sort
 sortBool =

@@ -76,7 +76,8 @@ import Kore.Unparser (
     Unparse,
     unparse,
  )
-import Log
+import Kore.Util (showHashHex)
+import Log hiding (UniqueId)
 import Prelude.Kore
 import Pretty (
     Pretty (..),
@@ -180,21 +181,25 @@ instance Pretty DebugRewriteTrace where
 instance Entry DebugInitialClaim where
     entrySeverity _ = Debug
     oneLineDoc (DebugInitialClaim uniqueId _) = "Initial claim " <> maybe mempty pretty (getUniqueId uniqueId)
+    oneLineContextDoc _ = single CtxDetail
     helpDoc _ = "log every claim before proving it"
 
 instance Entry DebugInitialPattern where
     entrySeverity _ = Debug
     oneLineDoc (DebugInitialPattern _) = "Initial pattern"
+    oneLineContextDoc (DebugInitialPattern p) = [CtxTerm `withShortId` showHashHex (hash p)]
     helpDoc _ = "log initial pattern before rewriting"
 
 instance Entry DebugFinalPatterns where
     entrySeverity _ = Debug
     oneLineDoc (DebugFinalPatterns _) = "Final patterns"
+    oneLineContextDoc _ = single CtxDetail
     helpDoc _ = "log final patterns after rewriting"
 
 instance Entry DebugRewriteTrace where
     entrySeverity _ = Debug
     oneLineDoc DebugRewriteTrace{} = "Rewrite trace"
+    oneLineContextDoc _ = single CtxDetail
     helpDoc _ = "log rewrite substitutions"
 
 unparseOneLine :: Unparse p => p -> Text

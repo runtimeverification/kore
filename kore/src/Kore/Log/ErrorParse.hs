@@ -34,6 +34,7 @@ instance Pretty ErrorParse where
 instance Entry ErrorParse where
     entrySeverity _ = Error
     oneLineDoc _ = "ErrorParse"
+    oneLineContextDoc _ = single CtxError
 
 errorParse :: MonadThrow log => String -> log a
 errorParse message =
