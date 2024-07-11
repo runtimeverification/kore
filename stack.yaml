@@ -25,6 +25,8 @@ extra-deps:
   - github: goodlyrottenapple/profiteur
     commit: 7b30bbe6b2a6b72a5b4896f3a0eed5587a5bf465
   - ghc-prof-1.4.1.12@sha256:0146d3324470db81f6ed1d84b445f1d1aadaeb2e4e045876f5cd231a0946b713,2117
+  - github: IagoAbal/haskell-z3
+    commit: b77a17e5eeb7db82656bcbcd66c6e952207e69ca
 
 allow-newer: true
 

@@ -43,6 +43,8 @@
               # inputs, but it is actually getting passed _itself_ (not the system package
               # `graphviz`), which causes the infinite recursion.
               "graphviz" = _: { graphviz = final.graphviz; };
+              "z3" = _: { z3 = final.z3; };
+              "smtlib-backends-z3" = _: { z3 = final.z3; };
             };
           additionalHaskellPkgSetOverrides = hfinal: hprev:
             with final.haskell.lib; {
@@ -57,6 +59,8 @@
               prettyprinter = dontCheck hprev.prettyprinter;
               semialign = doJailbreak hprev.semialign;
               smtlib-backends-process = dontCheck hprev.smtlib-backends-process;
+              z3 = dontCheck hprev.z3;
+              smtlib-backends-z3 = dontCheck hprev.smtlib-backends-z3;
               tar = dontCheck hprev.tar;
               text-short = doJailbreak hprev.text-short;
               these = doJailbreak hprev.these;

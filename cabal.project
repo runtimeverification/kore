@@ -21,4 +21,9 @@ source-repository-package
   location: https://github.com/goodlyrottenapple/profiteur.git
   tag: 7b30bbe6b2a6b72a5b4896f3a0eed5587a5bf465
 
+source-repository-package
+  type: git
+  location: https://github.com/IagoAbal/haskell-z3.git
+  tag: b77a17e5eeb7db82656bcbcd66c6e952207e69ca
+
 constraints: profiteur +embed-data-files

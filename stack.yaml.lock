@@ -75,6 +75,17 @@ packages:
       size: 687
   original:
     hackage: ghc-prof-1.4.1.12@sha256:0146d3324470db81f6ed1d84b445f1d1aadaeb2e4e045876f5cd231a0946b713,2117
+- completed:
+    name: z3
+    pantry-tree:
+      sha256: 991b51749ed89306e80e1bc62c97539991b1a4b2bfc8aae9d6f98480200f48d5
+      size: 2289
+    sha256: 03aac729f0317ed4cbba8fd991ee690f133db6247fd233cd78ed4c99562477df
+    size: 100088
+    url: https://github.com/IagoAbal/haskell-z3/archive/b77a17e5eeb7db82656bcbcd66c6e952207e69ca.tar.gz
+    version: 411.0.1
+  original:
+    url: https://github.com/IagoAbal/haskell-z3/archive/b77a17e5eeb7db82656bcbcd66c6e952207e69ca.tar.gz
 snapshots:
 - completed:
     sha256: 73ad581de7c5306278aec7706cafaf3b1c2eb7abf4ab586e4d9dc675c6106c4e
