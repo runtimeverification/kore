@@ -29,7 +29,7 @@
           '';
         };
       # This should based on the compiler version from the resolver in stack.yaml.
-      ghcVersion = pkgs: pkgs.haskell.packages.ghc965;
+      ghcVersion = pkgs: pkgs.haskell.packages.native-bignum.ghc965;
     in {
       overlay = final: prev: {
         haskell-backend = final.stacklock2nix {
@@ -47,6 +47,7 @@
           additionalHaskellPkgSetOverrides = hfinal: hprev:
             with final.haskell.lib; {
               crypton-x509 = dontCheck hprev.crypton-x509;
+              cryptonite = disableCabalFlag hprev.cryptonite "integer-gmp";
               data-fix = doJailbreak hprev.data-fix;
               decision-diagrams = dontCheck hprev.decision-diagrams;
               fgl = dontCheck hprev.fgl;
