@@ -239,14 +239,28 @@ toCache tag orig result = eqState . modify $ \s -> s{cache = updateCache tag s.c
   where
     insertInto = Map.insert orig result
     updateCache LLVM cache = cache{llvm = insertInto cache.llvm}
-    updateCache Equations cache = cache{equations = insertInto cache.equations}
+    updateCache Equations cache =
+        -- Check before inserting a new result to avoid creating a
+        -- lookup chain e -> result -> olderResult.
+        let newCache = case Map.lookup result cache.equations of
+                Nothing -> Map.insert orig result cache.equations
+                Just furtherResult -> Map.insert orig furtherResult cache.equations
+         in cache{equations = newCache}
 
 fromCache :: Monad io => CacheTag -> Term -> EquationT io (Maybe Term)
-fromCache tag t = eqState $ Map.lookup t <$> gets (select tag . (.cache))
-  where
-    select :: CacheTag -> SimplifierCache -> Map Term Term
-    select LLVM = (.llvm)
-    select Equations = (.equations)
+fromCache tag t = eqState $ do
+    eqState <- get
+    case tag of
+        LLVM -> pure $ Map.lookup t eqState.cache.llvm
+        Equations -> do
+            case Map.lookup t eqState.cache.equations of
+                Nothing -> pure Nothing
+                Just t' -> case Map.lookup t' eqState.cache.equations of
+                    Nothing -> pure $ Just t'
+                    Just t'' -> do
+                        let newEqCache = Map.insert t t'' eqState.cache.equations
+                        put eqState{cache = eqState.cache{equations = newEqCache}}
+                        pure $ Just t''
 
 logWarn :: LoggerMIO m => Text -> m ()
 logWarn msg =
