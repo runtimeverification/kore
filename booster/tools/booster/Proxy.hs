@@ -49,7 +49,7 @@ import Kore.Log qualified
 import Kore.Syntax.Definition (SentenceAxiom)
 import Kore.Syntax.Json.Types qualified as KoreJson
 import SMT qualified
-import Stats (MethodTiming (..), StatsVar, addStats, microsWithUnit, timed)
+import Stats (MethodTiming (..), StatsVar, addStats, secWithUnit, timed)
 
 data KoreServer = KoreServer
     { serverState :: MVar.MVar Kore.ServerState
@@ -396,7 +396,7 @@ respondEither cfg@ProxyConfig{boosterState} booster kore req = case req of
                                                 , koreTime = kTime
                                                 }
                                         )
-                                        ("Kore fall-back in " <> microsWithUnit kTime)
+                                        ("Kore fall-back in " <> secWithUnit kTime)
                             case kResult of
                                 Right (Execute koreResult) -> do
                                     let

@@ -509,13 +509,17 @@ runTarball common (Just sock) tarFile keepGoing runOnly compareDetails = do
             | otherwise = Tar.read
 
     entries <- Tar.decodeLongNames . unpackTar <$> BS.readFile tarFile
-    -- let checked = Tar.checkSecurity containedFiles
     -- probe server connection before doing anything, display
     -- instructions unless server was found.
     runAllRequests entries sock
   where
-    -- runAllRequests ::
-    --     Tar.Entries Tar.FormatError -> Socket -> IO ()
+    runAllRequests ::
+        Tar.GenEntries
+            FilePath
+            a
+            (Either Tar.FormatError Tar.DecodeLongNamesError) ->
+        Socket ->
+        IO ()
     runAllRequests checked skt = cancelIfInterrupted skt $ do
         withTempDir $ \tmp -> withLogLevel common.logLevel $ do
             -- unpack relevant tar files (rpc_* directories only)

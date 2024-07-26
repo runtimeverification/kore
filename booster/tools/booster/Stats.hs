@@ -3,7 +3,7 @@ module Stats (
     addStats,
     finaliseStats,
     timed,
-    microsWithUnit,
+    secWithUnit,
     RequestStats (..),
     StatsVar,
     MethodTiming (..),
@@ -25,7 +25,7 @@ import Booster.Log
 import Booster.Prettyprinter
 import Kore.JsonRpc.Types (APIMethod)
 
--- server statistics
+-- | Statistics for duration measurement time series (in seconds)
 data RequestStats a = RequestStats
     { count :: Int
     , average :: a
@@ -60,31 +60,30 @@ instance (Floating a, PrintfArg a, Ord a) => Pretty (RequestStats a) where
                 <+> withUnit stats.koreMax
             ]
       where
-        withUnit = pretty . microsWithUnit
+        withUnit = pretty . secWithUnit
 
-microsWithUnit :: (Floating a, Ord a, PrintfArg a) => a -> String
-microsWithUnit x
-    | x > 10 ** 5 = printf "%.2fs" $ x / 10 ** 6
-    | x > 10 ** 2 = printf "%.3fms" $ x / 10 ** 3
-    | otherwise = printf "%.1fμs" x
+secWithUnit :: (Floating a, Ord a, PrintfArg a) => a -> String
+secWithUnit x
+    | x > 0.1 = printf "%.2fs" x
+    | x > 0.0001 = printf "%.3fms" $ x * 10 ** 3
+    | otherwise = printf "%.1fμs" $ x * 10 ** 6
 
 -- internal helper type
--- all values are in microseconds
-data Stats' a = Stats'
+-- all values are in seconds
+data Stats' = Stats'
     { count :: Int
-    , total :: a
-    , squares :: a
-    , maxVal :: a
-    , minVal :: a
-    , koreTotal :: a
-    , koreMax :: a
+    , total :: Double
+    , squares :: Double
+    , maxVal :: Double
+    , minVal :: Double
+    , koreTotal :: Double
+    , koreMax :: Double
     }
 
-instance (Ord a, Num a) => Semigroup (Stats' a) where
+instance Semigroup Stats' where
     (<>) = addStats'
 
-{-# SPECIALIZE addStats' :: Stats' Double -> Stats' Double -> Stats' Double #-}
-addStats' :: (Ord a, Num a) => Stats' a -> Stats' a -> Stats' a
+addStats' :: Stats' -> Stats' -> Stats'
 addStats' stats1 stats2 =
     Stats'
         { count = stats1.count + stats2.count
@@ -96,7 +95,7 @@ addStats' stats1 stats2 =
         , koreMax = max stats1.koreMax stats2.koreMax
         }
 
-singleStats' :: Num a => a -> a -> Stats' a
+singleStats' :: Double -> Double -> Stats'
 singleStats' x korePart =
     Stats'
         { count = 1
@@ -108,43 +107,44 @@ singleStats' x korePart =
         , koreMax = korePart
         }
 
-type StatsVar = MVar (Map APIMethod (Stats' Double))
+type StatsVar = MVar (Map APIMethod Stats')
 
 -- helper type mainly for json logging
-data MethodTiming a = MethodTiming {method :: APIMethod, time :: a, koreTime :: a}
+data MethodTiming = MethodTiming {method :: APIMethod, time :: Double, koreTime :: Double}
     deriving stock (Eq, Show, Generic)
     deriving
         (ToJSON, FromJSON)
-        via CustomJSON '[FieldLabelModifier '[CamelToKebab]] (MethodTiming a)
+        via CustomJSON '[FieldLabelModifier '[CamelToKebab]] MethodTiming
 
-instance ToLogFormat (MethodTiming Double) where
+instance ToLogFormat MethodTiming where
     toTextualLog mt =
         pack $
             printf
                 "Performed %s in %s (%s kore time)"
                 (show mt.method)
-                (microsWithUnit mt.time)
-                (microsWithUnit mt.koreTime)
+                (secWithUnit mt.time)
+                (secWithUnit mt.koreTime)
     toJSONLog = toJSON
 
 addStats ::
     MonadIO m =>
-    MVar (Map APIMethod (Stats' Double)) ->
-    MethodTiming Double ->
+    MVar (Map APIMethod Stats') ->
+    MethodTiming ->
     m ()
 addStats statVar MethodTiming{method, time, koreTime} =
     liftIO . modifyMVar_ statVar $
         pure . Map.insertWith (<>) method (singleStats' time koreTime)
 
-newStats :: MonadIO m => m (MVar (Map APIMethod (Stats' Double)))
+newStats :: MonadIO m => m (MVar (Map APIMethod Stats'))
 newStats = liftIO $ newMVar Map.empty
 
+-- returns time taken by the given action (in seconds)
 timed :: MonadIO m => m a -> m (a, Double)
 timed action = do
     start <- liftIO $ getTime Monotonic
     result <- action
     stop <- liftIO $ getTime Monotonic
-    let time = fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 1000.0
+    let time = fromIntegral (toNanoSecs (diffTimeSpec stop start)) / 10 ** 9
     pure (result, time)
 
 newtype FinalStats = FinalStats (Map APIMethod (RequestStats Double))
@@ -164,10 +164,10 @@ instance ToLogFormat FinalStats where
     toTextualLog = renderText . pretty
     toJSONLog = toJSON
 
-finaliseStats :: MVar (Map APIMethod (Stats' Double)) -> IO FinalStats
+finaliseStats :: MVar (Map APIMethod Stats') -> IO FinalStats
 finaliseStats var = FinalStats . Map.map finalise <$> readMVar var
   where
-    finalise :: Floating a => Stats' a -> RequestStats a
+    finalise :: Stats' -> RequestStats Double
     finalise Stats'{count, total, squares, maxVal, minVal, koreTotal, koreMax} =
         let average = total / fromIntegral count
             stddev = sqrt $ squares / fromIntegral count - average * average

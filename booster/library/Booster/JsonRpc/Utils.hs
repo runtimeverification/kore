@@ -224,12 +224,15 @@ methodOfRpcCall = \case
 renderDiff :: BS.ByteString -> BS.ByteString -> Maybe String
 renderDiff first second
     | first == second = Nothing
-renderDiff first second = unsafePerformIO . withTempDir $ \dir -> do
+    | otherwise = renderDiff' ["-w"] first second
+
+renderDiff' :: [String] -> BS.ByteString -> BS.ByteString -> Maybe String
+renderDiff' diffOptions first second = unsafePerformIO . withTempDir $ \dir -> do
     let path1 = dir </> "diff_file1.txt"
         path2 = dir </> "diff_file2.txt"
     BS.writeFile path1 first
     BS.writeFile path2 second
-    (result, str, _) <- readProcessWithExitCode "diff" ["-w", path1, path2] ""
+    (result, str, _) <- readProcessWithExitCode "diff" (diffOptions <> [path1, path2]) ""
     case result of
         ExitSuccess -> pure Nothing
         ExitFailure 1 -> pure $ Just str
@@ -240,7 +243,7 @@ renderDiff first second = unsafePerformIO . withTempDir $ \dir -> do
 -- This uses the `pretty` instance for a textual diff.
 diffBy :: Internal.KoreDefinition -> KorePattern -> KorePattern -> Maybe String
 diffBy def pat1 pat2 =
-    renderDiff (internalise pat1) (internalise pat2)
+    renderDiff' ["-c", "-w"] (internalise pat1) (internalise pat2)
   where
     renderBS :: TermOrPredicates -> BS.ByteString
     renderBS (Predicates ps) =
