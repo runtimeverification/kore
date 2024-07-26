@@ -234,32 +234,43 @@ popRecursion = do
             throw $ InternalError "Trying to pop an empty recursion stack"
         else eqState $ put s{recursionStack = tail s.recursionStack}
 
-toCache :: Monad io => CacheTag -> Term -> Term -> EquationT io ()
-toCache tag orig result = eqState . modify $ \s -> s{cache = updateCache tag s.cache}
-  where
-    insertInto = Map.insert orig result
-    updateCache LLVM cache = cache{llvm = insertInto cache.llvm}
-    updateCache Equations cache =
-        -- Check before inserting a new result to avoid creating a
-        -- lookup chain e -> result -> olderResult.
-        let newCache = case Map.lookup result cache.equations of
-                Nothing -> Map.insert orig result cache.equations
-                Just furtherResult -> Map.insert orig furtherResult cache.equations
-         in cache{equations = newCache}
+toCache :: LoggerMIO io => CacheTag -> Term -> Term -> EquationT io ()
+toCache LLVM orig result = eqState . modify $
+    \s -> s{cache = s.cache{llvm = Map.insert orig result s.cache.llvm}}
+toCache Equations orig result = eqState $ do
+    s <- get
+    -- Check before inserting a new result to avoid creating a
+    -- lookup chain e -> result -> olderResult.
+    newEqCache <- case Map.lookup result s.cache.equations of
+            Nothing ->
+                pure $ Map.insert orig result s.cache.equations
+            Just furtherResult -> do
+                withContextFor Equations . logMessage $
+                  "toCache shortening a chain "
+                      <> showHashHex (getAttributes orig).hash
+                      <> "->"
+                      <> showHashHex (getAttributes furtherResult).hash
+                pure $ Map.insert orig furtherResult s.cache.equations
+    put s{cache = s.cache{equations = newEqCache}}
 
-fromCache :: Monad io => CacheTag -> Term -> EquationT io (Maybe Term)
+fromCache :: LoggerMIO io => CacheTag -> Term -> EquationT io (Maybe Term)
 fromCache tag t = eqState $ do
-    eqState <- get
+    s <- get
     case tag of
-        LLVM -> pure $ Map.lookup t eqState.cache.llvm
+        LLVM -> pure $ Map.lookup t s.cache.llvm
         Equations -> do
-            case Map.lookup t eqState.cache.equations of
+            case Map.lookup t s.cache.equations of
                 Nothing -> pure Nothing
-                Just t' -> case Map.lookup t' eqState.cache.equations of
+                Just t' -> case Map.lookup t' s.cache.equations of
                     Nothing -> pure $ Just t'
                     Just t'' -> do
-                        let newEqCache = Map.insert t t'' eqState.cache.equations
-                        put eqState{cache = eqState.cache{equations = newEqCache}}
+                        withContextFor Equations . logMessage $
+                            "fromCache shortening a chain "
+                                <> showHashHex (getAttributes t).hash
+                                <> "->"
+                                <> showHashHex (getAttributes t'').hash
+                        let newEqCache = Map.insert t t'' s.cache.equations
+                        put s{cache = s.cache{equations = newEqCache}}
                         pure $ Just t''
 
 logWarn :: LoggerMIO m => Text -> m ()
