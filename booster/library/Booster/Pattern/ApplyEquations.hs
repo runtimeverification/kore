@@ -22,7 +22,8 @@ module Booster.Pattern.ApplyEquations (
     handleSimplificationEquation,
     simplifyConstraint,
     simplifyConstraints,
-    SimplifierCache,
+    SimplifierCache (..),
+    CacheTag (..),
     evaluateConstraints,
 ) where
 
@@ -245,11 +246,12 @@ toCache Equations orig result = eqState $ do
             Nothing ->
                 pure $ Map.insert orig result s.cache.equations
             Just furtherResult -> do
-                withContextFor Equations . logMessage $
-                  "toCache shortening a chain "
-                      <> showHashHex (getAttributes orig).hash
-                      <> "->"
-                      <> showHashHex (getAttributes furtherResult).hash
+                when (result /= furtherResult) $ do
+                    withContextFor Equations . logMessage $
+                        "toCache shortening a chain "
+                            <> showHashHex (getAttributes orig).hash
+                            <> "->"
+                            <> showHashHex (getAttributes furtherResult).hash
                 pure $ Map.insert orig furtherResult s.cache.equations
     put s{cache = s.cache{equations = newEqCache}}
 
@@ -264,13 +266,14 @@ fromCache tag t = eqState $ do
                 Just t' -> case Map.lookup t' s.cache.equations of
                     Nothing -> pure $ Just t'
                     Just t'' -> do
-                        withContextFor Equations . logMessage $
-                            "fromCache shortening a chain "
-                                <> showHashHex (getAttributes t).hash
-                                <> "->"
-                                <> showHashHex (getAttributes t'').hash
-                        let newEqCache = Map.insert t t'' s.cache.equations
-                        put s{cache = s.cache{equations = newEqCache}}
+                        when (t'' /= t') $ do
+                            withContextFor Equations . logMessage $
+                                "fromCache shortening a chain "
+                                    <> showHashHex (getAttributes t).hash
+                                    <> "->"
+                                    <> showHashHex (getAttributes t'').hash
+                            let newEqCache = Map.insert t t'' s.cache.equations
+                            put s{cache = s.cache{equations = newEqCache}}
                         pure $ Just t''
 
 logWarn :: LoggerMIO m => Text -> m ()
@@ -925,6 +928,12 @@ applyEquation term rule =
                                 Left other ->
                                     liftIO $ Exception.throw other
                         lift $ pushConstraints $ Set.fromList ensuredConditions
+                        -- when a new path condition is added, invalidate the equation cache
+                        unless (null ensuredConditions) $ do
+                            withContextFor Equations . logMessage $
+                                ("New ensured condition from evaluation, invalidating cache" :: Text)
+                            lift . eqState . modify $
+                                \s -> s{cache = s.cache{equations = mempty}}
                         pure $ substituteInTerm subst rule.rhs
   where
     filterOutKnownConstraints :: Set Predicate -> [Predicate] -> EquationT io [Predicate]
