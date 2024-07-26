@@ -269,7 +269,8 @@ finalizeRule
             let renamedRule = Conditional.term unifiedRule
             (subst, final) <- finalizeApplied renamedRule applied
             let result = resetResultPattern initialVariables final
-            return Step.Result{appliedRule = unifiedRule{substitution = subst}, result}
+            trace ("Initial variables: " <> show initialVariables) $
+                return Step.Result{appliedRule = unifiedRule{substitution = subst}, result}
 
 -- | Finalizes a list of applied rules into 'Results'.
 type Finalizer rule =
