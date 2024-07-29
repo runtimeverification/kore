@@ -26,7 +26,7 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader (ReaderT (..), ask, asks, withReaderT)
-import Control.Monad.Trans.State.Strict (StateT (runStateT), get, modify)
+import Control.Monad.Trans.State.Strict (StateT (runStateT), get, modify, put)
 import Data.Aeson (object, (.=))
 import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
@@ -48,9 +48,9 @@ import Booster.Definition.Base
 import Booster.LLVM as LLVM (API)
 import Booster.Log
 import Booster.Pattern.ApplyEquations (
+    CacheTag (Equations),
     EquationFailure (..),
     SimplifierCache (..),
-    CacheTag (Equations),
     evaluatePattern,
     simplifyConstraint,
  )
@@ -423,7 +423,6 @@ applyRule pat@Pattern{ceilConditions} rule =
                             ("New path condition ensured, invalidating cache" :: Text)
                         lift . RewriteT . lift . modify $ \s -> s{equations = mempty}
 
-
                     -- existential variables may be present in rule.rhs and rule.ensures,
                     -- need to strip prefixes and freshen their names with respect to variables already
                     -- present in the input pattern and in the unification substitution
@@ -751,6 +750,9 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
 
     updateCache simplifierCache = modify $ \rss -> rss{simplifierCache}
 
+    updateSolver :: SMT.SMTContext -> RewriteStepsState -> RewriteStepsState
+    updateSolver solver s = s{smtSolver = Just solver}
+
     simplifyP :: Pattern -> StateT RewriteStepsState io (Maybe Pattern)
     simplifyP p = withContext CtxSimplify $ do
         st <- get
@@ -909,6 +911,18 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
                                 emitRewriteTrace $ RewriteStepFailed failure
                                 logMessage $ "Aborted after " <> showCounter counter
                                 pure (RewriteAborted failure pat')
+                        -- if a rule condition was unclear and the pattern was
+                        -- unsimplified, simplify and retry rewriting once
+                        Left failure@(RuleConditionUnclear rule unclearCondition)
+                            | not wasSimplified -> do
+                                -- start new solver because it was already stopped permanently...
+                                solver <- SMT.initSolver def SMT.defaultSMTOptions
+                                let act = do
+                                        rss <- get
+                                        let rss' = updateSolver solver rss
+                                        put rss'
+                                act
+                                withSimplified pat' "Retrying with simplified pattern" (doSteps True)
                         Left failure -> do
                             emitRewriteTrace $ RewriteStepFailed failure
                             let msg = "Aborted after " <> showCounter counter
