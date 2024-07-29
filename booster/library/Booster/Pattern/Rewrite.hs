@@ -744,6 +744,9 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
 
     updateCache simplifierCache = modify $ \rss -> rss{simplifierCache}
 
+    updateSolver :: SMT.SMTContext -> RewriteStepsState -> RewriteStepsState
+    updateSolver solver s = s{smtSolver = Just solver}
+
     simplifyP :: Pattern -> StateT RewriteStepsState io (Maybe Pattern)
     simplifyP p = withContext CtxSimplify $ do
         st <- get
@@ -882,7 +885,9 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
                         Left failure@(RuleApplicationUnclear rule _ remainder)
                             | not wasSimplified -> do
                                 emitRewriteTrace $ RewriteStepFailed failure
-                                -- simplify remainders, substitute and rerun.
+                                -- start new solver because it was already stopped permanently...
+                                solver <- SMT.initSolver def SMT.defaultSMTOptions
+                                _ <- modify (updateSolver solver)
                                 -- If failed, do the pattern-wide simplfication and rerun again
                                 withSimplified pat' "Retrying with simplified pattern" (doSteps True)
                             | otherwise -> do
