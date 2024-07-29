@@ -726,7 +726,7 @@ performRewrite ::
     io (Natural, Seq (RewriteTrace ()), RewriteResult Pattern)
 performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalLabels pat = do
     (rr, RewriteStepsState{counter, traces}) <-
-        flip runStateT rewriteStart $ doSteps False pat
+        flip runStateT (rewriteStart mSolver) $ doSteps False pat
     pure (counter, traces, rr)
   where
     logDepth = withContext CtxDepth . logMessage
@@ -937,11 +937,11 @@ data RewriteStepsState = RewriteStepsState
     , smtSolver :: Maybe SMT.SMTContext
     }
 
-rewriteStart :: RewriteStepsState
-rewriteStart =
+rewriteStart :: Maybe SMT.SMTContext -> RewriteStepsState
+rewriteStart mSolver =
     RewriteStepsState
         { counter = 0
         , traces = mempty
         , simplifierCache = mempty
-        , smtSolver = Nothing
+        , smtSolver = mSolver
         }
