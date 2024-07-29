@@ -738,7 +738,7 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
                     [ ("steps: " <> (pack . show $ counter))
                     , ("LLVM cache: " <> (pack . show . Map.size $ simplifierCache.llvm))
                     , ("Equations cache: " <> (pack . show . Map.size $ simplifierCache.equations))
-                    , ("Solver: " <> (pack . show $ SMT.options <$> smtSolver))
+                    , ("Solver options: " <> (pack . show $ SMT.options <$> smtSolver))
                     ]
 
     depthReached n = maybe False (n >=) mbMaxDepth
