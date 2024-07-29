@@ -39,7 +39,7 @@ import Data.Map qualified as Map
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Sequence (Seq, (|>))
 import Data.Set qualified as Set
-import Data.Text as Text (Text, pack)
+import Data.Text as Text (Text, intercalate, pack)
 import Numeric.Natural
 import Prettyprinter
 
@@ -49,7 +49,7 @@ import Booster.LLVM as LLVM (API)
 import Booster.Log
 import Booster.Pattern.ApplyEquations (
     EquationFailure (..),
-    SimplifierCache,
+    SimplifierCache (..),
     evaluatePattern,
     simplifyConstraint,
  )
@@ -67,6 +67,7 @@ import Booster.Pattern.Pretty
 import Booster.Pattern.Util
 import Booster.Prettyprinter
 import Booster.SMT.Interface qualified as SMT
+import Booster.SMT.Runner qualified as SMT
 import Booster.Syntax.Json.Externalise (externaliseTerm)
 import Booster.Util (Flag (..))
 
@@ -729,6 +730,16 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
     pure (counter, traces, rr)
   where
     logDepth = withContext CtxDepth . logMessage
+    logDebugRewriter RewriteStepsState{counter, simplifierCache, smtSolver} =
+        withContext CtxDebugRewriter $ do
+            logMessage $
+                Text.intercalate
+                    ","
+                    [ ("steps: " <> (pack . show $ counter))
+                    , ("LLVM cache: " <> (pack . show . Map.size $ simplifierCache.llvm))
+                    , ("Equations cache: " <> (pack . show . Map.size $ simplifierCache.equations))
+                    , ("Solver: " <> (pack . show $ SMT.options <$> smtSolver))
+                    ]
 
     depthReached n = maybe False (n >=) mbMaxDepth
 
@@ -808,8 +819,9 @@ performRewrite doTracing def mLlvmLibrary mSolver mbMaxDepth cutLabels terminalL
     doSteps ::
         Bool -> Pattern -> StateT RewriteStepsState io (RewriteResult Pattern)
     doSteps wasSimplified pat' = do
-        RewriteStepsState{counter, simplifierCache} <- get
+        rewriteStepsState@RewriteStepsState{counter, simplifierCache, smtSolver} <- get
         logDepth $ showCounter counter
+        logDebugRewriter rewriteStepsState
         if depthReached counter
             then do
                 logDepth $ "Reached maximum depth of " <> maybe "?" showCounter mbMaxDepth

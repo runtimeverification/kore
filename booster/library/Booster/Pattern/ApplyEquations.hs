@@ -22,7 +22,7 @@ module Booster.Pattern.ApplyEquations (
     handleSimplificationEquation,
     simplifyConstraint,
     simplifyConstraints,
-    SimplifierCache,
+    SimplifierCache (..),
     evaluateConstraints,
 ) where
 

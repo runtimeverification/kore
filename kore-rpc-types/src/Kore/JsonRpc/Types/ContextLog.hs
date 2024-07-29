@@ -53,6 +53,7 @@ data SimpleContext
     | CtxSubstitution
     | CtxRemainder
     | CtxDepth
+    | CtxDebugRewriter
     | CtxTiming
     | -- standard log levels
       CtxError
