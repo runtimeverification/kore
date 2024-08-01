@@ -408,6 +408,7 @@ data CLProxyOptions = CLProxyOptions
     { clOptions :: CLOptions
     , proxyOptions :: ProxyOptions
     }
+    deriving stock (Show)
 
 data ProxyOptions = ProxyOptions
     { forceFallback :: Maybe Depth
@@ -421,6 +422,7 @@ data ProxyOptions = ProxyOptions
     , simplifyBeforeFallback :: Bool
     -- ^ whether to run a simplification before fall-back execute requests
     }
+    deriving stock (Show)
 
 parserInfoModifiers :: InfoMod options
 parserInfoModifiers =
@@ -458,17 +460,23 @@ clProxyOptionsParser =
                     <> help "Halt reasons for which requests should be re-executed with kore-rpc"
                     <> showDefaultWith (intercalate "," . map show)
                 )
-            <*> flag
-                True
-                False
-                ( long "no-post-exec-simplify"
-                    <> help "disable post-exec simplification"
+            <*> ( switch (long "post-exec-simplify" <> help "simplify after execution")
+                    <|> ( flag
+                            True
+                            False
+                            ( long "no-post-exec-simplify"
+                                <> help "Deprecated: used to disable post-exec simplification (which is now the default)"
+                            )
+                        )
                 )
-            <*> flag
-                True
-                False
-                ( long "no-fallback-simplify"
-                    <> help "disable simplification before fallback requests"
+            <*> ( switch (long "fallback-simplify" <> help "run a simplification before fallback requests")
+                    <|> ( flag
+                            True
+                            False
+                            ( long "no-fallback-simplify"
+                                <> help "Deprecated: used to disable simplification before fallback requests (now the default)"
+                            )
+                        )
                 )
 
     reasonReader :: String -> Either String HaltReason
