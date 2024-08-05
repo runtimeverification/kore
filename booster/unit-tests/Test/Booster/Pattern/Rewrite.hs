@@ -274,7 +274,7 @@ runRewrite t = do
     conf <- testConf
     (counter, _, res) <-
         runNoLoggingT $
-            performRewrite conf $
+            performRewrite conf mempty $
                 Pattern_ t
     pure (counter, fmap (.term) res)
 
@@ -418,7 +418,7 @@ supportsDepthControl =
     rewritesToDepth (MaxDepth depth) (Steps n) t t' f = do
         conf <- testConf
         (counter, _, res) <-
-            runNoLoggingT $ performRewrite conf{mbMaxDepth = Just depth} $ Pattern_ t
+            runNoLoggingT $ performRewrite conf{mbMaxDepth = Just depth} mempty $ Pattern_ t
         (counter, fmap (.term) res) @?= (n, f t')
 
 supportsCutPoints :: TestTree
@@ -472,7 +472,7 @@ supportsCutPoints =
         conf <- testConf
         (counter, _, res) <-
             runNoLoggingT $
-                performRewrite conf{cutLabels = [lbl]} $
+                performRewrite conf{cutLabels = [lbl]} mempty $
                     Pattern_ t
         (counter, fmap (.term) res) @?= (n, f t')
 
@@ -504,5 +504,5 @@ supportsTerminalRules =
     rewritesToTerminal lbl (Steps n) t t' f = do
         conf <- testConf
         (counter, _, res) <-
-            runNoLoggingT $ performRewrite conf{terminalLabels = [lbl]} $ Pattern_ t
+            runNoLoggingT $ performRewrite conf{terminalLabels = [lbl]} mempty $ Pattern_ t
         (counter, fmap (.term) res) @?= (n, f t')
