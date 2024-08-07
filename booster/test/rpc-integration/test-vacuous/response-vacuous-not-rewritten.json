@@ -46,7 +46,7 @@
                                                         "name": "SortState",
                                                         "args": []
                                                     },
-                                                    "value": "symbolic-subst"
+                                                    "value": "b"
                                                 }
                                             ]
                                         },
@@ -67,44 +67,12 @@
                             "args": [
                                 {
                                     "tag": "EVar",
-                                    "name": "X",
+                                    "name": "N",
                                     "sort": {
                                         "tag": "SortApp",
                                         "name": "SortInt",
                                         "args": []
                                     }
-                                }
-                            ]
-                        },
-                        {
-                            "tag": "App",
-                            "name": "Lbl'-LT-'jnt'-GT-'",
-                            "sorts": [],
-                            "args": [
-                                {
-                                    "tag": "App",
-                                    "name": "Lbl'UndsPlus'Int'Unds'",
-                                    "sorts": [],
-                                    "args": [
-                                        {
-                                            "tag": "DV",
-                                            "sort": {
-                                                "tag": "SortApp",
-                                                "name": "SortInt",
-                                                "args": []
-                                            },
-                                            "value": "1"
-                                        },
-                                        {
-                                            "tag": "EVar",
-                                            "name": "X",
-                                            "sort": {
-                                                "tag": "SortApp",
-                                                "name": "SortInt",
-                                                "args": []
-                                            }
-                                        }
-                                    ]
                                 }
                             ]
                         },
@@ -127,55 +95,112 @@
                     ]
                 }
             },
-            "substitution": {
+            "predicate": {
                 "format": "KORE",
                 "version": 1,
                 "term": {
-                    "tag": "Equals",
-                    "argSort": {
-                        "tag": "SortApp",
-                        "name": "SortInt",
-                        "args": []
-                    },
+                    "tag": "And",
                     "sort": {
                         "tag": "SortApp",
                         "name": "SortGeneratedTopCell",
                         "args": []
                     },
-                    "first": {
-                        "tag": "EVar",
-                        "name": "Y",
-                        "sort": {
-                            "tag": "SortApp",
-                            "name": "SortInt",
-                            "args": []
-                        }
-                    },
-                    "second": {
-                        "tag": "App",
-                        "name": "Lbl'UndsPlus'Int'Unds'",
-                        "sorts": [],
-                        "args": [
-                            {
+                    "patterns": [
+                        {
+                            "tag": "Equals",
+                            "argSort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortGeneratedTopCell",
+                                "args": []
+                            },
+                            "first": {
                                 "tag": "DV",
                                 "sort": {
                                     "tag": "SortApp",
-                                    "name": "SortInt",
+                                    "name": "SortBool",
                                     "args": []
                                 },
-                                "value": "1"
+                                "value": "true"
                             },
-                            {
-                                "tag": "EVar",
-                                "name": "X",
+                            "second": {
+                                "tag": "App",
+                                "name": "Lbl'UndsEqlsSlshEqls'Int'Unds'",
+                                "sorts": [],
+                                "args": [
+                                    {
+                                        "tag": "EVar",
+                                        "name": "N",
+                                        "sort": {
+                                            "tag": "SortApp",
+                                            "name": "SortInt",
+                                            "args": []
+                                        }
+                                    },
+                                    {
+                                        "tag": "DV",
+                                        "sort": {
+                                            "tag": "SortApp",
+                                            "name": "SortInt",
+                                            "args": []
+                                        },
+                                        "value": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "tag": "Equals",
+                            "argSort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortGeneratedTopCell",
+                                "args": []
+                            },
+                            "first": {
+                                "tag": "DV",
                                 "sort": {
                                     "tag": "SortApp",
-                                    "name": "SortInt",
+                                    "name": "SortBool",
                                     "args": []
-                                }
+                                },
+                                "value": "true"
+                            },
+                            "second": {
+                                "tag": "App",
+                                "name": "Lbl'UndsEqlsEqls'Int'Unds'",
+                                "sorts": [],
+                                "args": [
+                                    {
+                                        "tag": "EVar",
+                                        "name": "N",
+                                        "sort": {
+                                            "tag": "SortApp",
+                                            "name": "SortInt",
+                                            "args": []
+                                        }
+                                    },
+                                    {
+                                        "tag": "DV",
+                                        "sort": {
+                                            "tag": "SortApp",
+                                            "name": "SortInt",
+                                            "args": []
+                                        },
+                                        "value": "0"
+                                    }
+                                ]
                             }
-                        ]
-                    }
+                        }
+                    ]
                 }
             }
         }

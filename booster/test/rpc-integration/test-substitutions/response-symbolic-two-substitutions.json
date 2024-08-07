@@ -157,15 +157,6 @@
                         "sorts": [],
                         "args": [
                             {
-                                "tag": "EVar",
-                                "name": "X",
-                                "sort": {
-                                    "tag": "SortApp",
-                                    "name": "SortInt",
-                                    "args": []
-                                }
-                            },
-                            {
                                 "tag": "DV",
                                 "sort": {
                                     "tag": "SortApp",
@@ -173,6 +164,15 @@
                                     "args": []
                                 },
                                 "value": "1"
+                            },
+                            {
+                                "tag": "EVar",
+                                "name": "X",
+                                "sort": {
+                                    "tag": "SortApp",
+                                    "name": "SortInt",
+                                    "args": []
+                                }
                             }
                         ]
                     }

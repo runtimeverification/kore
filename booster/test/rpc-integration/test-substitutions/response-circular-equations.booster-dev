@@ -225,61 +225,13 @@
                                         }
                                     },
                                     {
-                                        "tag": "App",
-                                        "name": "Lbl'UndsPlus'Int'Unds'",
-                                        "sorts": [],
-                                        "args": [
-                                            {
-                                                "tag": "App",
-                                                "name": "Lbl'UndsPlus'Int'Unds'",
-                                                "sorts": [],
-                                                "args": [
-                                                    {
-                                                        "tag": "EVar",
-                                                        "name": "X",
-                                                        "sort": {
-                                                            "tag": "SortApp",
-                                                            "name": "SortInt",
-                                                            "args": []
-                                                        }
-                                                    },
-                                                    {
-                                                        "tag": "DV",
-                                                        "sort": {
-                                                            "tag": "SortApp",
-                                                            "name": "SortInt",
-                                                            "args": []
-                                                        },
-                                                        "value": "1"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "tag": "App",
-                                                "name": "Lbl'Unds'-Int'Unds'",
-                                                "sorts": [],
-                                                "args": [
-                                                    {
-                                                        "tag": "DV",
-                                                        "sort": {
-                                                            "tag": "SortApp",
-                                                            "name": "SortInt",
-                                                            "args": []
-                                                        },
-                                                        "value": "0"
-                                                    },
-                                                    {
-                                                        "tag": "DV",
-                                                        "sort": {
-                                                            "tag": "SortApp",
-                                                            "name": "SortInt",
-                                                            "args": []
-                                                        },
-                                                        "value": "1"
-                                                    }
-                                                ]
-                                            }
-                                        ]
+                                        "tag": "EVar",
+                                        "name": "X",
+                                        "sort": {
+                                            "tag": "SortApp",
+                                            "name": "SortInt",
+                                            "args": []
+                                        }
                                     }
                                 ]
                             }

@@ -31,10 +31,9 @@ NB: Booster applies the given substitution before performing any action.
   - with an additional constraint `Y = 1 +Int X` (internalised as a substitution)
   - leading to a contradictory constraint `X = 1 +Int X` after
     rewriting and adding `Y =Int X` from the `ensures`-clause
-    - `kore-rpc-booster` returns `vacuous` after 1 step
-    - `kore-rpc-dev` returns `vacuous` after 0 steps (detects the contradiction earlier)
-    - `kore-rpc-dev` reproduces the exact input as `state` while
-      `kore-rpc-booster` splits off `substitution` (from input) and `predicate` (from the rule)
+    - `kore-rpc-booster` and `booster-dev` return `vacuous` after 0 step, substitution `Y` for `X +Int 1` in the state. However, `kore-rpc-booster` and `booster-dev` disagree a little on the value in the substitution, hence the two responses.
+    - `kore-rpc-dev` returns `vacuous` after 0 steps and reproduces the exact input as `state`
+
 * `state-circular-equations.execute`
   - starts from `concrete-subst`
   - with two equations that have circular dependencies: `Y = 1 +Int X`, `X = Y -Int 1`
@@ -42,6 +41,6 @@ NB: Booster applies the given substitution before performing any action.
 * `state-symbolic-bottom-predicate.execute`
   - starts from `symbolic-subst`
   - with an equation that is instantly false: `X = 1 +Int X`
-  - leading to a vacuous state in `kore-rpc-booster` after rewriting once,
+  - leading to a vacuous state in `booster-dev` and `kore-rpc-booster`,
   - while `kore-rpc-dev` returns `stuck` instantly after 0 steps,
     returning the exact input as `state`.

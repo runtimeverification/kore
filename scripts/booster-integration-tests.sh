@@ -28,12 +28,12 @@ for dir in $(ls -d test-*); do
     name=${dir##test-}
     echo "Running $name..."
     case "$name" in
-        "a-to-f" | "diamond")
+        "a-to-f" | "diamond" | "substitutions" | "vacuous")
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;
-        "substitutions" | "vacuous" | "pathological-add-module")
+        "pathological-add-module")
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;

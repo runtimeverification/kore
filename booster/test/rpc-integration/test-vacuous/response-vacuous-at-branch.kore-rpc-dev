@@ -2,9 +2,8 @@
     "jsonrpc": "2.0",
     "id": 1,
     "result": {
-        "reason": "terminal-rule",
-        "depth": 1,
-        "rule": "TEST.concrete-subst",
+        "reason": "vacuous",
+        "depth": 0,
         "state": {
             "term": {
                 "format": "KORE",
@@ -47,7 +46,7 @@
                                                         "name": "SortState",
                                                         "args": []
                                                     },
-                                                    "value": "a"
+                                                    "value": "init"
                                                 }
                                             ]
                                         },
@@ -67,29 +66,13 @@
                             "sorts": [],
                             "args": [
                                 {
-                                    "tag": "EVar",
-                                    "name": "X",
+                                    "tag": "DV",
                                     "sort": {
                                         "tag": "SortApp",
                                         "name": "SortInt",
                                         "args": []
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "tag": "App",
-                            "name": "Lbl'-LT-'jnt'-GT-'",
-                            "sorts": [],
-                            "args": [
-                                {
-                                    "tag": "EVar",
-                                    "name": "Y",
-                                    "sort": {
-                                        "tag": "SortApp",
-                                        "name": "SortInt",
-                                        "args": []
-                                    }
+                                    },
+                                    "value": "0"
                                 }
                             ]
                         },
@@ -110,57 +93,6 @@
                             ]
                         }
                     ]
-                }
-            },
-            "predicate": {
-                "format": "KORE",
-                "version": 1,
-                "term": {
-                    "tag": "Equals",
-                    "argSort": {
-                        "tag": "SortApp",
-                        "name": "SortBool",
-                        "args": []
-                    },
-                    "sort": {
-                        "tag": "SortApp",
-                        "name": "SortGeneratedTopCell",
-                        "args": []
-                    },
-                    "first": {
-                        "tag": "DV",
-                        "sort": {
-                            "tag": "SortApp",
-                            "name": "SortBool",
-                            "args": []
-                        },
-                        "value": "true"
-                    },
-                    "second": {
-                        "tag": "App",
-                        "name": "Lbl'UndsEqlsEqls'Int'Unds'",
-                        "sorts": [],
-                        "args": [
-                            {
-                                "tag": "EVar",
-                                "name": "X",
-                                "sort": {
-                                    "tag": "SortApp",
-                                    "name": "SortInt",
-                                    "args": []
-                                }
-                            },
-                            {
-                                "tag": "DV",
-                                "sort": {
-                                    "tag": "SortApp",
-                                    "name": "SortInt",
-                                    "args": []
-                                },
-                                "value": "42"
-                            }
-                        ]
-                    }
                 }
             }
         }
