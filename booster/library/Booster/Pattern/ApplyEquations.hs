@@ -458,14 +458,38 @@ evaluatePattern def mLlvmLibrary smtSolver cache pat =
     runEquationT def mLlvmLibrary smtSolver cache pat.constraints . evaluatePattern' $ pat
 
 -- version for internal nested evaluation
+-- version for internal nested evaluation
 evaluatePattern' ::
     LoggerMIO io =>
     Pattern ->
     EquationT io Pattern
-evaluatePattern' pat@Pattern{term, ceilConditions} = withPatternContext pat $ do
+evaluatePattern' pat@Pattern{term, constraints, ceilConditions} = withPatternContext pat $ do
+    solver <- (.smtSolver) <$> getConfig
+    -- check the pattern's constraints for satisfiability to ensure they are consistent
+    consistent <-
+        withContext CtxConstraint $ do
+            withContext CtxDetail . withTermContext (coerce $ collapseAndBools constraints) $ pure ()
+            consistent <- SMT.isSat solver (Set.toList constraints)
+            withContext CtxConstraint $
+                logMessage $
+                    "Constraints consistency check returns: " <> show consistent
+            pure consistent
+    case consistent of
+        SMT.IsUnsat -> do
+            -- the constraints are unsatisfiable, which means that the patten is Bottom
+            throw . SideConditionFalse . collapseAndBools $ constraints
+        SMT.IsUnknown{} -> do
+            -- unlikely case of an Unknown response to a consistency check.
+            -- continue to preserver the old behaviour.
+            withContext CtxConstraint . logWarn . Text.pack $
+                "Constraints consistency UNKNOWN: " <> show consistent
+            pure ()
+        SMT.IsSat{} ->
+            -- constraints are consistent, continue
+            pure ()
+
     newTerm <- withTermContext term $ evaluateTerm' BottomUp term `catch_` keepTopLevelResults
-    -- after evaluating the term, evaluate all (existing and
-    -- newly-acquired) constraints, once
+    -- after evaluating the term, evaluate all (existing and newly-acquired) constraints, once
     traverse_ simplifyAssumedPredicate . predicates =<< getState
     -- this may yield additional new constraints, left unevaluated
     evaluatedConstraints <- predicates <$> getState
@@ -481,6 +505,9 @@ evaluatePattern' pat@Pattern{term, ceilConditions} = withPatternContext pat $ do
         TooManyIterations _ _ partialResult ->
             pure partialResult
         err -> throw err
+
+    collapseAndBools :: Set Predicate -> Predicate
+    collapseAndBools = coerce . foldAndBool . map coerce . Set.toList
 
 -- evaluate the given predicate assuming all others
 simplifyAssumedPredicate :: LoggerMIO io => Predicate -> EquationT io ()
