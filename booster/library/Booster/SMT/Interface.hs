@@ -191,7 +191,7 @@ finaliseSolver ctxt = do
 pattern IsUnknown :: unknown -> Either unknown b
 pattern IsUnknown u = Left u
 
-newtype IsSat' a = IsSat' (Maybe a) deriving (Functor)
+newtype IsSat' a = IsSat' (Maybe a) deriving (Functor, Show)
 
 type IsSatResult a = Either Text (IsSat' a)
 
@@ -345,7 +345,7 @@ getModelFor ctxt ps subst
 mkComment :: Pretty (PrettyWithModifiers '[Decoded] a) => a -> BS.ByteString
 mkComment = BS.pack . Pretty.renderDefault . pretty' @'[Decoded]
 
-newtype IsValid' = IsValid' Bool
+newtype IsValid' = IsValid' Bool deriving (Show)
 
 type IsValidResult = Either (Maybe Text) IsValid'
 
