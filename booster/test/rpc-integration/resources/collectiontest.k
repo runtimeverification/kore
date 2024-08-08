@@ -5,7 +5,7 @@ module COLLECTIONTEST
   imports LIST
   imports MAP
 
-  syntax State ::= State(Collection, Int) [klabel(State), symbol]
+  syntax State ::= State(Collection, Int) [symbol(State)]
 
   syntax Collection ::= Set // | List | Map
 
