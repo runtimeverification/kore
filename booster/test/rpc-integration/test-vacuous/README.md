@@ -45,9 +45,7 @@ Rules `init` and `AC` introduce constraints on this variable:
      ==Int 1  \and N =/=Int  1` (A contradiction in the initial constraints).
 
    _Expected:_
-   - Rewrite with `BD` (despite the contradiction)
-   - The rewrite is stuck with `<k>d</k><int>N</int> \and...(contradiction)`
-   - The result is simplified and discovered to be `vacuous` (with state `d`).
+   - The state is simplified and discovered to be `vacuous` (with state `b`).
 
 With `kore-rpc-dev`, some contradictions will be discovered before or while
 attempting to rewrite (at the time of writing, it returns `stuck`, though).

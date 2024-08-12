@@ -458,7 +458,6 @@ evaluatePattern def mLlvmLibrary smtSolver cache pat =
     runEquationT def mLlvmLibrary smtSolver cache pat.constraints . evaluatePattern' $ pat
 
 -- version for internal nested evaluation
--- version for internal nested evaluation
 evaluatePattern' ::
     LoggerMIO io =>
     Pattern ->
@@ -470,9 +469,8 @@ evaluatePattern' pat@Pattern{term, constraints, ceilConditions} = withPatternCon
         withContext CtxConstraint $ do
             withContext CtxDetail . withTermContext (coerce $ collapseAndBools constraints) $ pure ()
             consistent <- SMT.isSat solver (Set.toList constraints)
-            withContext CtxConstraint $
-                logMessage $
-                    "Constraints consistency check returns: " <> show consistent
+            logMessage $
+                "Constraints consistency check returns: " <> show consistent
             pure consistent
     case consistent of
         SMT.IsUnsat -> do
@@ -480,7 +478,7 @@ evaluatePattern' pat@Pattern{term, constraints, ceilConditions} = withPatternCon
             throw . SideConditionFalse . collapseAndBools $ constraints
         SMT.IsUnknown{} -> do
             -- unlikely case of an Unknown response to a consistency check.
-            -- continue to preserver the old behaviour.
+            -- continue to preserve the old behaviour.
             withContext CtxConstraint . logWarn . Text.pack $
                 "Constraints consistency UNKNOWN: " <> show consistent
             pure ()
