@@ -170,7 +170,7 @@ runPrelude doCheck = do
     mapM_ runCmd ctxt.prelude
     -- optionally check the prelude for consistency
     when (coerce doCheck) $ do
-        check <- mapM_ runCmd ctxt.prelude >> runCmd CheckSat
+        check <- runCmd CheckSat
         case check of
             Sat -> pure ()
             other -> do
