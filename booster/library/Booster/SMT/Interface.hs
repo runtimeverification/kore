@@ -57,6 +57,7 @@ import Booster.SMT.Base as SMT
 import Booster.SMT.Runner as SMT
 import Booster.SMT.Translate as SMT
 import Booster.Syntax.Json.Externalise (externaliseTerm)
+import Booster.Util (Flag (..))
 
 data SMTError
     = GeneralSMTError Text
@@ -98,7 +99,7 @@ initSolver def smtOptions = Log.withContext Log.CtxSMT $ do
     Log.logMessage ("Starting new SMT solver" :: Text)
     ctxt <- mkContext smtOptions prelude
 
-    evalSMT ctxt checkPrelude
+    evalSMT ctxt (runPrelude CheckSMTPrelude)
     Log.logMessage ("Successfully initialised SMT solver with " <> (Text.pack . show $ smtOptions))
     pure ctxt
 
@@ -130,7 +131,7 @@ hardResetSolver = do
             liftIO $ do
                 writeIORef solverRef solver
                 writeIORef ctxt.solverClose $ Backend.close handle
-            checkPrelude
+            runPrelude NoCheckSMTPrelude
 
 -- | Retry the action `cb`, first decreasing the retry counter and increasing the timeout limit, unless the retry limit has already been reached, in which case call `onTimeout`
 retry :: Log.LoggerMIO io => SMT io a -> SMT io a -> SMT io a
@@ -155,14 +156,28 @@ translatePrelude def =
                 throwSMT $ "Unable to translate elements of the definition to SMT: " <> err
             Right decls -> pure decls
 
-checkPrelude :: Log.LoggerMIO io => SMT io ()
-checkPrelude = do
+pattern CheckSMTPrelude, NoCheckSMTPrelude :: Flag "CheckSMTPrelude"
+pattern CheckSMTPrelude = Flag True
+pattern NoCheckSMTPrelude = Flag False
+
+runPrelude :: Log.LoggerMIO io => Flag "CheckSMTPrelude" -> SMT io ()
+runPrelude doCheck = do
     ctxt <- SMT get
     -- set the user defined timeout for queries
     setTimeout ctxt.options.timeout
     Log.logMessage ("Checking definition prelude" :: Text)
     -- send the commands from the definition's SMT prelude
     mapM_ runCmd ctxt.prelude
+    -- optionally check the prelude for consistency
+    when (coerce doCheck) $ do
+        check <- mapM_ runCmd ctxt.prelude >> runCmd CheckSat
+        case check of
+            Sat -> pure ()
+            other -> do
+                Log.logMessage $ "Initial SMT definition check returned " <> pack (show other)
+                closeContext ctxt
+                throwSMT' $
+                    "Aborting due to potentially-inconsistent SMT setup: Initial check returned " <> show other
   where
     setTimeout timeout = do
         Log.logMessage $ "Setting SMT timeout to: " <> show timeout
