@@ -136,24 +136,31 @@ runImplies def mLlvmLibrary mSMTOptions antecedent consequent =
                                 (externaliseExistTerm existsL substPatL.term)
                                 (externaliseExistTerm existsR substPatR.term)
                         MatchIndeterminate remainder ->
-                            ApplyEquations.evaluatePattern def mLlvmLibrary solver mempty substPatL >>= \case
-                                (Right simplifedSubstPatL, _) ->
-                                    if substPatL == simplifedSubstPatL
-                                        then -- we are being conservative here for now and returning an error.
-                                        -- since we have already simplified the LHS, we may want to eventually return implise, but the condition
-                                        -- will contain the remainder as an equality contraint, predicating the implication on that equality being true.
+                            ApplyEquations.evaluatePattern
+                                def
+                                mLlvmLibrary
+                                solver
+                                mempty
+                                ApplyEquations.CheckConstraintsConsistent
+                                substPatL
+                                >>= \case
+                                    (Right simplifedSubstPatL, _) ->
+                                        if substPatL == simplifedSubstPatL
+                                            then -- we are being conservative here for now and returning an error.
+                                            -- since we have already simplified the LHS, we may want to eventually return implise, but the condition
+                                            -- will contain the remainder as an equality contraint, predicating the implication on that equality being true.
 
-                                            pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
-                                                "match remainder: "
-                                                    <> renderDefault
-                                                        ( hsep $
-                                                            punctuate comma $
-                                                                map (\(t1, t2) -> pretty' @mods t1 <+> "==" <+> pretty' @mods t2) $
-                                                                    NonEmpty.toList remainder
-                                                        )
-                                        else checkImpliesMatchTerms existsL simplifedSubstPatL existsR substPatR
-                                (Left err, _) ->
-                                    pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ err)
+                                                pure . Left . RpcError.backendError . RpcError.ImplicationCheckError . RpcError.ErrorOnly . pack $
+                                                    "match remainder: "
+                                                        <> renderDefault
+                                                            ( hsep $
+                                                                punctuate comma $
+                                                                    map (\(t1, t2) -> pretty' @mods t1 <+> "==" <+> pretty' @mods t2) $
+                                                                        NonEmpty.toList remainder
+                                                            )
+                                            else checkImpliesMatchTerms existsL simplifedSubstPatL existsR substPatR
+                                    (Left err, _) ->
+                                        pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ err)
                         MatchSuccess subst -> do
                             let filteredConsequentPreds =
                                     Set.map (substituteInPredicate subst) substPatR.constraints `Set.difference` substPatL.constraints

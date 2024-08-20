@@ -154,6 +154,7 @@ respond stateVar request =
                                 mLlvmLibrary
                                 solver
                                 mempty
+                                ApplyEquations.CheckConstraintsConsistent
                                 substPat
 
                         case evaluatedInitialPattern of
@@ -277,21 +278,29 @@ respond stateVar request =
                                     , constraints = Set.map (substituteInPredicate substitution) pat.constraints
                                     , ceilConditions = pat.ceilConditions
                                     }
-                        ApplyEquations.evaluatePattern def mLlvmLibrary solver mempty substPat >>= \case
-                            (Right newPattern, _) -> do
-                                let (term, mbPredicate, mbSubstitution) = externalisePattern newPattern substitution
-                                    tSort = externaliseSort (sortOfPattern newPattern)
-                                    result = case catMaybes (mbPredicate : mbSubstitution : map Just unsupported) of
-                                        [] -> term
-                                        ps -> KoreJson.KJAnd tSort $ term : ps
-                                pure $ Right (addHeader result)
-                            (Left ApplyEquations.SideConditionFalse{}, _) -> do
-                                let tSort = externaliseSort $ sortOfPattern pat
-                                pure $ Right (addHeader $ KoreJson.KJBottom tSort)
-                            (Left (ApplyEquations.EquationLoop _terms), _) ->
-                                pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
-                            (Left other, _) ->
-                                pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
+                        -- evaluate the pattern, checking the constrains for consistency
+                        ApplyEquations.evaluatePattern
+                            def
+                            mLlvmLibrary
+                            solver
+                            mempty
+                            ApplyEquations.CheckConstraintsConsistent
+                            substPat
+                            >>= \case
+                                (Right newPattern, _) -> do
+                                    let (term, mbPredicate, mbSubstitution) = externalisePattern newPattern substitution
+                                        tSort = externaliseSort (sortOfPattern newPattern)
+                                        result = case catMaybes (mbPredicate : mbSubstitution : map Just unsupported) of
+                                            [] -> term
+                                            ps -> KoreJson.KJAnd tSort $ term : ps
+                                    pure $ Right (addHeader result)
+                                (Left ApplyEquations.SideConditionFalse{}, _) -> do
+                                    let tSort = externaliseSort $ sortOfPattern pat
+                                    pure $ Right (addHeader $ KoreJson.KJBottom tSort)
+                                (Left (ApplyEquations.EquationLoop _terms), _) ->
+                                    pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
+                                (Left other, _) ->
+                                    pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
                     -- predicate only
                     Right (Predicates ps)
                         | null ps.boolPredicates && null ps.ceilPredicates && null ps.substitution && null ps.unsupported ->

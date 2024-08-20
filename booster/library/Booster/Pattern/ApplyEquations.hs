@@ -10,6 +10,8 @@ License     : BSD-3-Clause
 module Booster.Pattern.ApplyEquations (
     evaluateTerm,
     evaluatePattern,
+    pattern CheckConstraintsConsistent,
+    pattern NoCheckConstraintsConsistent,
     Direction (..),
     EquationT (..),
     runEquationT,
@@ -70,7 +72,7 @@ import Booster.Pattern.Util
 import Booster.Prettyprinter (renderOneLineText)
 import Booster.SMT.Interface qualified as SMT
 import Booster.Syntax.Json.Externalise (externaliseTerm)
-import Booster.Util (Bound (..))
+import Booster.Util (Bound (..), Flag (..))
 import Kore.JsonRpc.Types.ContextLog (CLContext (CLWithId), IdContext (CtxCached))
 import Kore.Util (showHashHex)
 
@@ -443,6 +445,12 @@ evaluateTerm' ::
     EquationT io Term
 evaluateTerm' direction = iterateEquations direction PreferFunctions
 
+pattern CheckConstraintsConsistent :: Flag "CheckConstraintsConsistent"
+pattern CheckConstraintsConsistent = Flag True
+
+pattern NoCheckConstraintsConsistent :: Flag "CheckConstraintsConsistent"
+pattern NoCheckConstraintsConsistent = Flag False
+
 {- | Simplify a Pattern, processing its constraints independently.
      Returns either the first failure or the new pattern if no failure was encountered
 -}
@@ -452,39 +460,42 @@ evaluatePattern ::
     Maybe LLVM.API ->
     SMT.SMTContext ->
     SimplifierCache ->
+    Flag "CheckConstraintsConsistent" ->
     Pattern ->
     io (Either EquationFailure Pattern, SimplifierCache)
-evaluatePattern def mLlvmLibrary smtSolver cache pat =
-    runEquationT def mLlvmLibrary smtSolver cache pat.constraints . evaluatePattern' $ pat
+evaluatePattern def mLlvmLibrary smtSolver cache doCheck pat =
+    runEquationT def mLlvmLibrary smtSolver cache pat.constraints . evaluatePattern' doCheck $ pat
 
 -- version for internal nested evaluation
 evaluatePattern' ::
     LoggerMIO io =>
+    Flag "CheckConstraintsConsistent" ->
     Pattern ->
     EquationT io Pattern
-evaluatePattern' pat@Pattern{term, constraints, ceilConditions} = withPatternContext pat $ do
-    solver <- (.smtSolver) <$> getConfig
-    -- check the pattern's constraints for satisfiability to ensure they are consistent
-    consistent <-
-        withContext CtxConstraint $ do
-            withContext CtxDetail . withTermContext (coerce $ collapseAndBools constraints) $ pure ()
-            consistent <- SMT.isSat solver (Set.toList constraints)
-            logMessage $
-                "Constraints consistency check returns: " <> show consistent
-            pure consistent
-    case consistent of
-        SMT.IsUnsat -> do
-            -- the constraints are unsatisfiable, which means that the patten is Bottom
-            throw . SideConditionFalse . collapseAndBools $ constraints
-        SMT.IsUnknown{} -> do
-            -- unlikely case of an Unknown response to a consistency check.
-            -- continue to preserve the old behaviour.
-            withContext CtxConstraint . logWarn . Text.pack $
-                "Constraints consistency UNKNOWN: " <> show consistent
-            pure ()
-        SMT.IsSat{} ->
-            -- constraints are consistent, continue
-            pure ()
+evaluatePattern' doCheck pat@Pattern{term, constraints, ceilConditions} = withPatternContext pat $ do
+    when (coerce doCheck) $ do
+        solver <- (.smtSolver) <$> getConfig
+        -- check the pattern's constraints for satisfiability to ensure they are consistent
+        consistent <-
+            withContext CtxConstraint $ do
+                withContext CtxDetail . withTermContext (coerce $ collapseAndBools constraints) $ pure ()
+                consistent <- SMT.isSat solver (Set.toList constraints)
+                logMessage $
+                    "Constraints consistency check returns: " <> show consistent
+                pure consistent
+        case consistent of
+            SMT.IsUnsat -> do
+                -- the constraints are unsatisfiable, which means that the patten is Bottom
+                throw . SideConditionFalse . collapseAndBools $ constraints
+            SMT.IsUnknown{} -> do
+                -- unlikely case of an Unknown response to a consistency check.
+                -- continue to preserve the old behaviour.
+                withContext CtxConstraint . logWarn . Text.pack $
+                    "Constraints consistency UNKNOWN: " <> show consistent
+                pure ()
+            SMT.IsSat{} ->
+                -- constraints are consistent, continue
+                pure ()
 
     newTerm <- withTermContext term $ evaluateTerm' BottomUp term `catch_` keepTopLevelResults
     -- after evaluating the term, evaluate all (existing and newly-acquired) constraints, once

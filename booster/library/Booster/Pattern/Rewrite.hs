@@ -54,6 +54,7 @@ import Booster.Pattern.ApplyEquations (
     SimplifierCache (..),
     evaluatePattern,
     simplifyConstraint,
+    pattern NoCheckConstraintsConsistent,
  )
 import Booster.Pattern.Base
 import Booster.Pattern.Bool
@@ -764,7 +765,7 @@ performRewrite rewriteConfig initialCache pat = do
     simplifyP p = withContext CtxSimplify $ do
         st <- get
         let cache = st.simplifierCache
-        evaluatePattern definition llvmApi smtSolver cache p >>= \(res, newCache) -> do
+        evaluatePattern definition llvmApi smtSolver cache NoCheckConstraintsConsistent p >>= \(res, newCache) -> do
             updateCache newCache
             case res of
                 Right newPattern -> do
