@@ -296,6 +296,7 @@ match1 _       t1@FunctionApplication{}                   t2@KSet{}             
 match1 Eval    (FunctionApplication symbol1 sorts1 args1) (ConsApplication symbol2 sorts2 args2)     = matchSymbolAplications Eval symbol1 sorts1 args1 symbol2 sorts2 args2
 match1 _       t1@FunctionApplication{}                   t2@ConsApplication{}                       = addIndeterminate t1 t2
 match1 Eval    (FunctionApplication symbol1 sorts1 args1) (FunctionApplication symbol2 sorts2 args2) = matchSymbolAplications Eval symbol1 sorts1 args1 symbol2 sorts2 args2
+match1 Rewrite (FunctionApplication symbol1 sorts1 args1) (FunctionApplication symbol2 sorts2 args2) = matchSymbolAplications Rewrite symbol1 sorts1 args1 symbol2 sorts2 args2
 match1 _       t1@FunctionApplication{}                   t2@FunctionApplication{}                   = addIndeterminate t1 t2
 match1 Rewrite t1@FunctionApplication{}                   (Var t2)                                   = failWith $ SubjectVariableMatch t1 t2
 match1 _       t1@FunctionApplication{}                   t2@Var{}                                   = addIndeterminate t1 t2
