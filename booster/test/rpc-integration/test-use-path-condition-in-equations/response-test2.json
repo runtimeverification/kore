@@ -63,13 +63,13 @@
                             "sorts": [],
                             "args": [
                                 {
-                                    "tag": "EVar",
-                                    "name": "Var'Ques'X",
+                                    "tag": "DV",
                                     "sort": {
                                         "tag": "SortApp",
                                         "name": "SortInt",
                                         "args": []
-                                    }
+                                    },
+                                    "value": "42"
                                 }
                             ]
                         },
@@ -92,14 +92,14 @@
                     ]
                 }
             },
-            "predicate": {
+            "substitution": {
                 "format": "KORE",
                 "version": 1,
                 "term": {
                     "tag": "Equals",
                     "argSort": {
                         "tag": "SortApp",
-                        "name": "SortBool",
+                        "name": "SortInt",
                         "args": []
                     },
                     "sort": {
@@ -108,38 +108,22 @@
                         "args": []
                     },
                     "first": {
+                        "tag": "EVar",
+                        "name": "Var'Ques'X",
+                        "sort": {
+                            "tag": "SortApp",
+                            "name": "SortInt",
+                            "args": []
+                        }
+                    },
+                    "second": {
                         "tag": "DV",
                         "sort": {
                             "tag": "SortApp",
-                            "name": "SortBool",
+                            "name": "SortInt",
                             "args": []
                         },
-                        "value": "true"
-                    },
-                    "second": {
-                        "tag": "App",
-                        "name": "Lbl'UndsEqlsEqls'Int'Unds'",
-                        "sorts": [],
-                        "args": [
-                            {
-                                "tag": "EVar",
-                                "name": "Var'Ques'X",
-                                "sort": {
-                                    "tag": "SortApp",
-                                    "name": "SortInt",
-                                    "args": []
-                                }
-                            },
-                            {
-                                "tag": "DV",
-                                "sort": {
-                                    "tag": "SortApp",
-                                    "name": "SortInt",
-                                    "args": []
-                                },
-                                "value": "42"
-                            }
-                        ]
+                        "value": "42"
                     }
                 }
             }

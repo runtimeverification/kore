@@ -1,0 +1,23 @@
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "error": {
+        "code": 2,
+        "data": [
+            {
+                "term": {
+                    "format": "KORE",
+                    "version": 1,
+                    "term": {
+                        "tag": "App",
+                        "name": "Lbltest4Init'LParRParUnds'TEST'REMAINDER-PREDICATES'State",
+                        "sorts": [],
+                        "args": []
+                    }
+                },
+                "error": "Unknown symbol 'Lbltest4Init'LParRParUnds'TEST'REMAINDER-PREDICATES'State'"
+            }
+        ],
+        "message": "Could not verify pattern"
+    }
+}
