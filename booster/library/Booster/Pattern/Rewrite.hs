@@ -73,11 +73,19 @@ import Booster.SMT.Interface qualified as SMT
 import Booster.Syntax.Json.Externalise (externaliseTerm)
 import Booster.Util (Flag (..))
 
+{- | The @'RewriteT'@ monad encapsulates the effects needed to make a single rewrite step.
+     See @'rewriteStep'@ and '@applyRule@'.
+-}
 newtype RewriteT io a = RewriteT
     { unRewriteT ::
-        ReaderT RewriteConfig (StateT SimplifierCache (ExceptT (RewriteFailed "Rewrite") io)) a
+        ReaderT RewriteConfig (StateT RewriteState (ExceptT (RewriteFailed "Rewrite") io)) a
     }
     deriving newtype (Functor, Applicative, Monad, MonadIO)
+
+data RewriteState = RewriteState
+    { cache :: SimplifierCache
+    , remainderPredicates :: [Predicate]
+    }
 
 data RewriteConfig = RewriteConfig
     { definition :: KoreDefinition
@@ -108,15 +116,24 @@ runRewriteT ::
     RewriteConfig ->
     SimplifierCache ->
     RewriteT io a ->
-    io (Either (RewriteFailed "Rewrite") (a, SimplifierCache))
+    io (Either (RewriteFailed "Rewrite") (a, RewriteState))
 runRewriteT rewriteConfig cache =
-    runExceptT . flip runStateT cache . flip runReaderT rewriteConfig . unRewriteT
+    let initialRewriteState = RewriteState{cache, remainderPredicates = []}
+     in runExceptT . flip runStateT initialRewriteState . flip runReaderT rewriteConfig . unRewriteT
 
 throw :: LoggerMIO io => RewriteFailed "Rewrite" -> RewriteT io a
 throw = RewriteT . lift . lift . throwE
 
 getDefinition :: LoggerMIO io => RewriteT io KoreDefinition
 getDefinition = RewriteT $ definition <$> ask
+
+invalidateRewriterEquationsCache :: LoggerMIO io => RewriteT io ()
+invalidateRewriterEquationsCache =
+    RewriteT . lift . modify $ \s@RewriteState{} ->
+        s{cache = s.cache{equations = mempty}}
+
+updateRewriterCache :: LoggerMIO io => SimplifierCache -> RewriteT io ()
+updateRewriterCache cache = RewriteT . lift . modify $ \s@RewriteState{} -> s{cache}
 
 {- | Performs a rewrite step (using suitable rewrite rules from the
    definition).
@@ -353,7 +370,7 @@ applyRule pat@Pattern{ceilConditions} rule =
                     unless (null newConstraints) $ do
                         withContextFor Equations . logMessage $
                             ("New path condition ensured, invalidating cache" :: Text)
-                        lift . RewriteT . lift . modify $ \s -> s{equations = mempty}
+                        lift invalidateRewriterEquationsCache
 
                     -- existential variables may be present in rule.rhs and rule.ensures,
                     -- need to strip prefixes and freshen their names with respect to variables already
@@ -411,12 +428,12 @@ applyRule pat@Pattern{ceilConditions} rule =
         RewriteRuleAppT (RewriteT io) (Maybe a)
     checkConstraint onUnclear onBottom knownPredicates p = do
         RewriteConfig{definition, llvmApi, smtSolver} <- lift $ RewriteT ask
-        oldCache <- lift . RewriteT . lift $ get
+        RewriteState{cache = oldCache} <- lift . RewriteT . lift $ get
         (simplified, cache) <-
             withContext CtxConstraint $
                 simplifyConstraint definition llvmApi smtSolver oldCache knownPredicates p
         -- update cache
-        lift . RewriteT . lift . modify $ const cache
+        lift $ updateRewriterCache cache
         case simplified of
             Right (Predicate FalseBool) -> onBottom
             Right (Predicate TrueBool) -> pure Nothing
@@ -491,8 +508,7 @@ applyRule pat@Pattern{ceilConditions} rule =
         unless (null newConstraints) $ do
             withContextFor Equations . logMessage $
                 ("New path condition ensured, invalidating cache" :: Text)
-
-            lift . RewriteT . lift . modify $ \s -> s{equations = mempty}
+            lift invalidateRewriterEquationsCache
         pure newConstraints
 
     smtUnclear :: [Predicate] -> RewriteRuleAppT (RewriteT io) ()
@@ -774,7 +790,7 @@ performRewrite rewriteConfig pat = do
     incrementCounter =
         modify $ \rss@RewriteStepsState{counter} -> rss{counter = counter + 1}
 
-    updateCache simplifierCache = modify $ \rss -> rss{simplifierCache}
+    updateCache simplifierCache = modify $ \rss -> (rss :: RewriteStepsState){simplifierCache}
 
     simplifyP :: Pattern -> StateT RewriteStepsState io (Maybe Pattern)
     simplifyP p = withContext CtxSimplify $ do
@@ -854,18 +870,18 @@ performRewrite rewriteConfig pat = do
                     simplifierCache
                     (withPatternContext pat' $ rewriteStep cutLabels terminalLabels pat')
                     >>= \case
-                        Right (RewriteFinished mlbl mUniqueId single, cache) -> do
+                        Right (RewriteFinished mlbl mUniqueId single, RewriteState{cache}) -> do
                             whenJust mlbl $ \lbl ->
                                 whenJust mUniqueId $ \uniqueId ->
                                     emitRewriteTrace $ RewriteSingleStep lbl uniqueId pat' single
                             updateCache cache
                             incrementCounter
                             doSteps False single
-                        Right (terminal@(RewriteTerminal lbl uniqueId single), _cache) -> withPatternContext pat' $ do
+                        Right (terminal@(RewriteTerminal lbl uniqueId single), _rewriteState) -> withPatternContext pat' $ do
                             emitRewriteTrace $ RewriteSingleStep lbl uniqueId pat' single
                             incrementCounter
                             simplifyResult pat' terminal
-                        Right (branching@RewriteBranch{}, cache) -> do
+                        Right (branching@RewriteBranch{}, RewriteState{cache}) -> do
                             logMessage $ "Stopped due to branching after " <> showCounter counter
                             updateCache cache
                             simplified <- withPatternContext pat' $ simplifyResult pat' branching
@@ -898,7 +914,7 @@ performRewrite rewriteConfig pat = do
                                     logMessage $ "Simplified to bottom after " <> showCounter counter
                                 _other -> error "simplifyResult: Unexpected return value"
                             pure simplified
-                        Right (stuck@RewriteStuck{}, cache) -> do
+                        Right (stuck@RewriteStuck{}, RewriteState{cache}) -> do
                             logMessage $ "Stopped after " <> showCounter counter
                             updateCache cache
                             emitRewriteTrace $ RewriteStepFailed $ NoApplicableRules pat'
