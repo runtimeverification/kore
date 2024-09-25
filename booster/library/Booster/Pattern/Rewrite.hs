@@ -335,8 +335,15 @@ applyRule pat@Pattern{ceilConditions} rule =
                                 pat
                                 rule.computedAttributes.notPreservesDefinednessReasons
 
-                    -- check required constraints from lhs: Stop if any is false, abort rewrite if indeterminate.
-                    checkRequires subst
+                    -- check required constraints from lhs: Stop if any is false,
+                    -- add as remainders if indeterminate.
+                    unclearRequiresAfterSmt <- checkRequires subst
+                    -- when unclearRequiresAfterSmt is non-empty, we need to add it as a rule remainder.
+                    -- To maintain the old behaviour, we fail hard here
+                    unless (null unclearRequiresAfterSmt) $
+                        failRewrite $
+                            RuleConditionUnclear rule . coerce . foldl1 AndTerm $
+                                map coerce unclearRequiresAfterSmt
 
                     -- check ensures constraints (new) from rhs: stop and return `Trivial` if
                     -- any are false, remove all that are trivially true, return the rest
@@ -418,7 +425,7 @@ applyRule pat@Pattern{ceilConditions} rule =
             Left _ -> pure $ Just $ onUnclear p
 
     checkRequires ::
-        Substitution -> RewriteRuleAppT (RewriteT io) ()
+        Substitution -> RewriteRuleAppT (RewriteT io) [Predicate]
     checkRequires matchingSubst = do
         ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
         -- apply substitution to rule requires
@@ -442,13 +449,13 @@ applyRule pat@Pattern{ceilConditions} rule =
             SMT.IsUnknown reason -> do
                 -- abort rewrite if a solver result was Unknown
                 withContext CtxAbort $ logMessage reason
-                smtUnclear stillUnclear
+                pure unclearRequires
             SMT.IsInvalid -> do
                 -- requires is actually false given the prior
                 withContext CtxFailure $ logMessage ("Required clauses evaluated to #Bottom." :: Text)
                 RewriteRuleAppT $ pure NotApplied
             SMT.IsValid ->
-                pure () -- can proceed
+                pure [] -- can proceed
     checkEnsures ::
         Substitution -> RewriteRuleAppT (RewriteT io) [Predicate]
     checkEnsures matchingSubst = do
