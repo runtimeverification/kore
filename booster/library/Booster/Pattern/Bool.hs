@@ -10,6 +10,7 @@ module Booster.Pattern.Bool (
     negateBool,
     splitBoolPredicates,
     splitAndBools,
+    collapseAndBools,
     -- patterns
     pattern TrueBool,
     pattern FalseBool,
@@ -206,3 +207,7 @@ splitAndBools :: Predicate -> [Predicate]
 splitAndBools p@(Predicate t)
     | AndBool l r <- t = concatMap (splitAndBools . Predicate) [l, r]
     | otherwise = [p]
+
+-- | Inverse of splitAndBools
+collapseAndBools :: [Predicate] -> Predicate
+collapseAndBools = Predicate . foldAndBool . map (\(Predicate p) -> p)

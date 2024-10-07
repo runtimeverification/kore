@@ -207,7 +207,7 @@ rewriteStep cutLabels terminalLabels pat = do
                         RewriteStuck{} -> pure $ RewriteTrivial pat
                         other -> pure other
                 -- all branches but one were either not applied or trivial
-                [(r, x)]
+                [(r, (x, _remainder, _subst))]
                     | labelOf r `elem` cutLabels ->
                         pure $ RewriteCutPoint (labelOf r) (uniqueId r) pat x
                     | labelOf r `elem` terminalLabels ->
@@ -220,7 +220,7 @@ rewriteStep cutLabels terminalLabels pat = do
                     pure $
                         RewriteBranch pat $
                             NE.fromList $
-                                map (\(r, p) -> (ruleLabelOrLocT r, uniqueId r, p)) rxs
+                                map (\(r, (p, _remainder, _subst)) -> (ruleLabelOrLocT r, uniqueId r, p)) rxs
 
 -- | Rewrite rule application transformer: may throw exceptions on non-applicable or trivial rule applications
 type RewriteRuleAppT m a = ExceptT RewriteRuleAppException m a
@@ -260,7 +260,7 @@ applyRule ::
     LoggerMIO io =>
     Pattern ->
     RewriteRule "Rewrite" ->
-    RewriteT io (RewriteRuleAppResult Pattern)
+    RewriteT io (RewriteRuleAppResult (Pattern, Predicate, Substitution))
 applyRule pat@Pattern{ceilConditions} rule =
     withRuleContext rule $
         runRewriteRuleAppT $
@@ -326,12 +326,6 @@ applyRule pat@Pattern{ceilConditions} rule =
                     -- check required constraints from lhs: Stop if any is false,
                     -- add as remainders if indeterminate.
                     unclearRequiresAfterSmt <- checkRequires subst
-                    -- when unclearRequiresAfterSmt is non-empty, we need to add it as a rule remainder.
-                    -- To maintain the old behaviour, we fail hard here
-                    unless (null unclearRequiresAfterSmt) $
-                        failRewrite $
-                            RuleConditionUnclear rule . coerce . foldl1 AndTerm $
-                                map coerce unclearRequiresAfterSmt
 
                     -- check ensures constraints (new) from rhs: stop and return `Trivial` if
                     -- any are false, remove all that are trivially true, return the rest
@@ -366,9 +360,21 @@ applyRule pat@Pattern{ceilConditions} rule =
                                     <> (Set.fromList $ map (coerce . substituteInTerm existentialSubst . coerce) newConstraints)
                                 )
                                 ceilConditions
-                    withContext CtxSuccess $
-                        withPatternContext rewritten $
-                            return rewritten
+                    withContext CtxSuccess $ do
+                        case unclearRequiresAfterSmt of
+                            [] -> withPatternContext rewritten $ pure (rewritten, Predicate FalseBool, subst)
+                            _ -> do
+                                failRewrite $
+                                    RuleConditionUnclear rule . coerce . foldl1 AndTerm $
+                                        map coerce unclearRequiresAfterSmt
+                                -- TODO the following code is intentionally dead and should be enabled to get rewrite rule remainders
+                                -- when unclearRequiresAfterSmt is non-empty, we need to add it as a rule remainder predicate, which means:
+                                -- - the resulting patten will have it conjoined to its constraints TODO is this right?
+                                -- - its negation, i.e. the remainder predicate, will be returned as the second component of the result
+                                let rewritten' = rewritten{constraints = rewritten.constraints <> Set.fromList unclearRequiresAfterSmt}
+                                 in withPatternContext rewritten' $
+                                        pure
+                                            (rewritten', Predicate $ NotBool $ coerce $ collapseAndBools unclearRequiresAfterSmt, subst)
   where
     filterOutKnownConstraints :: Set.Set Predicate -> [Predicate] -> RewriteT io [Predicate]
     filterOutKnownConstraints priorKnowledge constraitns = do
