@@ -222,59 +222,27 @@ rewriteStep cutLabels terminalLabels pat = do
                             NE.fromList $
                                 map (\(r, p) -> (ruleLabelOrLocT r, uniqueId r, p)) rxs
 
+-- | Rewrite rule application transformer: may throw exceptions on non-applicable or trivial rule applications
+type RewriteRuleAppT m a = ExceptT RewriteRuleAppException m a
+
+data RewriteRuleAppException = RewriteRuleNotApplied | RewriteRuleTrivial deriving (Show, Eq)
+
+runRewriteRuleAppT :: Monad m => RewriteRuleAppT m a -> m (RewriteRuleAppResult a)
+runRewriteRuleAppT action =
+    runExceptT action >>= \case
+        Left RewriteRuleNotApplied -> pure NotApplied
+        Left RewriteRuleTrivial -> pure Trivial
+        Right result -> pure (Applied result)
+
 data RewriteRuleAppResult a
     = Applied a
     | NotApplied
     | Trivial
     deriving (Show, Eq, Functor)
 
-newtype RewriteRuleAppT m a = RewriteRuleAppT {runRewriteRuleAppT :: m (RewriteRuleAppResult a)}
-    deriving (Functor)
-
-instance Monad m => Applicative (RewriteRuleAppT m) where
-    pure = RewriteRuleAppT . return . Applied
-    {-# INLINE pure #-}
-    mf <*> mx = RewriteRuleAppT $ do
-        mb_f <- runRewriteRuleAppT mf
-        case mb_f of
-            NotApplied -> return NotApplied
-            Trivial -> return Trivial
-            Applied f -> do
-                mb_x <- runRewriteRuleAppT mx
-                case mb_x of
-                    NotApplied -> return NotApplied
-                    Trivial -> return Trivial
-                    Applied x -> return (Applied (f x))
-    {-# INLINE (<*>) #-}
-    m *> k = m >> k
-    {-# INLINE (*>) #-}
-
-instance Monad m => Monad (RewriteRuleAppT m) where
-    return = pure
-    {-# INLINE return #-}
-    x >>= f = RewriteRuleAppT $ do
-        v <- runRewriteRuleAppT x
-        case v of
-            Applied y -> runRewriteRuleAppT (f y)
-            NotApplied -> return NotApplied
-            Trivial -> return Trivial
-    {-# INLINE (>>=) #-}
-
-instance MonadTrans RewriteRuleAppT where
-    lift :: Monad m => m a -> RewriteRuleAppT m a
-    lift = RewriteRuleAppT . fmap Applied
-    {-# INLINE lift #-}
-
-instance Monad m => MonadFail (RewriteRuleAppT m) where
-    fail _ = RewriteRuleAppT (return NotApplied)
-    {-# INLINE fail #-}
-
-instance MonadIO m => MonadIO (RewriteRuleAppT m) where
-    liftIO = lift . liftIO
-    {-# INLINE liftIO #-}
-
-instance LoggerMIO m => LoggerMIO (RewriteRuleAppT m) where
-    withLogger l (RewriteRuleAppT m) = RewriteRuleAppT $ withLogger l m
+returnTrivial, returnNotApplied :: Monad m => RewriteRuleAppT m a
+returnTrivial = throwE RewriteRuleTrivial
+returnNotApplied = throwE RewriteRuleNotApplied
 
 {- | Tries to apply one rewrite rule:
 
@@ -310,7 +278,7 @@ applyRule pat@Pattern{ceilConditions} rule =
                             failRewrite $ InternalMatchError $ renderText $ pretty' @mods err
                         MatchFailed reason -> do
                             withContext CtxFailure $ logPretty' @mods reason
-                            fail "Rule matching failed"
+                            returnNotApplied
                         MatchIndeterminate remainder -> do
                             withContext CtxIndeterminate $
                                 logMessage $
@@ -417,12 +385,6 @@ applyRule pat@Pattern{ceilConditions} rule =
     failRewrite :: RewriteFailed "Rewrite" -> RewriteRuleAppT (RewriteT io) a
     failRewrite = lift . (throw)
 
-    notAppliedIfBottom :: RewriteRuleAppT (RewriteT io) a
-    notAppliedIfBottom = RewriteRuleAppT $ pure NotApplied
-
-    trivialIfBottom :: RewriteRuleAppT (RewriteT io) a
-    trivialIfBottom = RewriteRuleAppT $ pure Trivial
-
     checkConstraint ::
         (Predicate -> a) ->
         RewriteRuleAppT (RewriteT io) (Maybe a) ->
@@ -457,7 +419,7 @@ applyRule pat@Pattern{ceilConditions} rule =
 
         -- simplify the constraints (one by one in isolation). Stop if false, abort rewrite if indeterminate.
         unclearRequires <-
-            catMaybes <$> mapM (checkConstraint id notAppliedIfBottom pat.constraints) toCheck
+            catMaybes <$> mapM (checkConstraint id returnNotApplied pat.constraints) toCheck
 
         -- unclear conditions may have been simplified and
         -- could now be syntactically present in the path constraints, filter again
@@ -473,7 +435,7 @@ applyRule pat@Pattern{ceilConditions} rule =
             SMT.IsInvalid -> do
                 -- requires is actually false given the prior
                 withContext CtxFailure $ logMessage ("Required clauses evaluated to #Bottom." :: Text)
-                RewriteRuleAppT $ pure NotApplied
+                returnNotApplied
             SMT.IsValid ->
                 pure [] -- can proceed
     checkEnsures ::
@@ -483,7 +445,7 @@ applyRule pat@Pattern{ceilConditions} rule =
         let ruleEnsures =
                 concatMap (splitBoolPredicates . coerce . substituteInTerm matchingSubst . coerce) rule.ensures
         newConstraints <-
-            catMaybes <$> mapM (checkConstraint id trivialIfBottom pat.constraints) ruleEnsures
+            catMaybes <$> mapM (checkConstraint id returnTrivial pat.constraints) ruleEnsures
 
         -- check all new constraints together with the known side constraints
         solver <- lift $ RewriteT $ (.smtSolver) <$> ask
@@ -492,10 +454,10 @@ applyRule pat@Pattern{ceilConditions} rule =
         (lift $ SMT.checkPredicates solver pat.constraints mempty (Set.fromList newConstraints)) >>= \case
             SMT.IsInvalid -> do
                 withContext CtxSuccess $ logMessage ("New constraints evaluated to #Bottom." :: Text)
-                RewriteRuleAppT $ pure Trivial
+                returnTrivial
             SMT.IsUnknown SMT.InconsistentGroundTruth -> do
                 withContext CtxSuccess $ logMessage ("Ground truth is #Bottom." :: Text)
-                RewriteRuleAppT $ pure Trivial
+                returnTrivial
             SMT.IsUnknown SMT.ImplicationIndeterminate -> do
                 -- the new constraint is satisfiable, continue
                 pure ()
