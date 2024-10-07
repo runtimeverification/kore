@@ -164,16 +164,15 @@ rewriteStep cutLabels terminalLabels pat = do
 
     -- process one priority group at a time (descending priority),
     -- until a result is obtained or the entire rewrite fails.
-    processGroups pat rules
+    processGroups rules
   where
     processGroups ::
         LoggerMIO io =>
-        Pattern ->
         [[RewriteRule "Rewrite"]] ->
         RewriteT io (RewriteResult Pattern)
-    processGroups pattr [] =
-        pure $ RewriteStuck pattr
-    processGroups pattr (rules : rest) = do
+    processGroups [] =
+        pure $ RewriteStuck pat
+    processGroups (rules : rest) = do
         -- try all rules of the priority group. This will immediately
         -- fail the rewrite if anything is uncertain (unification,
         -- definedness, rule conditions)
@@ -182,7 +181,7 @@ rewriteStep cutLabels terminalLabels pat = do
                 <$> forM
                     rules
                     ( \rule -> do
-                        result <- applyRule pattr rule
+                        result <- applyRule pat rule
                         pure (fmap (rule,) result)
                     )
 
@@ -198,13 +197,13 @@ rewriteStep cutLabels terminalLabels pat = do
 
         case results of
             -- no rules in this group were applicable
-            [] -> processGroups pattr rest
+            [] -> processGroups rest
             _ -> case concatMap (\case Applied x -> [x]; _ -> []) results of
                 [] ->
                     -- all remaining branches are trivial, i.e. rules which did apply had an ensures condition which evaluated to false
                     -- if, all the other groups only generate a not applicable or trivial rewrites,
                     -- then we return a `RewriteTrivial`.
-                    processGroups pattr rest >>= \case
+                    processGroups rest >>= \case
                         RewriteStuck{} -> pure $ RewriteTrivial pat
                         other -> pure other
                 -- all branches but one were either not applied or trivial
