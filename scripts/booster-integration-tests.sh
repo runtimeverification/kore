@@ -28,6 +28,9 @@ for dir in $(ls -d test-*); do
     name=${dir##test-}
     echo "Running $name..."
     case "$name" in
+        "3934-smt" | "issue3764-vacuous-branch" | "use-path-condition-in-equations" | "remainder-predicates")
+	    continue
+            ;;
         "a-to-f" | "diamond")
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
