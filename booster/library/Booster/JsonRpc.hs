@@ -643,6 +643,11 @@ mkLogRewriteTrace
                                             { reason = "Uncertain about a condition in rule"
                                             , _ruleId = Just $ getUniqueId (uniqueId $ Definition.attributes r)
                                             }
+                                    RewriteRemainderPredicate rs _ _ ->
+                                        Failure
+                                            { reason = "Uncertain about a condition in rule"
+                                            , _ruleId = Just $ getUniqueId (uniqueId $ Definition.attributes (head rs))
+                                            }
                                     DefinednessUnclear r _ undefReasons ->
                                         Failure
                                             { reason = "Uncertain about definedness of rule because of: " <> pack (show undefReasons)
