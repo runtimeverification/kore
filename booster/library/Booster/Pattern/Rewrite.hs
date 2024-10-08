@@ -70,6 +70,7 @@ import Booster.Pattern.Pretty
 import Booster.Pattern.Util
 import Booster.Prettyprinter
 import Booster.SMT.Interface qualified as SMT
+import Booster.SMT.Runner qualified as SMT
 import Booster.Syntax.Json.Externalise (externalisePredicate, externaliseSort, externaliseTerm)
 import Booster.Util (Flag (..))
 
@@ -198,7 +199,18 @@ rewriteStep cutLabels terminalLabels pat = do
                     RewriteStuck{} -> pure $ RewriteTrivial pat
                     other -> pure other
             AppliedRules ([], _remainder) -> processGroups rest
-            AppliedRules ([(rule, newPat, _subst)], _remainder)
+            AppliedRules ([(rule, newPat, _subst)], remainder)
+                | not (Set.null remainder) && not (any isFalse remainder) -> do
+                    -- a non-trivial remainder with a single applicable rule is
+                    -- an indication if semantics incompleteness: abort
+                    -- TODO refactor remainder check into a function and reuse below
+                    solver <- getSolver
+                    logMessage (show (SMT.options solver))
+                    satRes <- SMT.isSat solver (Set.toList $ pat.constraints <> remainder)
+                    throw $
+                        RewriteRemainderPredicate [rule] satRes . coerce . foldl1 AndTerm $
+                            map coerce . Set.toList $
+                                remainder
                 -- a single rule applies, see if it's special and return an appropriate result
                 | labelOf rule `elem` cutLabels ->
                     pure $ RewriteCutPoint (labelOf rule) (uniqueId rule) pat newPat
@@ -209,7 +221,6 @@ rewriteStep cutLabels terminalLabels pat = do
             AppliedRules (xs, remainder)
                 -- multiple rules apply, analyse brunching and remainders
                 | any isFalse remainder -> do
-                    withContext CtxRemainder $ logMessage ("remainder is UNSAT" :: Text)
                     -- the remainder predicate is trivially false, return the branching result
                     pure $
                         RewriteBranch pat $
@@ -222,7 +233,6 @@ rewriteStep cutLabels terminalLabels pat = do
                     SMT.isSat solver (Set.toList $ pat.constraints <> remainder) >>= \case
                         SMT.IsUnsat -> do
                             -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
-                            withContext CtxRemainder $ logMessage ("remainder is UNSAT" :: Text)
                             -- pure resultsWithoutRemainders
                             pure $
                                 RewriteBranch pat $
@@ -438,6 +448,10 @@ applyRule pat@Pattern{ceilConditions} rule =
                         case unclearRequiresAfterSmt of
                             [] -> withPatternContext rewritten $ pure (rewritten, Predicate FalseBool, subst)
                             _ -> do
+                                -- the requires clause was unclear:
+                                -- - add it as an assumption to the pattern
+                                -- - return it's negation as a rule remainder to construct
+                                ---  the remainder pattern in @rewriteStep@
                                 let rewritten' = rewritten{constraints = rewritten.constraints <> Set.fromList unclearRequiresAfterSmt}
                                  in withPatternContext rewritten' $
                                         pure
@@ -502,8 +516,13 @@ applyRule pat@Pattern{ceilConditions} rule =
         solver <- lift $ RewriteT $ (.smtSolver) <$> ask
         SMT.checkPredicates solver pat.constraints mempty (Set.fromList stillUnclear) >>= \case
             SMT.IsUnknown reason -> do
-                -- abort rewrite if a solver result was Unknown
                 withContext CtxAbort $ logMessage reason
+                -- return unclear rewrite rule condition if the condition is indeterminate
+                withContext CtxConstraint . withContext CtxWarn . logMessage $
+                    WithJsonMessage (object ["conditions" .= (externaliseTerm . coerce <$> stillUnclear)]) $
+                        renderOneLineText $
+                            "Uncertain about condition(s) in a rule:"
+                                <+> (hsep . punctuate comma . map (pretty' @mods) $ stillUnclear)
                 pure unclearRequires
             SMT.IsInvalid -> do
                 -- requires is actually false given the prior
