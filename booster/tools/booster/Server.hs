@@ -454,7 +454,7 @@ clProxyOptionsParser =
                 (eitherReader $ mapM reasonReader . splitOn ",")
                 ( long "fallback-on"
                     <> metavar "REASON1,REASON2..."
-                    <> value [Branching, Stuck, Aborted]
+                    <> value [Stuck, Aborted]
                     <> help "Halt reasons for which requests should be re-executed with kore-rpc"
                     <> showDefaultWith (intercalate "," . map show)
                 )

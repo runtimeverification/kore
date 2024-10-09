@@ -319,7 +319,7 @@ respondEither cfg@ProxyConfig{boosterState} booster kore req = case req of
                                     <$> accumulatedLogs
                                 )
                                 r{ExecuteRequest.state = execStateToKoreJson simplifiedBoosterState}
-                -- if we stop for a reason in fallbackReasons (default [Aborted, Stuck, Branching],
+                -- if we stop for a reason in fallbackReasons (default [Aborted, Stuck],
                 -- revert to the old backend to re-confirm and possibly proceed
                 | boosterResult.reason `elem` cfg.fallbackReasons -> do
                     Booster.Log.withContext CtxProxy $
