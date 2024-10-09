@@ -218,45 +218,67 @@ rewriteStep cutLabels terminalLabels pat = do
                     pure $ RewriteTerminal (labelOf rule) (uniqueId rule) newPat
                 | otherwise ->
                     pure $ RewriteFinished (Just $ ruleLabelOrLocT rule) (Just $ uniqueId rule) newPat
-            AppliedRules (xs, remainder)
+            AppliedRules (xs, remainder) -> do
+                ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
+                let remainderForLogging = coerce . foldl1 AndTerm $ map coerce . Set.toList $ remainder
                 -- multiple rules apply, analyse brunching and remainders
-                | any isFalse remainder -> do
-                    -- the remainder predicate is trivially false, return the branching result
-                    pure $
-                        RewriteBranch pat $
-                            NE.fromList $
-                                map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
-                | otherwise -> do
-                    -- otherwise, we need to check the remainder predicate with the SMT solver
-                    --      and construct an additional remainder branch if needed
-                    solver <- getSolver
-                    SMT.isSat solver (Set.toList $ pat.constraints <> remainder) >>= \case
-                        SMT.IsUnsat -> do
-                            -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
-                            -- pure resultsWithoutRemainders
-                            pure $
-                                RewriteBranch pat $
-                                    NE.fromList $
-                                        map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
-                        satRes@(SMT.IsSat{}) -> do
-                            -- the remainder condition is satisfiable.
-                            --  Have to construct the remainder branch and consider it
-                            -- To construct the "remainder pattern",
-                            -- we add the remainder condition to the predicates of the @pattr@
-                            -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
-                            let rs = map (\(r, _p, _subst) -> r) xs
-                            throw $
-                                RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
-                                    map coerce . Set.toList $
-                                        remainder
-                        satRes@SMT.IsUnknown{} -> do
-                            -- solver cannot solve the remainder. Descend into the remainder branch anyway
-                            -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
-                            let rs = map (\(r, _p, _subst) -> r) xs
-                            throw $
-                                RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
-                                    map coerce . Set.toList $
-                                        remainder
+                if any isFalse remainder
+                    then do
+                        withContext CtxRemainder . withContext CtxContinue
+                            $ logMessage
+                            $ WithJsonMessage
+                                ( object
+                                    [ "remainder"
+                                        .= externalisePredicate (externaliseSort $ sortOfPattern pat) remainderForLogging
+                                    ]
+                                )
+                            $ renderOneLineText
+                            $ pretty' @mods (RewriteRemainderPredicate (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainderForLogging)
+                        -- the remainder predicate is trivially false, return the branching result
+                        pure $
+                            RewriteBranch pat $
+                                NE.fromList $
+                                    map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
+                    else do
+                        -- otherwise, we need to check the remainder predicate with the SMT solver
+                        --      and construct an additional remainder branch if needed
+                        solver <- getSolver
+                        SMT.isSat solver (Set.toList $ pat.constraints <> remainder) >>= \case
+                            SMT.IsUnsat -> do
+                                -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
+                                withContext CtxRemainder . withContext CtxContinue
+                                    $ logMessage
+                                    $ WithJsonMessage
+                                        ( object
+                                            [ "remainder"
+                                                .= externalisePredicate (externaliseSort $ sortOfPattern pat) (coerce remainderForLogging)
+                                            ]
+                                        )
+                                    $ renderOneLineText
+                                    $ pretty' @mods (RewriteRemainderPredicate (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainderForLogging)
+                                pure $
+                                    RewriteBranch pat $
+                                        NE.fromList $
+                                            map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
+                            satRes@(SMT.IsSat{}) -> do
+                                -- the remainder condition is satisfiable.
+                                --  Have to construct the remainder branch and consider it
+                                -- To construct the "remainder pattern",
+                                -- we add the remainder condition to the predicates of the @pattr@
+                                -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
+                                let rs = map (\(r, _p, _subst) -> r) xs
+                                throw $
+                                    RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
+                                        map coerce . Set.toList $
+                                            remainder
+                            satRes@SMT.IsUnknown{} -> do
+                                -- solver cannot solve the remainder. Descend into the remainder branch anyway
+                                -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
+                                let rs = map (\(r, _p, _subst) -> r) xs
+                                throw $
+                                    RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
+                                        map coerce . Set.toList $
+                                            remainder
 
 -- if any isFalse remainder -- no need to call SMT if any of the conditions is trivially false
 --     then do
