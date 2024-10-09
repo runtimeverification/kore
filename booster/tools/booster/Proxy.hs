@@ -527,6 +527,8 @@ respondEither cfg@ProxyConfig{boosterState} booster kore req = case req of
                                                 sub
                                                 unsup
                                                 Nothing
+                                                Nothing
+                                                Nothing
                                           )
                                             { ruleId = s.ruleId
                                             , ruleSubstitution = s.ruleSubstitution

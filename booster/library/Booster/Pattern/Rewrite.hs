@@ -225,7 +225,7 @@ rewriteStep cutLabels terminalLabels pat = do
                     pure $
                         RewriteBranch pat $
                             NE.fromList $
-                                map (\(r, p, _subst) -> (ruleLabelOrLocT r, uniqueId r, p)) xs
+                                map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
                 | otherwise -> do
                     -- otherwise, we need to check the remainder predicate with the SMT solver
                     --      and construct an additional remainder branch if needed
@@ -237,7 +237,7 @@ rewriteStep cutLabels terminalLabels pat = do
                             pure $
                                 RewriteBranch pat $
                                     NE.fromList $
-                                        map (\(r, p, _subst) -> (ruleLabelOrLocT r, uniqueId r, p)) xs
+                                        map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
                         satRes@(SMT.IsSat{}) -> do
                             -- the remainder condition is satisfiable.
                             --  Have to construct the remainder branch and consider it
@@ -694,7 +694,7 @@ ruleLabelOrLoc rule =
 -- | Different rewrite results (returned from RPC execute endpoint)
 data RewriteResult pat
     = -- | branch point
-      RewriteBranch pat (NonEmpty (Text, UniqueId, pat))
+      RewriteBranch pat (NonEmpty (Text, UniqueId, pat, Maybe Predicate, Substitution))
     | -- | no rules could be applied, config is stuck
       RewriteStuck pat
     | -- | cut point rule, return current (lhs) and single next state
@@ -922,14 +922,14 @@ performRewrite rewriteConfig pat = do
             simplifyP p >>= \case
                 Nothing -> pure $ RewriteTrivial orig
                 Just p' -> do
-                    let simplifyP3rd (a, b, c) =
-                            fmap (a,b,) <$> simplifyP c
+                    let simplifyP3rd (a, b, c, e, f) =
+                            fmap (a,b,,e,f) <$> simplifyP c
                     nexts' <- catMaybes <$> mapM simplifyP3rd (toList nexts)
                     pure $ case nexts' of
                         -- The `[]` case should be `Stuck` not `Trivial`, because `RewriteTrivial p'`
                         -- means the pattern `p'` is bottom, but we know that is not the case here.
                         [] -> RewriteStuck p'
-                        [(lbl, uId, n)] -> RewriteFinished (Just lbl) (Just uId) n
+                        [(lbl, uId, n, _rp, _rs)] -> RewriteFinished (Just lbl) (Just uId) n
                         ns -> RewriteBranch p' $ NE.fromList ns
         r@RewriteStuck{} -> pure r
         r@RewriteTrivial{} -> pure r
@@ -999,7 +999,7 @@ performRewrite rewriteConfig pat = do
                                     incrementCounter
                                     doSteps False single
                                 RewriteBranch pat'' branches -> withPatternContext pat' $ do
-                                    emitRewriteTrace $ RewriteBranchingStep pat'' $ fmap (\(lbl, uid, _) -> (lbl, uid)) branches
+                                    emitRewriteTrace $ RewriteBranchingStep pat'' $ fmap (\(lbl, uid, _, _, _) -> (lbl, uid)) branches
                                     pure simplified
                                 _other -> withPatternContext pat' $ error "simplifyResult: Unexpected return value"
                         Right (cutPoint@(RewriteCutPoint lbl _ _ _), _) -> withPatternContext pat' $ do
@@ -1092,3 +1092,14 @@ rewriteStart =
         , traces = mempty
         , simplifierCache = mempty
         }
+
+{- | Instantiate a rewrite rule's requires clause with a substitution.
+     Returns Nothing is the resulting @Predicate@ is trivially @True@.
+-}
+mkRulePredicate :: RewriteRule a -> Substitution -> Maybe Predicate
+mkRulePredicate rule subst =
+    case concatMap
+        (splitBoolPredicates . coerce . substituteInTerm subst . coerce)
+        rule.requires of
+        [] -> Nothing
+        xs -> Just $ collapseAndBools xs
