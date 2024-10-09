@@ -198,14 +198,15 @@ rewriteStep cutLabels terminalLabels pat = do
                 processGroups rest >>= \case
                     RewriteStuck{} -> pure $ RewriteTrivial pat
                     other -> pure other
-            AppliedRules ([], _remainder) -> processGroups rest
+            AppliedRules ([], _remainder) ->
+                -- TODO check that remainder is trivial, abort otherwise
+                processGroups rest
             AppliedRules ([(rule, newPat, _subst)], remainder)
                 | not (Set.null remainder) && not (any isFalse remainder) -> do
                     -- a non-trivial remainder with a single applicable rule is
                     -- an indication if semantics incompleteness: abort
                     -- TODO refactor remainder check into a function and reuse below
                     solver <- getSolver
-                    logMessage (show (SMT.options solver))
                     satRes <- SMT.isSat solver (Set.toList $ pat.constraints <> remainder)
                     throw $
                         RewriteRemainderPredicate [rule] satRes . coerce . foldl1 AndTerm $
@@ -219,26 +220,12 @@ rewriteStep cutLabels terminalLabels pat = do
                 | otherwise ->
                     pure $ RewriteFinished (Just $ ruleLabelOrLocT rule) (Just $ uniqueId rule) newPat
             AppliedRules (xs, remainder) -> do
-                ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
-                let remainderForLogging = coerce . foldl1 AndTerm $ map coerce . Set.toList $ remainder
                 -- multiple rules apply, analyse brunching and remainders
                 if any isFalse remainder
                     then do
-                        withContext CtxRemainder . withContext CtxContinue
-                            $ logMessage
-                            $ WithJsonMessage
-                                ( object
-                                    [ "remainder"
-                                        .= externalisePredicate (externaliseSort $ sortOfPattern pat) remainderForLogging
-                                    ]
-                                )
-                            $ renderOneLineText
-                            $ pretty' @mods (RewriteRemainderPredicate (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainderForLogging)
+                        logRemainder (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainder
                         -- the remainder predicate is trivially false, return the branching result
-                        pure $
-                            RewriteBranch pat $
-                                NE.fromList $
-                                    map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
+                        pure $ mkBranch pat xs
                     else do
                         -- otherwise, we need to check the remainder predicate with the SMT solver
                         --      and construct an additional remainder branch if needed
@@ -246,87 +233,57 @@ rewriteStep cutLabels terminalLabels pat = do
                         SMT.isSat solver (Set.toList $ pat.constraints <> remainder) >>= \case
                             SMT.IsUnsat -> do
                                 -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
-                                withContext CtxRemainder . withContext CtxContinue
-                                    $ logMessage
-                                    $ WithJsonMessage
-                                        ( object
-                                            [ "remainder"
-                                                .= externalisePredicate (externaliseSort $ sortOfPattern pat) (coerce remainderForLogging)
-                                            ]
-                                        )
-                                    $ renderOneLineText
-                                    $ pretty' @mods (RewriteRemainderPredicate (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainderForLogging)
-                                pure $
-                                    RewriteBranch pat $
-                                        NE.fromList $
-                                            map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) xs
+                                logRemainder (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainder
+                                pure $ mkBranch pat xs
                             satRes@(SMT.IsSat{}) -> do
                                 -- the remainder condition is satisfiable.
-                                --  Have to construct the remainder branch and consider it
+                                -- TODO construct the remainder branch and consider it
                                 -- To construct the "remainder pattern",
                                 -- we add the remainder condition to the predicates of the @pattr@
-                                -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
-                                let rs = map (\(r, _p, _subst) -> r) xs
-                                throw $
-                                    RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
-                                        map coerce . Set.toList $
-                                            remainder
+                                throwRemainder (map (\(r, _p, _subst) -> r) xs) satRes remainder
                             satRes@SMT.IsUnknown{} -> do
-                                -- solver cannot solve the remainder. Descend into the remainder branch anyway
-                                -- (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
-                                let rs = map (\(r, _p, _subst) -> r) xs
-                                throw $
-                                    RewriteRemainderPredicate rs satRes . coerce . foldl1 AndTerm $
-                                        map coerce . Set.toList $
-                                            remainder
+                                -- solver cannot solve the remainder
+                                -- TODO descend into the remainder branch anyway
+                                throwRemainder (map (\(r, _p, _subst) -> r) xs) satRes remainder
 
--- if any isFalse remainder -- no need to call SMT if any of the conditions is trivially false
---     then do
---         --                        setRemainder mempty
---         pure xs
---     else do
---         solver <- getSolver
---         SMT.isSat solver (pat.constraints <> remainder) >>= \case
---             SMT.IsUnsat -> do
---                 -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
---                 setRemainder mempty
---                 withContext CtxRemainder $ logMessage ("remainder is UNSAT" :: Text)
---                 pure resultsWithoutRemainders
---             SMT.IsSat _ -> do
---                 withContext CtxRemainder $ logMessage ("remainder is SAT" :: Text)
---                 -- the remainder condition is satisfiable.
---                 --  Have to construct the remainder branch and consider it
---                 -- To construct the "remainder pattern",
---                 -- we add the remainder condition to the predicates of the @pattr@
---                 (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
---             SMT.IsUnknown{} -> do
---                 withContext CtxRemainder $ logMessage ("remainder is UNKNWON" :: Text)
---                 -- solver cannot solve the remainder. Descend into the remainder branch anyway
---                 (resultsWithoutRemainders <>) <$> processGroups lowerPriorityRules
+    mkBranch :: Pattern -> [(RewriteRule "Rewrite", Pattern, Substitution)] -> RewriteResult Pattern
+    mkBranch base leafs =
+        let ruleLabelOrLocT = renderOneLineText . ruleLabelOrLoc
+            uniqueId = (.uniqueId) . (.attributes)
+         in RewriteBranch base $
+                NE.fromList $
+                    map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) leafs
 
--- _ -> case concatMap (\case Applied x -> [x]; _ -> []) results of
---     [] ->
---         -- all remaining branches are trivial, i.e. rules which did apply had an ensures condition which evaluated to false
---         -- if, all the other groups only generate a not applicable or trivial rewrites,
---         -- then we return a `RewriteTrivial`.
---         processGroups rest >>= \case
---             RewriteStuck{} -> pure $ RewriteTrivial pat
---             other -> pure other
---     -- all branches but one were either not applied or trivial
---     [(r, (x, _remainder, _subst))]
---         | labelOf r `elem` cutLabels ->
---             pure $ RewriteCutPoint (labelOf r) (uniqueId r) pat x
---         | labelOf r `elem` terminalLabels ->
---             pure $ RewriteTerminal (labelOf r) (uniqueId r) x
---         | otherwise ->
---             pure $ RewriteFinished (Just $ ruleLabelOrLocT r) (Just $ uniqueId r) x
---     -- at this point, there were some Applied rules and potentially some Trivial ones.
---     -- here, we just return all the applied rules in a `RewriteBranch`
---     rxs ->
---         pure $
---             RewriteBranch pat $
---                 NE.fromList $
---                     map (\(r, (p, _remainder, _subst)) -> (ruleLabelOrLocT r, uniqueId r, p)) rxs
+    -- abort rewriting by throwing a remainder predicate as an exception, to be caught and processed in @performRewrite@
+    throwRemainder ::
+        LoggerMIO io => [RewriteRule "Rewrite"] -> SMT.IsSatResult () -> Set.Set Predicate -> RewriteT io a
+    throwRemainder rules satResult remainderPredicate =
+        throw $
+            RewriteRemainderPredicate rules satResult . coerce . foldl1 AndTerm $
+                map coerce . Set.toList $
+                    remainderPredicate
+
+    -- log a remainder predicate as an exception without aborting rewriting
+    logRemainder ::
+        LoggerMIO io => [RewriteRule "Rewrite"] -> SMT.IsSatResult () -> Set.Set Predicate -> RewriteT io ()
+    logRemainder rules satResult remainderPredicate = do
+        ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
+        let remainderForLogging = coerce . foldl1 AndTerm $ map coerce . Set.toList $ remainderPredicate
+        withContext CtxRemainder . withContext CtxContinue
+            $ logMessage
+            $ WithJsonMessage
+                ( object
+                    [ "remainder"
+                        .= externalisePredicate (externaliseSort $ sortOfPattern pat) (coerce remainderForLogging)
+                    ]
+                )
+            $ renderOneLineText
+            $ pretty' @mods
+                ( RewriteRemainderPredicate
+                    rules
+                    satResult
+                    remainderForLogging
+                )
 
 -- | Rewrite rule application transformer: may throw exceptions on non-applicable or trivial rule applications
 type RewriteRuleAppT m a = ExceptT RewriteRuleAppException m a
