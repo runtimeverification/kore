@@ -201,7 +201,7 @@ rewriteStep cutLabels terminalLabels pat = do
             AppliedRules ([], _remainder) ->
                 -- TODO check that remainder is trivial, abort otherwise
                 processGroups rest
-            AppliedRules ([(rule, newPat, _subst)], remainder)
+            AppliedRules ([(rule, newPat, _subst, _rulePred)], remainder)
                 | not (Set.null remainder) && not (any isFalse remainder) -> do
                     -- a non-trivial remainder with a single applicable rule is
                     -- an indication if semantics incompleteness: abort
@@ -223,7 +223,7 @@ rewriteStep cutLabels terminalLabels pat = do
                 -- multiple rules apply, analyse brunching and remainders
                 if any isFalse remainder
                     then do
-                        logRemainder (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainder
+                        logRemainder (map (\(r, _, _, _) -> r) xs) SMT.IsUnsat remainder
                         -- the remainder predicate is trivially false, return the branching result
                         pure $ mkBranch pat xs
                     else do
@@ -233,26 +233,29 @@ rewriteStep cutLabels terminalLabels pat = do
                         SMT.isSat solver (Set.toList $ pat.constraints <> remainder) >>= \case
                             SMT.IsUnsat -> do
                                 -- the remainder condition is unsatisfiable: no need to consider the remainder branch.
-                                logRemainder (map (\(r, _, _) -> r) xs) SMT.IsUnsat remainder
+                                logRemainder (map (\(r, _, _, _) -> r) xs) SMT.IsUnsat remainder
                                 pure $ mkBranch pat xs
                             satRes@(SMT.IsSat{}) -> do
                                 -- the remainder condition is satisfiable.
                                 -- TODO construct the remainder branch and consider it
                                 -- To construct the "remainder pattern",
                                 -- we add the remainder condition to the predicates of the @pattr@
-                                throwRemainder (map (\(r, _p, _subst) -> r) xs) satRes remainder
+                                throwRemainder (map (\(r, _p, _subst, _) -> r) xs) satRes remainder
                             satRes@SMT.IsUnknown{} -> do
                                 -- solver cannot solve the remainder
                                 -- TODO descend into the remainder branch anyway
-                                throwRemainder (map (\(r, _p, _subst) -> r) xs) satRes remainder
+                                throwRemainder (map (\(r, _p, _subst, _) -> r) xs) satRes remainder
 
-    mkBranch :: Pattern -> [(RewriteRule "Rewrite", Pattern, Substitution)] -> RewriteResult Pattern
+    mkBranch ::
+        Pattern ->
+        [(RewriteRule "Rewrite", Pattern, Substitution, Maybe Predicate)] ->
+        RewriteResult Pattern
     mkBranch base leafs =
         let ruleLabelOrLocT = renderOneLineText . ruleLabelOrLoc
             uniqueId = (.uniqueId) . (.attributes)
          in RewriteBranch base $
                 NE.fromList $
-                    map (\(r, p, subst) -> (ruleLabelOrLocT r, uniqueId r, p, mkRulePredicate r subst, subst)) leafs
+                    map (\(r, p, subst, rulePred) -> (ruleLabelOrLocT r, uniqueId r, p, rulePred, subst)) leafs
 
     -- abort rewriting by throwing a remainder predicate as an exception, to be caught and processed in @performRewrite@
     throwRemainder ::
@@ -323,7 +326,7 @@ applyRule ::
     LoggerMIO io =>
     Pattern ->
     RewriteRule "Rewrite" ->
-    RewriteT io (RewriteRuleAppResult (Pattern, Predicate, Substitution))
+    RewriteT io (RewriteRuleAppResult (Pattern, Predicate, Substitution, Maybe Predicate))
 applyRule pat@Pattern{ceilConditions} rule =
     withRuleContext rule $
         runRewriteRuleAppT $
@@ -425,8 +428,9 @@ applyRule pat@Pattern{ceilConditions} rule =
                                 ceilConditions
                     withContext CtxSuccess $ do
                         case unclearRequiresAfterSmt of
-                            [] -> withPatternContext rewritten $ pure (rewritten, Predicate FalseBool, subst)
+                            [] -> withPatternContext rewritten $ pure (rewritten, Predicate FalseBool, subst, Nothing)
                             _ -> do
+                                rulePredicate <- mkSimplifiedRulePredicate subst
                                 -- the requires clause was unclear:
                                 -- - add it as an assumption to the pattern
                                 -- - return it's negation as a rule remainder to construct
@@ -434,7 +438,11 @@ applyRule pat@Pattern{ceilConditions} rule =
                                 let rewritten' = rewritten{constraints = rewritten.constraints <> Set.fromList unclearRequiresAfterSmt}
                                  in withPatternContext rewritten' $
                                         pure
-                                            (rewritten', Predicate $ NotBool $ coerce $ collapseAndBools unclearRequiresAfterSmt, subst)
+                                            ( rewritten'
+                                            , Predicate $ NotBool $ coerce $ collapseAndBools unclearRequiresAfterSmt
+                                            , subst
+                                            , Just rulePredicate
+                                            )
   where
     filterOutKnownConstraints :: Set.Set Predicate -> [Predicate] -> RewriteT io [Predicate]
     filterOutKnownConstraints priorKnowledge constraitns = do
@@ -559,6 +567,16 @@ applyRule pat@Pattern{ceilConditions} rule =
             RuleConditionUnclear rule . coerce . foldl1 AndTerm $
                 map coerce predicates
 
+    -- Instantiate the requires clause of the rule and simplify, but not prune.
+    -- Unfortunately this function may have to re-do work that was already done by checkRequires
+    mkSimplifiedRulePredicate :: Substitution -> RewriteRuleAppT (RewriteT io) Predicate
+    mkSimplifiedRulePredicate matchingSubst = do
+        -- apply substitution to rule requires
+        let ruleRequires =
+                concatMap (splitBoolPredicates . coerce . substituteInTerm matchingSubst . coerce) rule.requires
+        collapseAndBools . catMaybes
+            <$> mapM (checkConstraint id returnNotApplied pat.constraints) ruleRequires
+
 data RuleGroupApplication a = OnlyTrivial | AppliedRules a
 
 ruleGroupPriority :: [RewriteRule a] -> Maybe Priority
@@ -573,8 +591,9 @@ ruleGroupPriority = \case
        and return them as a set relating to the whole group
 -}
 postProcessRuleAttempts ::
-    [(RewriteRule "Rewrite", RewriteRuleAppResult (Pattern, Predicate, Substitution))] ->
-    RuleGroupApplication ([(RewriteRule "Rewrite", Pattern, Substitution)], Set.Set Predicate)
+    [(RewriteRule "Rewrite", RewriteRuleAppResult (Pattern, Predicate, Substitution, Maybe Predicate))] ->
+    RuleGroupApplication
+        ([(RewriteRule "Rewrite", Pattern, Substitution, Maybe Predicate)], Set.Set Predicate)
 postProcessRuleAttempts = \case
     [] -> AppliedRules ([], mempty)
     apps -> case filter ((/= NotApplied) . snd) apps of
@@ -587,7 +606,7 @@ postProcessRuleAttempts = \case
         [] -> AppliedRules (reverse accPatterns, accRemainders)
         ((rule, appRes) : xs) ->
             case appRes of
-                Applied (pat, remainder, subst) -> go ((rule, pat, subst) : accPatterns, Set.singleton remainder <> accRemainders) xs
+                Applied (pat, remainder, subst, rulePred) -> go ((rule, pat, subst, rulePred) : accPatterns, Set.singleton remainder <> accRemainders) xs
                 NotApplied -> go acc xs
                 Trivial -> go acc xs
 
@@ -890,6 +909,9 @@ performRewrite rewriteConfig pat = do
                     emitRewriteTrace $ RewriteSimplified (Just other)
                     pure $ Just p
 
+    simplifyRulePredicate :: Predicate -> io Predicate
+    simplifyRulePredicate = undefined
+
     -- Results may change when simplification prunes a false side
     -- condition, otherwise this would mainly be fmap simplifyP
     simplifyResult ::
@@ -1071,14 +1093,3 @@ rewriteStart =
         , traces = mempty
         , simplifierCache = mempty
         }
-
-{- | Instantiate a rewrite rule's requires clause with a substitution.
-     Returns Nothing is the resulting @Predicate@ is trivially @True@.
--}
-mkRulePredicate :: RewriteRule a -> Substitution -> Maybe Predicate
-mkRulePredicate rule subst =
-    case concatMap
-        (splitBoolPredicates . coerce . substituteInTerm subst . coerce)
-        rule.requires of
-        [] -> Nothing
-        xs -> Just $ collapseAndBools xs
