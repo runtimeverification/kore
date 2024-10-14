@@ -85,7 +85,7 @@ module REMAINDER-PREDICATES
   /// two rules apply with SAT remainder predicate,                             //
   /// have to consider the remainder branch where X ==Int 0,                    //
   /// no further rules apply.                                                   //
-  /// Aborts with boosted-dev; results in 2 branches in kore-rpc-booster.       //
+  /// Aborts with boosted-dev; results in 3 branches in kore-rpc-booster.       //
   ////////////////////////////////////////////////////////////////////////////////
   rule [test2-init]: <k> test2Init() => test2State1() ... </k>
                      <int> _         => ?_X               </int>
@@ -102,7 +102,7 @@ module REMAINDER-PREDICATES
   /// two rules apply with SAT remainder predicate,                             //
   /// have to consider the remainder branch where X ==Int 0,                    //
   /// but the are no further rules to apply.                                    //
-  /// Aborts with boosted-dev; results in 2 branches in kore-rpc-booster.       //
+  /// Aborts with boosted-dev; results in 3 branches in kore-rpc-booster.       //
   ////////////////////////////////////////////////////////////////////////////////
   rule [test3-init]: <k> test3Init() => test3State1() ... </k>
                      <int> _         => ?_X               </int>
