@@ -30,7 +30,7 @@ module USE-PATH-CONDITION-IN-EQUATIONS
   ////////////////////////////////////////////////////////////////////////////////
   // Here the simplification's side condition is syntactically present          //
   // in the path condition and is not checked.                                  //
-  // Result                                                                     //
+  // Result kore-rpc-booster and booster-dev:                                   //
   //   Stuck at depth 2 in state test1State2()                                  //
   //   after applying rules test1-init,test1-1-2                                //
   ////////////////////////////////////////////////////////////////////////////////
@@ -46,8 +46,9 @@ module USE-PATH-CONDITION-IN-EQUATIONS
 
   ////////////////////////////////////////////////////////////////////////////////
   // Here the simplification's side condition is implied by the path condition. //
-  // Result: Stuck at depth 2 in state test2State2(),                           //
-  //         after applying rules test2-init, test2-1-2.                        //
+  // Result kore-rpc-booster and booster-dev:                                   //
+  //   Stuck at depth 2 in state test2State2(),                                 //
+  //   after applying rules test2-init, test2-1-2.                              //
   ////////////////////////////////////////////////////////////////////////////////
   rule [test2-init]: <k> test2Init() => test2State1() ... </k>
                      <int> _         => ?X                </int>
@@ -63,8 +64,8 @@ module USE-PATH-CONDITION-IN-EQUATIONS
   // Exactly like test2, but the function now has actual evaluators, rather than //
   // a simplification-based semantics. Using the SMT solver Booster determines   //
   // that the condition of rule test3-1-2 is False.                              //
-  // Result kore-rpc-booster:                                                    //
-  //   Stuck at depth  in state test3State1()                                    //
+  // Result kore-rpc-booster and booster-dev:                                    //
+  //   Stuck at depth 1 in state test3State1()                                   //
   //   after applying rules test3-init          .                                //
   /////////////////////////////////////////////////////////////////////////////////
   rule [test3-init]: <k> test3Init() => test3State1() ... </k>
@@ -81,7 +82,7 @@ module USE-PATH-CONDITION-IN-EQUATIONS
   /////////////////////////////////////////////////////////////////////////////////
   // Similar to test3, but now there are two rules. Using the solver, Booster    //
   // determines that the condition of rule test4-1-2 is False.                   //
-  // Result:                                                                     //
+  // Result kore-rpc-booster and booster-dev:                                    //
   //   Stuck at depth 2 in state test2State3()                                   //
   /////////////////////////////////////////////////////////////////////////////////
   rule [test4-init]: <k> test4Init() => test4State1() ... </k>

@@ -28,7 +28,7 @@ for dir in $(ls -d test-*); do
     name=${dir##test-}
     echo "Running $name..."
     case "$name" in
-        "3934-smt" | "issue3764-vacuous-branch" | "use-path-condition-in-equations")
+        "3934-smt" | "issue3764-vacuous-branch")
 	    continue
             ;;
         "a-to-f" | "diamond")
@@ -40,7 +40,7 @@ for dir in $(ls -d test-*); do
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;
-        "get-model" | "collectiontest" | "implies" | "implies2" | "implies-issue-3941" | "remainder-predicates")
+        "get-model" | "collectiontest" | "implies" | "implies2" | "implies-issue-3941" | "remainder-predicates" | "use-path-condition-in-equations")
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;
@@ -52,7 +52,7 @@ for dir in $(ls -d test-*); do
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
             ;;
-        "use-path-condition-in-equations" | "compute-ceil" | "no-evaluator" | "non-linear-int-requires" | "get-model-subsorts" | "simplify")
+        "compute-ceil" | "no-evaluator" | "non-linear-int-requires" | "get-model-subsorts" | "simplify")
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             ;;
         "log-simplify-json")
