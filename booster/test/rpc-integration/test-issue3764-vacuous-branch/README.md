@@ -17,3 +17,4 @@ The files for this test are a slight reduction of the original input, but the de
   - Output is virtually the same, except the `depth` field and one returned `rule-id`.
 
 
+`booster-dev` currently branches at depth 0 for `state-branch-in-zero` and is unable to proceed. This is worth investigating.

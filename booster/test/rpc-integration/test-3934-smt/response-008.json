@@ -3825,153 +3825,55 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-LT-'Gas'UndsUnds'GAS-SYNTAX'Unds'Bool'Unds'Gas'Unds'Gas",
+                            "name": "Lbl'Unds-LT-'Int'Unds'",
                             "sorts": [],
                             "args": [
                                 {
                                     "tag": "App",
-                                    "name": "inj",
-                                    "sorts": [
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortInt",
-                                            "args": []
-                                        },
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortGas",
-                                            "args": []
-                                        }
-                                    ],
+                                    "name": "Lbl'UndsPlus'Int'Unds'",
+                                    "sorts": [],
                                     "args": [
                                         {
-                                            "tag": "App",
-                                            "name": "Lbl'UndsPlus'Int'Unds'",
-                                            "sorts": [],
-                                            "args": [
-                                                {
-                                                    "tag": "EVar",
-                                                    "name": "VarGAS'Unds'AMT",
-                                                    "sort": {
-                                                        "tag": "SortApp",
-                                                        "name": "SortInt",
-                                                        "args": []
-                                                    }
-                                                },
-                                                {
-                                                    "tag": "DV",
-                                                    "sort": {
-                                                        "tag": "SortApp",
-                                                        "name": "SortInt",
-                                                        "args": []
-                                                    },
-                                                    "value": "-23"
-                                                }
-                                            ]
+                                            "tag": "EVar",
+                                            "name": "VarGAS'Unds'AMT",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            }
+                                        },
+                                        {
+                                            "tag": "DV",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            },
+                                            "value": "-23"
                                         }
                                     ]
                                 },
                                 {
                                     "tag": "App",
-                                    "name": "inj",
-                                    "sorts": [
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortInt",
-                                            "args": []
-                                        },
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortGas",
-                                            "args": []
-                                        }
-                                    ],
+                                    "name": "Lbl'Unds'-Int'Unds'",
+                                    "sorts": [],
                                     "args": [
                                         {
                                             "tag": "App",
-                                            "name": "Lbl'Unds'-Int'Unds'",
+                                            "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
                                             "sorts": [],
                                             "args": [
                                                 {
                                                     "tag": "App",
-                                                    "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                                    "name": "LblLONDON'Unds'EVM",
                                                     "sorts": [],
-                                                    "args": [
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "LblLONDON'Unds'EVM",
-                                                            "sorts": [],
-                                                            "args": []
-                                                        },
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "Lbl'Hash'memory'LParUndsCommUndsRParUnds'EVM'Unds'Int'Unds'OpCode'Unds'Int",
-                                                            "sorts": [],
-                                                            "args": [
-                                                                {
-                                                                    "tag": "App",
-                                                                    "name": "inj",
-                                                                    "sorts": [
-                                                                        {
-                                                                            "tag": "SortApp",
-                                                                            "name": "SortInternalOp",
-                                                                            "args": []
-                                                                        },
-                                                                        {
-                                                                            "tag": "SortApp",
-                                                                            "name": "SortOpCode",
-                                                                            "args": []
-                                                                        }
-                                                                    ],
-                                                                    "args": [
-                                                                        {
-                                                                            "tag": "App",
-                                                                            "name": "Lbl'UndsUndsUnds'EVM'Unds'InternalOp'Unds'UnStackOp'Unds'Int",
-                                                                            "sorts": [],
-                                                                            "args": [
-                                                                                {
-                                                                                    "tag": "App",
-                                                                                    "name": "LblMLOAD'Unds'EVM'Unds'UnStackOp",
-                                                                                    "sorts": [],
-                                                                                    "args": []
-                                                                                },
-                                                                                {
-                                                                                    "tag": "DV",
-                                                                                    "sort": {
-                                                                                        "tag": "SortApp",
-                                                                                        "name": "SortInt",
-                                                                                        "args": []
-                                                                                    },
-                                                                                    "value": "64"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "tag": "EVar",
-                                                                    "name": "VarMEMORYUSED'Unds'CELL",
-                                                                    "sort": {
-                                                                        "tag": "SortApp",
-                                                                        "name": "SortInt",
-                                                                        "args": []
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
+                                                    "args": []
                                                 },
                                                 {
                                                     "tag": "App",
-                                                    "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                                    "name": "Lbl'Hash'memoryUsageUpdate'LParUndsCommUndsCommUndsRParUnds'EVM'Unds'Int'Unds'Int'Unds'Int'Unds'Int",
                                                     "sorts": [],
                                                     "args": [
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "LblLONDON'Unds'EVM",
-                                                            "sorts": [],
-                                                            "args": []
-                                                        },
                                                         {
                                                             "tag": "EVar",
                                                             "name": "VarMEMORYUSED'Unds'CELL",
@@ -3980,8 +3882,48 @@
                                                                 "name": "SortInt",
                                                                 "args": []
                                                             }
+                                                        },
+                                                        {
+                                                            "tag": "DV",
+                                                            "sort": {
+                                                                "tag": "SortApp",
+                                                                "name": "SortInt",
+                                                                "args": []
+                                                            },
+                                                            "value": "64"
+                                                        },
+                                                        {
+                                                            "tag": "DV",
+                                                            "sort": {
+                                                                "tag": "SortApp",
+                                                                "name": "SortInt",
+                                                                "args": []
+                                                            },
+                                                            "value": "32"
                                                         }
                                                     ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "tag": "App",
+                                            "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                            "sorts": [],
+                                            "args": [
+                                                {
+                                                    "tag": "App",
+                                                    "name": "LblLONDON'Unds'EVM",
+                                                    "sorts": [],
+                                                    "args": []
+                                                },
+                                                {
+                                                    "tag": "EVar",
+                                                    "name": "VarMEMORYUSED'Unds'CELL",
+                                                    "sort": {
+                                                        "tag": "SortApp",
+                                                        "name": "SortInt",
+                                                        "args": []
+                                                    }
                                                 }
                                             ]
                                         }
@@ -5978,110 +5920,30 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-LT-Eqls'Gas'UndsUnds'GAS-SYNTAX'Unds'Bool'Unds'Gas'Unds'Gas",
+                            "name": "Lbl'Unds-LT-Eqls'Int'Unds'",
                             "sorts": [],
                             "args": [
                                 {
                                     "tag": "App",
-                                    "name": "inj",
-                                    "sorts": [
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortInt",
-                                            "args": []
-                                        },
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortGas",
-                                            "args": []
-                                        }
-                                    ],
+                                    "name": "Lbl'Unds'-Int'Unds'",
+                                    "sorts": [],
                                     "args": [
                                         {
                                             "tag": "App",
-                                            "name": "Lbl'Unds'-Int'Unds'",
+                                            "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
                                             "sorts": [],
                                             "args": [
                                                 {
                                                     "tag": "App",
-                                                    "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                                    "name": "LblLONDON'Unds'EVM",
                                                     "sorts": [],
-                                                    "args": [
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "LblLONDON'Unds'EVM",
-                                                            "sorts": [],
-                                                            "args": []
-                                                        },
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "Lbl'Hash'memory'LParUndsCommUndsRParUnds'EVM'Unds'Int'Unds'OpCode'Unds'Int",
-                                                            "sorts": [],
-                                                            "args": [
-                                                                {
-                                                                    "tag": "App",
-                                                                    "name": "inj",
-                                                                    "sorts": [
-                                                                        {
-                                                                            "tag": "SortApp",
-                                                                            "name": "SortInternalOp",
-                                                                            "args": []
-                                                                        },
-                                                                        {
-                                                                            "tag": "SortApp",
-                                                                            "name": "SortOpCode",
-                                                                            "args": []
-                                                                        }
-                                                                    ],
-                                                                    "args": [
-                                                                        {
-                                                                            "tag": "App",
-                                                                            "name": "Lbl'UndsUndsUnds'EVM'Unds'InternalOp'Unds'UnStackOp'Unds'Int",
-                                                                            "sorts": [],
-                                                                            "args": [
-                                                                                {
-                                                                                    "tag": "App",
-                                                                                    "name": "LblMLOAD'Unds'EVM'Unds'UnStackOp",
-                                                                                    "sorts": [],
-                                                                                    "args": []
-                                                                                },
-                                                                                {
-                                                                                    "tag": "DV",
-                                                                                    "sort": {
-                                                                                        "tag": "SortApp",
-                                                                                        "name": "SortInt",
-                                                                                        "args": []
-                                                                                    },
-                                                                                    "value": "64"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "tag": "EVar",
-                                                                    "name": "VarMEMORYUSED'Unds'CELL",
-                                                                    "sort": {
-                                                                        "tag": "SortApp",
-                                                                        "name": "SortInt",
-                                                                        "args": []
-                                                                    }
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
+                                                    "args": []
                                                 },
                                                 {
                                                     "tag": "App",
-                                                    "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                                    "name": "Lbl'Hash'memoryUsageUpdate'LParUndsCommUndsCommUndsRParUnds'EVM'Unds'Int'Unds'Int'Unds'Int'Unds'Int",
                                                     "sorts": [],
                                                     "args": [
-                                                        {
-                                                            "tag": "App",
-                                                            "name": "LblLONDON'Unds'EVM",
-                                                            "sorts": [],
-                                                            "args": []
-                                                        },
                                                         {
                                                             "tag": "EVar",
                                                             "name": "VarMEMORYUSED'Unds'CELL",
@@ -6090,8 +5952,48 @@
                                                                 "name": "SortInt",
                                                                 "args": []
                                                             }
+                                                        },
+                                                        {
+                                                            "tag": "DV",
+                                                            "sort": {
+                                                                "tag": "SortApp",
+                                                                "name": "SortInt",
+                                                                "args": []
+                                                            },
+                                                            "value": "64"
+                                                        },
+                                                        {
+                                                            "tag": "DV",
+                                                            "sort": {
+                                                                "tag": "SortApp",
+                                                                "name": "SortInt",
+                                                                "args": []
+                                                            },
+                                                            "value": "32"
                                                         }
                                                     ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "tag": "App",
+                                            "name": "LblCmem'LParUndsCommUndsRParUnds'GAS-FEES'Unds'Int'Unds'Schedule'Unds'Int",
+                                            "sorts": [],
+                                            "args": [
+                                                {
+                                                    "tag": "App",
+                                                    "name": "LblLONDON'Unds'EVM",
+                                                    "sorts": [],
+                                                    "args": []
+                                                },
+                                                {
+                                                    "tag": "EVar",
+                                                    "name": "VarMEMORYUSED'Unds'CELL",
+                                                    "sort": {
+                                                        "tag": "SortApp",
+                                                        "name": "SortInt",
+                                                        "args": []
+                                                    }
                                                 }
                                             ]
                                         }
@@ -6099,44 +6001,26 @@
                                 },
                                 {
                                     "tag": "App",
-                                    "name": "inj",
-                                    "sorts": [
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortInt",
-                                            "args": []
-                                        },
-                                        {
-                                            "tag": "SortApp",
-                                            "name": "SortGas",
-                                            "args": []
-                                        }
-                                    ],
+                                    "name": "Lbl'UndsPlus'Int'Unds'",
+                                    "sorts": [],
                                     "args": [
                                         {
-                                            "tag": "App",
-                                            "name": "Lbl'UndsPlus'Int'Unds'",
-                                            "sorts": [],
-                                            "args": [
-                                                {
-                                                    "tag": "EVar",
-                                                    "name": "VarGAS'Unds'AMT",
-                                                    "sort": {
-                                                        "tag": "SortApp",
-                                                        "name": "SortInt",
-                                                        "args": []
-                                                    }
-                                                },
-                                                {
-                                                    "tag": "DV",
-                                                    "sort": {
-                                                        "tag": "SortApp",
-                                                        "name": "SortInt",
-                                                        "args": []
-                                                    },
-                                                    "value": "-23"
-                                                }
-                                            ]
+                                            "tag": "EVar",
+                                            "name": "VarGAS'Unds'AMT",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            }
+                                        },
+                                        {
+                                            "tag": "DV",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            },
+                                            "value": "-23"
                                         }
                                     ]
                                 }
