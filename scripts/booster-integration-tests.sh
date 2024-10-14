@@ -28,7 +28,7 @@ for dir in $(ls -d test-*); do
     name=${dir##test-}
     echo "Running $name..."
     case "$name" in
-        "3934-smt" | "issue3764-vacuous-branch" | "use-path-condition-in-equations" | "remainder-predicates")
+        "3934-smt" | "issue3764-vacuous-branch" | "use-path-condition-in-equations")
 	    continue
             ;;
         "a-to-f" | "diamond")
@@ -40,7 +40,7 @@ for dir in $(ls -d test-*); do
             SERVER=$KORE_RPC_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;
-        "get-model" | "collectiontest" | "implies" | "implies2" | "implies-issue-3941")
+        "get-model" | "collectiontest" | "implies" | "implies2" | "implies-issue-3941" | "remainder-predicates")
             SERVER=$BOOSTER_DEV ./runDirectoryTest.sh test-$name $@
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
             ;;
