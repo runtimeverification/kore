@@ -41,7 +41,7 @@
                                             "args": [
                                                 {
                                                     "tag": "App",
-                                                    "name": "Lbltest2State1'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
+                                                    "name": "Lbltest11State1'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
                                                     "sorts": [],
                                                     "args": []
                                                 }
@@ -131,7 +131,7 @@
                                                 "args": [
                                                     {
                                                         "tag": "App",
-                                                        "name": "Lbltest2State2'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
+                                                        "name": "Lbltest11State2'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
                                                         "sorts": [],
                                                         "args": []
                                                     }
@@ -208,7 +208,7 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-GT-'Int'Unds'",
+                            "name": "Lbl'UndsEqlsEqls'Int'Unds'",
                             "sorts": [],
                             "args": [
                                 {
@@ -233,7 +233,7 @@
                         }
                     }
                 },
-                "rule-id": "f1062b57b8ba73d1fa8fa0a1b5cb828ee0c750f42a3ff3227b6ddb5c260b8c03",
+                "rule-id": "f54071f2a0ee01e4094f9dea825a6b4e5cf15453acc52ff5b431e712ce1f1087",
                 "rule-predicate": {
                     "format": "KORE",
                     "version": 1,
@@ -260,7 +260,7 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-GT-'Int'Unds'",
+                            "name": "Lbl'UndsEqlsEqls'Int'Unds'",
                             "sorts": [],
                             "args": [
                                 {
@@ -323,7 +323,7 @@
                                                 "args": [
                                                     {
                                                         "tag": "App",
-                                                        "name": "Lbltest2State3'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
+                                                        "name": "Lbltest11State3'LParRParUnds'REMAINDER-PREDICATES'Unds'State",
                                                         "sorts": [],
                                                         "args": []
                                                     }
@@ -400,32 +400,39 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-LT-'Int'Unds'",
+                            "name": "LblnotBool'Unds'",
                             "sorts": [],
                             "args": [
                                 {
-                                    "tag": "EVar",
-                                    "name": "Var'QuesUnds'X0",
-                                    "sort": {
-                                        "tag": "SortApp",
-                                        "name": "SortInt",
-                                        "args": []
-                                    }
-                                },
-                                {
-                                    "tag": "DV",
-                                    "sort": {
-                                        "tag": "SortApp",
-                                        "name": "SortInt",
-                                        "args": []
-                                    },
-                                    "value": "0"
+                                    "tag": "App",
+                                    "name": "Lbl'UndsEqlsEqls'Int'Unds'",
+                                    "sorts": [],
+                                    "args": [
+                                        {
+                                            "tag": "EVar",
+                                            "name": "Var'QuesUnds'X0",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            }
+                                        },
+                                        {
+                                            "tag": "DV",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            },
+                                            "value": "0"
+                                        }
+                                    ]
                                 }
                             ]
                         }
                     }
                 },
-                "rule-id": "54a5fca77be17b0d99e953eded75809e0ed9046f73cab5027603a82df1f4c4b2",
+                "rule-id": "b3179a4519053c503ae87c9c4ed9664840941bfc3946f3de50646292f474a038",
                 "rule-predicate": {
                     "format": "KORE",
                     "version": 1,
@@ -452,26 +459,33 @@
                         },
                         "second": {
                             "tag": "App",
-                            "name": "Lbl'Unds-LT-'Int'Unds'",
+                            "name": "LblnotBool'Unds'",
                             "sorts": [],
                             "args": [
                                 {
-                                    "tag": "EVar",
-                                    "name": "Var'QuesUnds'X0",
-                                    "sort": {
-                                        "tag": "SortApp",
-                                        "name": "SortInt",
-                                        "args": []
-                                    }
-                                },
-                                {
-                                    "tag": "DV",
-                                    "sort": {
-                                        "tag": "SortApp",
-                                        "name": "SortInt",
-                                        "args": []
-                                    },
-                                    "value": "0"
+                                    "tag": "App",
+                                    "name": "Lbl'UndsEqlsEqls'Int'Unds'",
+                                    "sorts": [],
+                                    "args": [
+                                        {
+                                            "tag": "EVar",
+                                            "name": "Var'QuesUnds'X0",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            }
+                                        },
+                                        {
+                                            "tag": "DV",
+                                            "sort": {
+                                                "tag": "SortApp",
+                                                "name": "SortInt",
+                                                "args": []
+                                            },
+                                            "value": "0"
+                                        }
+                                    ]
                                 }
                             ]
                         }
