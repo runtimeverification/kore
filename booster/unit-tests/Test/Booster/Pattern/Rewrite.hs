@@ -172,6 +172,12 @@ testConf = do
             , terminalLabels = []
             }
 
+ignoreRulePredicateAndSubst :: RewriteResult Pattern -> RewriteResult Pattern
+ignoreRulePredicateAndSubst =
+    \case
+        RewriteBranch pre posts -> RewriteBranch pre (NE.map (\(lbl, uid, p, _, _) -> (lbl, uid, p, Nothing, mempty)) posts)
+        other -> other
+
 ----------------------------------------
 errorCases
     , rewriteSuccess
@@ -244,7 +250,7 @@ rulePriority =
 
 runWith :: Term -> IO (Either (RewriteFailed "Rewrite") (RewriteResult Pattern))
 runWith t =
-    second fst <$> do
+    second (ignoreRulePredicateAndSubst . fst) <$> do
         conf <- testConf
         runNoLoggingT $ runRewriteT conf mempty (rewriteStep [] [] $ Pattern_ t)
 
@@ -260,7 +266,10 @@ branchesTo :: Term -> [(Text, Term)] -> IO ()
 t `branchesTo` ts =
     runWith t
         @?>>= Right
-            (RewriteBranch (Pattern_ t) $ NE.fromList $ map (\(lbl, t') -> (lbl, mockUniqueId, Pattern_ t')) ts)
+            ( RewriteBranch (Pattern_ t) $
+                NE.fromList $
+                    map (\(lbl, t') -> (lbl, mockUniqueId, Pattern_ t', Nothing, mempty)) ts
+            )
 
 failsWith :: Term -> RewriteFailed "Rewrite" -> IO ()
 failsWith t err =
@@ -276,7 +285,7 @@ runRewrite t = do
         runNoLoggingT $
             performRewrite conf $
                 Pattern_ t
-    pure (counter, fmap (.term) res)
+    pure (counter, fmap (.term) (ignoreRulePredicateAndSubst res))
 
 aborts :: RewriteFailed "Rewrite" -> Term -> IO ()
 aborts failure t = runRewrite t >>= (@?= (0, RewriteAborted failure t))
@@ -306,11 +315,15 @@ canRewrite =
                     ( "con1-f2"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{AnotherSort{}, SortKItem{}}( con4{}( \dv{SomeSort{}}("somethingElse"), \dv{SomeSort{}}("somethingElse") ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
                 branch2 =
                     ( "con1-f1'"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{SomeSort{}, SortKItem{}}(    f1{}(   \dv{SomeSort{}}("somethingElse")                                   ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
 
             rewrites
@@ -399,11 +412,15 @@ supportsDepthControl =
                     ( "con1-f2"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{AnotherSort{}, SortKItem{}}( con4{}( \dv{SomeSort{}}("somethingElse"), \dv{SomeSort{}}("somethingElse") ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
                 branch2 =
                     ( "con1-f1'"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{SomeSort{}, SortKItem{}}(    f1{}(   \dv{SomeSort{}}("somethingElse")                                   ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
 
             rewritesToDepth
@@ -419,7 +436,7 @@ supportsDepthControl =
         conf <- testConf
         (counter, _, res) <-
             runNoLoggingT $ performRewrite conf{mbMaxDepth = Just depth} $ Pattern_ t
-        (counter, fmap (.term) res) @?= (n, f t')
+        (counter, fmap (.term) (ignoreRulePredicateAndSubst res)) @?= (n, f t')
 
 supportsCutPoints :: TestTree
 supportsCutPoints =
@@ -452,11 +469,15 @@ supportsCutPoints =
                     ( "con1-f2"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{AnotherSort{}, SortKItem{}}( con4{}( \dv{SomeSort{}}("somethingElse"), \dv{SomeSort{}}("somethingElse") ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
                 branch2 =
                     ( "con1-f1'"
                     , mockUniqueId
                     , [trm| kCell{}( kseq{}( inj{SomeSort{}, SortKItem{}}(    f1{}(   \dv{SomeSort{}}("somethingElse")                                   ) ), C:SortK{}) ) |]
+                    , Nothing
+                    , mempty
                     )
 
             rewritesToCutPoint
@@ -474,7 +495,7 @@ supportsCutPoints =
             runNoLoggingT $
                 performRewrite conf{cutLabels = [lbl]} $
                     Pattern_ t
-        (counter, fmap (.term) res) @?= (n, f t')
+        (counter, fmap (.term) (ignoreRulePredicateAndSubst res)) @?= (n, f t')
 
 supportsTerminalRules :: TestTree
 supportsTerminalRules =
