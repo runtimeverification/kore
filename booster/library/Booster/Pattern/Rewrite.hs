@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
@@ -70,7 +69,6 @@ import Booster.Pattern.Pretty
 import Booster.Pattern.Util
 import Booster.Prettyprinter
 import Booster.SMT.Interface qualified as SMT
-import Booster.SMT.Runner qualified as SMT
 import Booster.Syntax.Json.Externalise (externalisePredicate, externaliseSort, externaliseTerm)
 import Booster.Util (Flag (..))
 
@@ -908,9 +906,6 @@ performRewrite rewriteConfig pat = do
                 Left other -> do
                     emitRewriteTrace $ RewriteSimplified (Just other)
                     pure $ Just p
-
-    simplifyRulePredicate :: Predicate -> io Predicate
-    simplifyRulePredicate = undefined
 
     -- Results may change when simplification prunes a false side
     -- condition, otherwise this would mainly be fmap simplifyP
