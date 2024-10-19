@@ -35,6 +35,7 @@ module Booster.Definition.Attributes.Base (
     Position (..),
     FileSource (..),
     Priority (..),
+    SyntacticClauses (..),
     pattern IsIdem,
     pattern IsNotIdem,
     pattern IsAssoc,
@@ -97,6 +98,7 @@ data AxiomAttributes = AxiomAttributes
     , preserving :: Flag "preservingDefinedness" -- this will override the computed attribute
     , concreteness :: Concreteness
     , smtLemma :: Flag "isSMTLemma"
+    , syntacticClauses :: SyntacticClauses -- indices of conjuncts in rule.requires to be checked syntactically
     }
     deriving stock (Eq, Ord, Show, Generic)
     deriving anyclass (NFData)
@@ -173,6 +175,10 @@ data SymbolType
     | Constructor
     deriving stock (Eq, Ord, Show, Generic, Data, Lift)
     deriving anyclass (NFData, Hashable)
+
+newtype SyntacticClauses = SyntacticClauses [Word8]
+    deriving stock (Eq, Ord, Read, Show)
+    deriving newtype (NFData)
 
 pattern IsIdem, IsNotIdem :: Flag "isIdem"
 pattern IsIdem = Flag True

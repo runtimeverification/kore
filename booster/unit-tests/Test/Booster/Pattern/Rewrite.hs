@@ -133,6 +133,7 @@ rule ruleLabel lhs rhs priority =
                 , concreteness = Unconstrained
                 , uniqueId = mockUniqueId
                 , smtLemma = Flag False
+                , syntacticClauses = SyntacticClauses []
                 }
         , computedAttributes = ComputedAxiomAttributes False []
         , existentials = mempty

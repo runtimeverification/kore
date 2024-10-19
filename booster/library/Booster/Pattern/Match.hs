@@ -10,6 +10,7 @@ module Booster.Pattern.Match (
     FailReason (..),
     Substitution,
     matchTerms,
+    matchTermsWithSubst,
     checkSubsort,
     SortError (..),
 ) where
@@ -121,6 +122,10 @@ instance FromModifiersT mods => Pretty (PrettyWithModifiers mods FailReason) whe
 
 type Substitution = Map Variable Term
 
+-- | Specialisation of @matchTermsWithSubst@ to an empty initial substitution
+matchTerms :: MatchType -> KoreDefinition -> Term -> Term -> MatchResult
+matchTerms matchType def = matchTermsWithSubst matchType def mempty
+
 {- | Attempts to find a simple unifying substitution for the given
    terms.
 
@@ -131,8 +136,9 @@ type Substitution = Map Variable Term
    to ensure that we always produce a matching substitution without having to check
    after running the matcher
 -}
-matchTerms :: MatchType -> KoreDefinition -> Term -> Term -> MatchResult
-matchTerms matchType KoreDefinition{sorts} term1 term2 =
+matchTermsWithSubst ::
+    MatchType -> KoreDefinition -> Substitution -> Term -> Term -> MatchResult
+matchTermsWithSubst matchType KoreDefinition{sorts} knownSubst term1 term2 =
     let runMatch :: MatchState -> MatchResult
         runMatch =
             fromEither
@@ -153,7 +159,7 @@ matchTerms matchType KoreDefinition{sorts} term1 term2 =
             else
                 runMatch
                     State
-                        { mSubstitution = Map.empty
+                        { mSubstitution = knownSubst
                         , mQueue = Seq.singleton (term1, term2) -- PriorityQueue.singleton (term1, term2) RegularTerm ()
                         , mMapQueue = mempty
                         , mIndeterminate = []

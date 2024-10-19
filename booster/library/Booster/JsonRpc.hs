@@ -83,7 +83,7 @@ import Booster.Syntax.ParsedKore.Internalise (
     addToDefinitions,
     definitionErrorToRpcError,
  )
-import Booster.Util (Flag (..), constructorName)
+import Booster.Util (Flag (..))
 import Kore.JsonRpc.Error qualified as RpcError
 import Kore.JsonRpc.Server (ErrorObj (..), JsonRpcHandler (..), Respond)
 import Kore.JsonRpc.Types qualified as RpcTypes
@@ -269,7 +269,7 @@ respond stateVar request =
                             (Left (ApplyEquations.EquationLoop _terms), _) ->
                                 pure . Left . RpcError.backendError $ RpcError.Aborted "equation loop detected"
                             (Left other, _) ->
-                                pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
+                                pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . show $ other)
                     -- predicate only
                     Right (Predicates ps)
                         | null ps.boolPredicates && null ps.ceilPredicates && null ps.substitution && null ps.unsupported ->

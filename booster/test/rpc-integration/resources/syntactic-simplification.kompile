@@ -17,7 +17,6 @@ else
     PLUGIN_CPP="${PLUGIN_DIR}/include/plugin-c/crypto.cpp ${PLUGIN_DIR}/include/plugin-c/plugin_util.cpp"
 fi
 
-
 NAME=$(basename ${0%.kompile})
 NAMETGZ=$(basename ${0%.kompile})
 

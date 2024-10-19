@@ -842,10 +842,35 @@ applyEquation term rule =
                         -- check required constraints from lhs.
                         -- Reaction on false/indeterminate varies depending on the equation's type (function/simplification),
                         -- see @handleSimplificationEquation@ and @handleFunctionEquation@
-                        checkRequires subst
 
-                        -- check ensured conditions, filter any true ones, prune if any is false
-                        ensuredConditions <- checkEnsures subst
+                        -- instantiate the requires clause with the obtained substitution
+                        let rawRequired =
+                                concatMap
+                                    splitBoolPredicates
+                                    rule.requires
+                        -- required = map (coerce . substituteInTerm subst . coerce) rawRequired
+                        knownPredicates <- (.predicates) <$> lift getState
+
+                        let (syntacticRequires, restRequires) = partitionClauses rawRequired rule.attributes.syntacticClauses
+                        -- check required conditions
+                        withContext CtxConstraint $ do
+                            unless (null syntacticRequires) $
+                                withContext CtxSyntactic $
+                                    logMessage $
+                                        renderOneLineText $
+                                            "Checking the following syntactically:"
+                                                <+> ( hsep $
+                                                        intersperse "," $
+                                                            map (pretty' @mods) syntacticRequires
+                                                    )
+                            finalSubstWithSyntacticPredicates <-
+                                checkRequiresSyntactically subst (Set.toList knownPredicates) restRequires syntacticRequires
+                            -- check concreteness again, in case we have matched an argument which nonetheless violates a concrete/symbolic constraint
+                            checkConcretenessStrict rule.attributes.concreteness finalSubstWithSyntacticPredicates
+                            checkRequiresSemantically finalSubstWithSyntacticPredicates knownPredicates restRequires
+
+                        -- check all ensured conditions together with the path condition
+                        ensuredConditions <- checkEnsures rule subst
                         lift $ pushConstraints $ Set.fromList ensuredConditions
 
                         -- when a new path condition is added, invalidate the equation cache
@@ -856,66 +881,39 @@ applyEquation term rule =
                                 \s -> s{cache = s.cache{equations = mempty}}
                         pure $ substituteInTerm subst rule.rhs
   where
-    filterOutKnownConstraints :: Set Predicate -> [Predicate] -> EquationT io [Predicate]
-    filterOutKnownConstraints priorKnowledge constraitns = do
-        let (knownTrue, toCheck) = partition (`Set.member` priorKnowledge) constraitns
-        unless (null knownTrue) $
-            getPrettyModifiers >>= \case
-                ModifiersRep (_ :: FromModifiersT mods => Proxy mods) ->
-                    logMessage $
-                        renderOneLineText $
-                            "Known true side conditions (won't check):"
-                                <+> hsep (intersperse "," $ map (pretty' @mods) knownTrue)
-        pure toCheck
-
-    -- Simplify given predicate in a nested EquationT execution.
-    -- Call 'whenBottom' if it is Bottom, return Nothing if it is Top,
-    -- otherwise return the simplified remaining predicate.
-    checkConstraint whenBottom (Predicate p) = withContext CtxConstraint $ do
-        let fallBackToUnsimplifiedOrBottom :: EquationFailure -> EquationT io Term
-            fallBackToUnsimplifiedOrBottom = \case
-                UndefinedTerm{} -> pure FalseBool
-                _ -> pure p
-        -- exceptions need to be handled differently in the recursion,
-        -- falling back to the unsimplified constraint instead of aborting.
-        simplified <-
-            lift $ simplifyConstraint' True p `catch_` fallBackToUnsimplifiedOrBottom
-        case simplified of
-            FalseBool -> do
-                throwE . whenBottom $ coerce p
-            TrueBool -> pure Nothing
-            other -> pure . Just $ coerce other
-
     allMustBeConcrete (AllConstrained Concrete) = True
     allMustBeConcrete _ = False
 
-    checkConcreteness ::
-        Concreteness ->
-        Map Variable Term ->
-        ExceptT
-            ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
-            (EquationT io)
-            ()
-    checkConcreteness Unconstrained _ = pure ()
-    checkConcreteness (AllConstrained constrained) subst =
-        mapM_ (\(var, t) -> mkCheck (toPair var) constrained t) $ Map.assocs subst
-    checkConcreteness (SomeConstrained mapping) subst =
-        void $ Map.traverseWithKey (verifyVar subst) (Map.mapWithKey mkCheck mapping)
+    checkConcreteness' _ Unconstrained _ = pure ()
+    checkConcreteness' _ (AllConstrained constrained) subst =
+        forM_ (Map.assocs subst) $ \(Variable{variableName}, t) ->
+            mkCheck variableName constrained t
+    checkConcreteness' throwOnVarNotFound (SomeConstrained mapping) subst =
+        forM_ (Map.assocs mapping) $ \((variableName, sortName), constrained) ->
+            case Map.lookup Variable{variableSort = SortApp sortName [], variableName} subst of
+                Nothing -> when throwOnVarNotFound $ do
+                    logMessage $ Text.pack $ "Variable not found: " <> show (variableName, sortName)
+                    lift . throw . InternalError . Text.pack $ "Variable not found: " <> show (variableName, sortName)
+                Just t -> mkCheck variableName constrained t
 
-    toPair Variable{variableSort, variableName} =
-        case variableSort of
-            SortApp sortName _ -> (variableName, sortName)
-            SortVar varName -> (variableName, varName)
+    -- strictly check concreteness of variables in the substitution, throwing an error if the variable is not found
+    checkConcretenessStrict = checkConcreteness' True
+    -- ignore missing variables. This may be necessary with a rule such as
+    -- rule A <=Int B => true requires C <=Int B andBool A <=Int C [concrete(A, C)]
+    -- where checking concretenes after mattching on the LHS would throw an error on C
+    -- hence, we have to call this check twice, once non-strictly after the inital match to prune
+    -- any obvious non-applicable rules and second time strictly, when we matched on C in the path condition
+    checkConcreteness = checkConcreteness' False
 
     mkCheck ::
-        (VarName, SortName) ->
+        VarName ->
         Constrained ->
         Term ->
         ExceptT
             ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
             (EquationT io)
             ()
-    mkCheck (varName, _) constrained (Term attributes _)
+    mkCheck varName constrained (Term attributes _)
         | not test =
             throwE
                 ( \ctxt ->
@@ -924,7 +922,7 @@ applyEquation term rule =
                             renderOneLineText $
                                 hsep
                                     [ "Concreteness constraint violated: "
-                                    , pretty $ show constrained <> " variable " <> show varName
+                                    , pretty $ "variable " <> BS.unpack varName <> " should map to a " <> show constrained <> " term"
                                     ]
                 , MatchConstraintViolated constrained varName
                 )
@@ -934,82 +932,253 @@ applyEquation term rule =
             Concrete -> attributes.isConstructorLike
             Symbolic -> not attributes.isConstructorLike
 
-    verifyVar subst (variableName, sortName) check =
-        maybe
-            ( lift . throw . InternalError . Text.pack $
-                "Variable not found: " <> show (variableName, sortName)
-            )
-            check
-            $ Map.lookup Variable{variableSort = SortApp sortName [], variableName} subst
+filterOutKnownConstraints ::
+    forall io.
+    LoggerMIO io =>
+    Set Predicate ->
+    [Predicate] ->
+    EquationT io [Predicate]
+filterOutKnownConstraints priorKnowledge constraitns = do
+    let (knownTrue, toCheck) = partition (`Set.member` priorKnowledge) constraitns
+    unless (null knownTrue) $
+        getPrettyModifiers >>= \case
+            ModifiersRep (_ :: FromModifiersT mods => Proxy mods) ->
+                logMessage $
+                    renderOneLineText $
+                        "Known true side conditions (won't check):"
+                            <+> hsep (intersperse "," $ map (pretty' @mods) knownTrue)
+    pure toCheck
 
-    checkRequires ::
-        Substitution ->
-        ExceptT
-            ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
-            (EquationT io)
-            ()
-    checkRequires matchingSubst = do
-        ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
-        -- instantiate the requires clause with the obtained substitution
-        let required =
-                concatMap
-                    (splitBoolPredicates . coerce . substituteInTerm matchingSubst . coerce)
-                    rule.requires
-        -- If the required condition is _syntactically_ present in
-        -- the prior (known constraints), we don't check it.
-        knownPredicates <- (.predicates) <$> lift getState
-        toCheck <- lift $ filterOutKnownConstraints knownPredicates required
+partitionClauses :: [a] -> SyntacticClauses -> ([a], [a])
+partitionClauses required (SyntacticClauses cs') =
+    let cs = Set.fromList cs'
+     in bimap (map snd) (map snd) $
+            partition (\(idx, _elem) -> idx `Set.member` cs) $
+                zip [1 ..] required
 
-        -- check the filtered requires clause conditions
-        unclearConditions <-
-            catMaybes
-                <$> mapM
-                    ( checkConstraint $ \p -> (\ctxt -> ctxt $ logMessage ("Condition simplified to #Bottom." :: Text), ConditionFalse p)
+checkRequiresSyntactically ::
+    forall io.
+    LoggerMIO io =>
+    Substitution ->
+    [Predicate] ->
+    [Predicate] ->
+    [Predicate] ->
+    ExceptT
+        ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
+        (EquationT io)
+        Substitution
+checkRequiresSyntactically currentSubst knownPredicates restRequires syntacticRequires = do
+    ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
+    case syntacticRequires of
+        [] -> pure currentSubst
+        (headSyntacticRequires : restSyntacticRequires) -> do
+            koreDef <- (.definition) <$> lift getConfig
+            let loopOver = \case
+                    [] ->
+                        -- no more @knownPredicates@, but unresolved syntactic condition remains: abort
+                        throwRemainingRequires currentSubst restRequires
+                    ((c :: Predicate) : cs) -> case matchTermsWithSubst Eval koreDef currentSubst (coerce headSyntacticRequires) (coerce c) of
+                        MatchFailed failReason -> do
+                            withContext CtxSyntactic $
+                                withTermContext (coerce c) $
+                                    withContext CtxMatch $
+                                        withContext CtxFailure $
+                                            logPretty' @mods failReason
+                            loopOver cs
+                        MatchIndeterminate remainder -> do
+                            withContext CtxSyntactic $
+                                withTermContext (coerce c) $
+                                    withContext CtxMatch $
+                                        withContext CtxFailure $
+                                            logMessage $
+                                                WithJsonMessage (object ["remainder" .= (bimap externaliseTerm externaliseTerm <$> remainder)]) $
+                                                    renderOneLineText $
+                                                        "Uncertain about match with rule. Remainder:"
+                                                            <+> ( hsep $
+                                                                    punctuate comma $
+                                                                        map (\(t1, t2) -> pretty' @mods t1 <+> "==" <+> pretty' @mods t2) $
+                                                                            NonEmpty.toList remainder
+                                                                )
+
+                            loopOver cs
+                        MatchSuccess newSubst ->
+                            -- we got a substitution from matching @headSyntacticRequires@ against the clause @c@ of the path condition,
+                            -- try applying it to @syntacticRequires <> restRequires'@, simplifying that with LLVM,
+                            -- and filtering from the path condition
+                            ( do
+                                withContext CtxSyntactic
+                                    $ withContext CtxSubstitution
+                                    $ logMessage
+                                    $ WithJsonMessage
+                                        (object ["substitution" .= (bimap (externaliseTerm . Var) externaliseTerm <$> Map.toList newSubst)])
+                                    $ renderOneLineText
+                                    $ "Substitution:"
+                                        <+> ( hsep $
+                                                intersperse "," $
+                                                    map (\(k, v) -> pretty' @mods k <+> "->" <+> pretty' @mods v) $
+                                                        Map.toList newSubst
+                                            )
+
+                                let substitited = map (coerce . substituteInTerm newSubst . coerce) (syntacticRequires <> restRequires)
+                                simplified <- withContext CtxSyntactic $ coerce <$> mapM simplifyWithLLVM substitited
+                                stillUnclear <-
+                                    withContext CtxSyntactic $
+                                        lift $
+                                            filterOutKnownConstraints (Set.fromList knownPredicates) simplified
+                                case stillUnclear of
+                                    [] -> pure newSubst -- done
+                                    _ -> do
+                                        withContext CtxSyntactic $
+                                            logMessage $
+                                                renderOneLineText
+                                                    ( "Uncertain about conditions in syntactic simplification rule: "
+                                                        <+> hsep (intersperse "," $ map (pretty' @mods) stillUnclear)
+                                                    )
+                                        -- @newSubst@ does not solve the conditions completely, repeat the process for @restSyntacticRequires@
+                                        -- using the learned @newSubst@
+                                        checkRequiresSyntactically newSubst knownPredicates restRequires restSyntacticRequires
+                            )
+                                `catchE` ( \case
+                                            (_, IndeterminateCondition{}) -> loopOver cs
+                                            (_, ConditionFalse{}) -> loopOver cs
+                                            err -> throwE err
+                                         )
+             in loopOver knownPredicates
+  where
+    simplifyWithLLVM term = do
+        simplified <-
+            lift $
+                simplifyConstraint' False term
+                    `catch_` ( \case
+                                UndefinedTerm{} -> pure FalseBool
+                                _ -> pure term
+                             )
+        case simplified of
+            FalseBool -> do
+                throwE
+                    ( \ctxt -> ctxt $ logMessage ("Condition simplified to #Bottom." :: Text)
+                    , ConditionFalse . coerce $ term
                     )
-                    toCheck
+            other -> pure other
 
-        -- unclear conditions may have been simplified and
-        -- could now be syntactically present in the path constraints, filter again
-        stillUnclear <- lift $ filterOutKnownConstraints knownPredicates unclearConditions
+    throwRemainingRequires subst preds = do
+        ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
+        let substituted = map (substituteInPredicate subst) preds
+        throwE
+            ( \ctx ->
+                ctx . logMessage $
+                    WithJsonMessage (object ["conditions" .= map (externaliseTerm . coerce) preds]) $
+                        renderOneLineText
+                            ( "Uncertain about conditions in syntactic simplification rule: "
+                                <+> hsep (intersperse "," $ map (pretty' @mods) substituted)
+                            )
+            , IndeterminateCondition restRequires
+            )
 
-        solver :: SMT.SMTContext <- (.smtSolver) <$> lift getConfig
+checkRequiresSemantically ::
+    forall io.
+    LoggerMIO io =>
+    Substitution ->
+    Set Predicate ->
+    [Predicate] ->
+    ExceptT
+        ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
+        (EquationT io)
+        ()
+checkRequiresSemantically currentSubst knownPredicates restRequires' = do
+    ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
 
-        -- check any conditions that are still unclear with the SMT solver
-        -- (or abort if no solver is being used), abort if still unclear after
-        unless (null stillUnclear) $
-            lift (SMT.checkPredicates solver knownPredicates mempty (Set.fromList stillUnclear)) >>= \case
-                SMT.IsUnknown{} -> do
-                    -- no solver or still unclear: abort
-                    throwE
-                        ( \ctx ->
-                            ctx . logMessage $
-                                WithJsonMessage (object ["conditions" .= map (externaliseTerm . coerce) stillUnclear]) $
-                                    renderOneLineText
-                                        ( "Uncertain about conditions in rule: " <+> hsep (intersperse "," $ map (pretty' @mods) stillUnclear)
-                                        )
-                        , IndeterminateCondition stillUnclear
-                        )
-                SMT.IsInvalid -> do
-                    -- actually false given path condition: fail
-                    let failedP = Predicate $ foldl1' AndTerm $ map coerce stillUnclear
-                    throwE
-                        ( \ctx ->
-                            ctx . logMessage $
-                                WithJsonMessage (object ["conditions" .= map (externaliseTerm . coerce) stillUnclear]) $
-                                    renderOneLineText ("Required condition found to be false: " <> pretty' @mods failedP)
-                        , ConditionFalse failedP
-                        )
-                SMT.IsValid{} -> do
-                    -- can proceed
-                    pure ()
+    -- apply current substitution to restRequires
+    let restRequires = map (coerce . substituteInTerm currentSubst . coerce) restRequires'
+    toCheck <- lift $ filterOutKnownConstraints knownPredicates restRequires
+    unclearRequires <-
+        catMaybes
+            <$> mapM
+                ( checkConstraint $ \p -> (\ctxt -> ctxt $ logMessage ("Condition simplified to #Bottom." :: Text), ConditionFalse p)
+                )
+                toCheck
 
-    checkEnsures ::
-        Substitution ->
-        ExceptT
-            ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
-            (EquationT io)
-            [Predicate]
-    checkEnsures matchingSubst = do
+    -- unclear conditions may have been simplified and
+    -- could now be syntactically present in the path constraints, filter again
+    stillUnclear <- lift $ filterOutKnownConstraints knownPredicates unclearRequires
+
+    -- check unclear requires-clauses in the context of known constraints (prior)
+    solver :: SMT.SMTContext <- (.smtSolver) <$> lift getConfig
+
+    -- check any conditions that are still unclear with the SMT solver
+    -- (or abort if no solver is being used), abort if still unclear after
+    unless (null stillUnclear) $
+        lift (SMT.checkPredicates solver knownPredicates mempty (Set.fromList stillUnclear)) >>= \case
+            SMT.IsUnknown{} -> do
+                -- no solver or still unclear: abort
+                throwE
+                    ( \ctx ->
+                        ctx . logMessage $
+                            WithJsonMessage (object ["conditions" .= map (externaliseTerm . coerce) stillUnclear]) $
+                                renderOneLineText
+                                    ( "Uncertain about conditions in rule: " <+> hsep (intersperse "," $ map (pretty' @mods) stillUnclear)
+                                    )
+                    , IndeterminateCondition stillUnclear
+                    )
+            SMT.IsInvalid -> do
+                -- actually false given path condition: fail
+                let failedP = Predicate $ foldl1' AndTerm $ map coerce stillUnclear
+                throwE
+                    ( \ctx ->
+                        ctx . logMessage $
+                            WithJsonMessage (object ["conditions" .= map (externaliseTerm . coerce) stillUnclear]) $
+                                renderOneLineText ("Required condition found to be false: " <> pretty' @mods failedP)
+                    , ConditionFalse failedP
+                    )
+            SMT.IsValid{} -> do
+                -- can proceed
+                pure ()
+
+-- Simplify given predicate in a nested EquationT execution.
+-- Call 'whenBottom' if it is Bottom, return Nothing if it is Top,
+-- otherwise return the simplified remaining predicate.
+checkConstraint ::
+    forall io.
+    LoggerMIO io =>
+    ( Predicate ->
+      ( (EquationT io () -> EquationT io ()) -> EquationT io ()
+      , ApplyEquationFailure
+      )
+    ) ->
+    Predicate ->
+    ExceptT
+        ( (EquationT io () -> EquationT io ()) -> EquationT io ()
+        , ApplyEquationFailure
+        )
+        (EquationT io)
+        (Maybe Predicate)
+checkConstraint whenBottom (Predicate p) = do
+    let fallBackToUnsimplifiedOrBottom :: EquationFailure -> EquationT io Term
+        fallBackToUnsimplifiedOrBottom = \case
+            UndefinedTerm{} -> pure FalseBool
+            _ -> pure p
+    -- exceptions need to be handled differently in the recursion,
+    -- falling back to the unsimplified constraint instead of aborting.
+    simplified <-
+        lift $ simplifyConstraint' True p `catch_` fallBackToUnsimplifiedOrBottom
+    case simplified of
+        FalseBool -> do
+            throwE . whenBottom $ coerce p
+        TrueBool -> pure Nothing
+        other -> pure . Just $ coerce other
+
+checkEnsures ::
+    forall io tag.
+    LoggerMIO io =>
+    RewriteRule tag ->
+    Substitution ->
+    ExceptT
+        ((EquationT io () -> EquationT io ()) -> EquationT io (), ApplyEquationFailure)
+        (EquationT io)
+        [Predicate]
+checkEnsures
+    rule
+    matchingSubst = do
         ModifiersRep (_ :: FromModifiersT mods => Proxy mods) <- getPrettyModifiers
         let ensured =
                 concatMap

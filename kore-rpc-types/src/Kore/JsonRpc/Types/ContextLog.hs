@@ -38,6 +38,7 @@ data SimpleContext
     | CtxUnify
     | CtxDefinedness
     | CtxConstraint
+    | CtxSyntactic
     | CtxSMT
     | CtxLlvm
     | -- results

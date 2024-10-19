@@ -43,6 +43,8 @@ for dir in $(ls -d test-*); do
             ;;
         "condition-filtering")
             SERVER=$KORE_RPC_BOOSTER ./runDirectoryTest.sh test-$name $@
+            ;;
+        "syntactic-simplification")
             SERVER=$BOOSTER_DEV SERVER_OPTS="--no-smt" ./runDirectoryTest.sh test-$name $@
             ;;
         "questionmark-vars" | "simplify-smt")

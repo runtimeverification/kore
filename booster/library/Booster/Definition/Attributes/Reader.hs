@@ -70,6 +70,7 @@ instance HasAttributes ParsedAxiom where
             <*> (attributes .! "preserves-definedness")
             <*> readConcreteness attributes
             <*> (attributes .! "smt-lemma")
+            <*> readSyntacticClauses attributes
       where
         -- Some rewrite rules are dynamically generated and injected into
         -- a running server using the RPC "add-module" endpoint.
@@ -152,6 +153,24 @@ readConcreteness attributes = do
     readVar str = except $ case Text.splitOn ":" str of
         [name, sort] -> Right (Text.encodeUtf8 name, Text.encodeUtf8 sort)
         _ -> Left "Invalid variable"
+
+{- | Reads 'syntactic' attribute, returning the set of integer indices.
+     Reports an error if any of the integers are non-positive or there are duplicates.
+     Defaults to an empty set.
+-}
+readSyntacticClauses :: ParsedAttributes -> Except Text SyntacticClauses
+readSyntacticClauses attributes = do
+    syntacticClauses <-
+        maybe (pure Nothing) ((Just <$>) . mapM (except . readWord8)) $
+            getAttribute "syntactic" attributes
+    case syntacticClauses of
+        Nothing -> pure $ SyntacticClauses []
+        Just [] -> pure $ SyntacticClauses []
+        Just more -> pure $ SyntacticClauses more
+  where
+    readWord8 str
+        | all isDigit (Text.unpack str) = first Text.pack $ readEither (Text.unpack str)
+        | otherwise = Left $ "invalid syntactic clause" <> (Text.pack $ show str)
 
 instance HasAttributes ParsedSymbol where
     type Attributes ParsedSymbol = SymbolAttributes
