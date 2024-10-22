@@ -564,7 +564,7 @@ decodePattern mDef = do
                 preds <- forM preds' $ \case
                     BPredicate pIdx -> Predicate <$> getTerm pIdx
                     _ -> fail "Expecting a predicate"
-                pure $ Pattern trm (Set.fromList preds) mempty
+                pure $ Pattern trm (Set.fromList preds) mempty mempty
             _ -> fail "Expecting a term on the top of the stack"
 
 encodeMagicHeaderAndVersion :: Version -> Put

@@ -55,12 +55,11 @@ import Booster.Pattern.Rewrite (
     RewriteTrace (..),
     performRewrite,
  )
+import Booster.Pattern.Substitution qualified as Substitution
 import Booster.Pattern.Util (
     freeVariables,
     sortOfPattern,
     sortOfTerm,
-    substituteInPredicate,
-    substituteInTerm,
  )
 import Booster.Prettyprinter (renderText)
 import Booster.SMT.Interface qualified as SMT
@@ -134,9 +133,10 @@ respond stateVar request =
                         -- apply the given substitution before doing anything else
                         let substPat =
                                 Pattern
-                                    { term = substituteInTerm substitution term
-                                    , constraints = Set.fromList $ map (substituteInPredicate substitution) preds
+                                    { term = Substitution.substituteInTerm substitution term
+                                    , constraints = Set.fromList $ map (Substitution.substituteInPredicate substitution) preds
                                     , ceilConditions = ceils
+                                    , substitution
                                     }
                             -- remember all variables used in the substitutions
                             substVars =
@@ -251,9 +251,10 @@ respond stateVar request =
                         -- apply the given substitution before doing anything else
                         let substPat =
                                 Pattern
-                                    { term = substituteInTerm substitution pat.term
-                                    , constraints = Set.map (substituteInPredicate substitution) pat.constraints
+                                    { term = Substitution.substituteInTerm substitution pat.term
+                                    , constraints = Set.map (Substitution.substituteInPredicate substitution) pat.constraints
                                     , ceilConditions = pat.ceilConditions
+                                    , substitution
                                     }
                         ApplyEquations.evaluatePattern def mLlvmLibrary solver mempty substPat >>= \case
                             (Right newPattern, _) -> do
@@ -281,14 +282,14 @@ respond stateVar request =
                                 withKorePatternContext (KoreJson.KJAnd (externaliseSort $ SortApp "SortBool" []) ps.unsupported) $ do
                                     logMessage ("ignoring unsupported predicate parts" :: Text)
                             -- apply the given substitution before doing anything else
-                            let predicates = map (substituteInPredicate ps.substitution) ps.boolPredicates
+                            let predicates = map (Substitution.substituteInPredicate ps.substitution) ps.boolPredicates
                             withContext CtxConstraint $
                                 ApplyEquations.simplifyConstraints
                                     def
                                     mLlvmLibrary
                                     solver
                                     mempty
-                                    predicates
+                                    predicates -- TODO include ps.substitution?
                                     >>= \case
                                         (Right newPreds, _) -> do
                                             let predicateSort =

@@ -39,6 +39,7 @@ NB: Booster applies the given substitution before performing any action.
   - starts from `concrete-subst`
   - with two equations that have circular dependencies: `Y = 1 +Int X`, `X = Y -Int 1`
   - leading to end state with `X == 42` from the `ensures`-clause
+  - `booster-dev` return a trivial circular constraint `X ==Int X`
 * `state-symbolic-bottom-predicate.execute`
   - starts from `symbolic-subst`
   - with an equation that is instantly false: `X = 1 +Int X`

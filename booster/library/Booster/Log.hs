@@ -69,6 +69,7 @@ import Booster.Pattern.Base (
     pattern AndTerm,
  )
 import Booster.Pattern.Pretty
+import Booster.Pattern.Substitution (asEquations)
 import Booster.Prettyprinter (renderOneLineText)
 import Booster.Syntax.Json (KorePattern, addHeader, prettyPattern)
 import Booster.Syntax.Json.Externalise (externaliseTerm)
@@ -185,8 +186,8 @@ withTermContext t@(Term attrs _) m =
         m
 
 withPatternContext :: LoggerMIO m => Pattern -> m a -> m a
-withPatternContext Pattern{term, constraints} m =
-    let t' = foldl' AndTerm term $ Set.toList $ Set.map coerce constraints -- FIXME
+withPatternContext Pattern{term, constraints, substitution} m =
+    let t' = foldl' AndTerm term . map coerce $ Set.toList constraints <> asEquations substitution
      in withTermContext t' m
 
 instance ToLogFormat KorePattern where

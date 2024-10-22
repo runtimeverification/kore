@@ -38,11 +38,10 @@ import Booster.Definition.Attributes.Base (
     pattern IsNotMacroOrAlias,
  )
 import Booster.Pattern.Base (
-    Pattern,
+    Pattern (..),
     Predicate (..),
     Symbol (Symbol),
     Term,
-    constraints,
     pattern DomainValue,
     pattern SortBool,
     pattern SortInt,

@@ -36,6 +36,7 @@ import Data.Functor.Foldable
 import Data.Hashable (Hashable)
 import Data.Hashable qualified as Hashable
 import Data.List as List (foldl', foldl1', sort)
+import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import GHC.Generics (Generic)
@@ -761,19 +762,22 @@ pattern KSeq sort a =
 
 --------------------
 
+type Substitution = Map Variable Term
+
 -- | A term (configuration) constrained by a number of predicates.
 data Pattern = Pattern
     { term :: Term
     , constraints :: !(Set Predicate)
+    , substitution :: Substitution
     , ceilConditions :: ![Ceil]
     }
     deriving stock (Eq, Ord, Show, Generic, Data)
     deriving anyclass (NFData)
 
 pattern Pattern_ :: Term -> Pattern
-pattern Pattern_ t <- Pattern t _ _
+pattern Pattern_ t <- Pattern t _ _ _
     where
-        Pattern_ t = Pattern t mempty mempty
+        Pattern_ t = Pattern t mempty mempty mempty
 
 pattern ConsApplication :: Symbol -> [Sort] -> [Term] -> Term
 pattern ConsApplication sym sorts args <-

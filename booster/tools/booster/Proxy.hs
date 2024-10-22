@@ -523,7 +523,7 @@ respondEither cfg@ProxyConfig{boosterState} booster kore req = case req of
                                 pure $
                                     Right
                                         ( ( Booster.toExecState
-                                                Pattern{term, ceilConditions, constraints = Set.fromList preds}
+                                                Pattern{term, ceilConditions, constraints = Set.fromList preds, substitution = sub}
                                                 sub
                                                 unsup
                                                 Nothing

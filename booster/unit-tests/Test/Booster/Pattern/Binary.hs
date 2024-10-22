@@ -67,7 +67,7 @@ genPredicate =
         <$> Gen.choice [pure TrueBool, pure FalseBool, genTerm]
 
 genPattern :: Gen Pattern
-genPattern = (\t cs -> Pattern t cs mempty) <$> genTerm <*> (Set.fromList <$> upTo 10 genPredicate)
+genPattern = (\t cs -> Pattern t cs mempty mempty) <$> genTerm <*> (Set.fromList <$> upTo 10 genPredicate)
 
 test_BinaryRoundTrips :: [TestTree]
 test_BinaryRoundTrips =

@@ -6,8 +6,6 @@ module Booster.Pattern.Util (
     substituteInSort,
     sortOfTerm,
     sortOfPattern,
-    substituteInTerm,
-    substituteInPredicate,
     modifyVariables,
     modifyVariablesInT,
     modifyVariablesInP,
@@ -82,33 +80,12 @@ substituteInSort subst (SortApp n args) =
 sortOfPattern :: Pattern -> Sort
 sortOfPattern pat = sortOfTerm pat.term
 
-substituteInTerm :: Map Variable Term -> Term -> Term
-substituteInTerm substitution = goSubst
-  where
-    targetSet = Map.keysSet substitution
-    goSubst t
-        | Set.null (targetSet `Set.intersection` (getAttributes t).variables) = t
-        | otherwise = case t of
-            Var v -> fromMaybe t (Map.lookup v substitution)
-            DomainValue{} -> t
-            SymbolApplication sym sorts args ->
-                SymbolApplication sym sorts $ map goSubst args
-            AndTerm t1 t2 -> AndTerm (goSubst t1) (goSubst t2)
-            Injection ss s sub -> Injection ss s (goSubst sub)
-            KMap attrs keyVals rest -> KMap attrs (bimap goSubst goSubst <$> keyVals) (goSubst <$> rest)
-            KList def heads rest ->
-                KList def (map goSubst heads) (bimap goSubst (map goSubst) <$> rest)
-            KSet def elements rest ->
-                KSet def (map goSubst elements) (goSubst <$> rest)
-
-substituteInPredicate :: Map Variable Term -> Predicate -> Predicate
-substituteInPredicate substitution = coerce . substituteInTerm substitution . coerce
-
 modifyVariables :: (Variable -> Variable) -> Pattern -> Pattern
 modifyVariables f p =
     Pattern
         { term = modifyVariablesInT f p.term
         , constraints = Set.map (modifyVariablesInP f) p.constraints
+        , substitution = Map.map (coerce $ modifyVariablesInT f) p.substitution
         , ceilConditions = map (coerce $ modifyVariablesInT f) p.ceilConditions
         }
 

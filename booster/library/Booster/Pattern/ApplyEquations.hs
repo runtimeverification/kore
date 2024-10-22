@@ -66,10 +66,12 @@ import Booster.Pattern.Bool
 import Booster.Pattern.Index qualified as Idx
 import Booster.Pattern.Match
 import Booster.Pattern.Pretty
+import Booster.Pattern.Substitution
 import Booster.Pattern.Util
 import Booster.Prettyprinter (renderOneLineText)
 import Booster.SMT.Interface qualified as SMT
 import Booster.Syntax.Json.Externalise (externaliseTerm)
+import Booster.Syntax.Json.Internalise (extractSubsitution)
 import Booster.Util (Bound (..))
 import Kore.JsonRpc.Types.ContextLog (CLContext (CLWithId), IdContext (CtxCached))
 import Kore.Util (showHashHex)
@@ -455,7 +457,15 @@ evaluatePattern ::
     Pattern ->
     io (Either EquationFailure Pattern, SimplifierCache)
 evaluatePattern def mLlvmLibrary smtSolver cache pat =
-    runEquationT def mLlvmLibrary smtSolver cache pat.constraints . evaluatePattern' $ pat
+    runEquationT
+        def
+        mLlvmLibrary
+        smtSolver
+        cache
+        -- interpret substitution as additional known constraints
+        (pat.constraints <> (Set.fromList . asEquations $ pat.substitution))
+        . evaluatePattern'
+        $ pat
 
 -- version for internal nested evaluation
 evaluatePattern' ::
@@ -469,7 +479,20 @@ evaluatePattern' pat@Pattern{term, ceilConditions} = withPatternContext pat $ do
     traverse_ simplifyAssumedPredicate . predicates =<< getState
     -- this may yield additional new constraints, left unevaluated
     evaluatedConstraints <- predicates <$> getState
-    pure Pattern{constraints = evaluatedConstraints, term = newTerm, ceilConditions}
+    -- The interface-level evaluatePattern puts pat.substitution together with pat.constraints
+    -- into the simplifier state as known truth. Here the substitution will bubble-up as part of
+    -- evaluatedConstraints. To avoid duplicating constraints (i.e. having equivalent entities
+    -- in pat.predicate and pat.substitution), we discard the old substitution here
+    -- and extract a possible simplified one from evaluatedConstraints.
+    let (simplifiedSubsitution, simplifiedConstraints) = extractSubsitution (Set.toList evaluatedConstraints)
+
+    pure
+        Pattern
+            { constraints = simplifiedConstraints
+            , term = newTerm
+            , ceilConditions
+            , substitution = simplifiedSubsitution
+            }
   where
     -- when TooManyIterations exception occurred while evaluating the top-level term,
     -- i.e. not in a recursive evaluation of a side-condition,

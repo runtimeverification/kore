@@ -8,7 +8,6 @@ module Booster.Pattern.Match (
     MatchResult (..),
     MatchType (..),
     FailReason (..),
-    Substitution,
     matchTerms,
     checkSubsort,
     SortError (..),
@@ -37,12 +36,12 @@ import Booster.Definition.Attributes.Base (KListDefinition, KMapDefinition, KSet
 import Booster.Definition.Base
 import Booster.Pattern.Base
 import Booster.Pattern.Pretty
+import Booster.Pattern.Substitution qualified as Substitution
 import Booster.Pattern.Util (
     checkSymbolIsAc,
     freeVariables,
     isConstructorSymbol,
     sortOfTerm,
-    substituteInTerm,
  )
 
 -- | Result of matching a pattern to a subject (a substitution or an indication of what went wrong)
@@ -118,8 +117,6 @@ instance FromModifiersT mods => Pretty (PrettyWithModifiers mods FailReason) whe
             hsep ["Argument length differ", pretty' @mods t1, pretty' @mods t2]
         SubjectVariableMatch t v ->
             hsep ["Cannot match variable in subject:", pretty' @mods v, pretty' @mods t]
-
-type Substitution = Map Variable Term
 
 {- | Attempts to find a simple unifying substitution for the given
    terms.
@@ -668,7 +665,7 @@ matchMaps
             -- before matching map keys.
                 enqueueMapProblem (KMap def patKeyVals patRest) (KMap def subjKeyVals subjRest)
             else do
-                let patternKeyVals = map (first (substituteInTerm st.mSubstitution)) patKeyVals
+                let patternKeyVals = map (first (Substitution.substituteInTerm st.mSubstitution)) patKeyVals
                 -- check for duplicate keys
                 checkDuplicateKeys patternKeyVals patRest
                 checkDuplicateKeys subjKeyVals subjRest
@@ -785,13 +782,13 @@ bindVariable matchType var term@(Term termAttrs _) = do
         Nothing -> do
             let
                 -- apply existing substitutions to term
-                term' = substituteInTerm currentSubst term
+                term' = Substitution.substituteInTerm currentSubst term
             when (var `Set.member` freeVariables term') $
                 failWith (VariableRecursion var term)
             let
                 -- substitute in existing substitution terms
                 currentSubst' =
-                    Map.map (substituteInTerm $ Map.singleton var term') currentSubst
+                    Map.map (Substitution.substituteInTerm $ Map.singleton var term') currentSubst
                 newSubst = Map.insert var term' currentSubst'
             modify $ \s -> s{mSubstitution = newSubst}
 

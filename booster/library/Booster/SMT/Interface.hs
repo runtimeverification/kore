@@ -287,8 +287,9 @@ isSat ::
     Log.LoggerMIO io =>
     SMT.SMTContext ->
     [Predicate] ->
+    Map Variable Term -> -- supplied substitution
     io (IsSatResult ())
-isSat ctxt ps = fmap void <$> (isSatReturnTransState ctxt ps mempty)
+isSat ctxt ps subst = fmap void <$> (isSatReturnTransState ctxt ps subst)
 
 {- |
 Implementation of get-model request

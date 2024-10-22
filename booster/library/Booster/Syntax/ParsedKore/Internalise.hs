@@ -57,6 +57,7 @@ import Booster.Pattern.Base qualified as Def.Symbol (Symbol (..))
 import Booster.Pattern.Bool (foldAndBool, pattern TrueBool)
 import Booster.Pattern.Index as Idx
 import Booster.Pattern.Pretty
+import Booster.Pattern.Substitution qualified as Substitution
 import Booster.Pattern.Util qualified as Util
 import Booster.Prettyprinter hiding (attributes)
 import Booster.Syntax.Json.Internalise
@@ -765,18 +766,20 @@ internaliseAxiom (Partial partialDefinition) parsedAxiom =
                     sortVars
                     attribs
 
-{- | internalises a pattern and turns its contained substitution into
-   equations (predicates). Errors if any ceil conditions or
-   unsupported predicates are found.
+{- | Internalises a pattern to be used as a rule left/right-hand side.
+
+     Turns its contained substitution into predicates.
+
+     Errors if any ceil conditions or unsupported predicates are found.
 -}
-internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported ::
+internaliseRulePattern ::
     KoreDefinition ->
     SourceRef ->
     Maybe [Id] ->
     (Variable -> Variable) ->
     Syntax.KorePattern ->
     Except DefinitionError (Def.Term, [Predicate])
-internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported partialDefinition ref maybeVars f t = do
+internaliseRulePattern partialDefinition ref maybeVars f t = do
     (term, preds, ceilConditions, substitution, unsupported) <-
         withExcept (DefinitionPatternError ref) $
             internalisePattern AllowAlias IgnoreSubsorts maybeVars partialDefinition t
@@ -788,7 +791,7 @@ internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported partialDefinition ref 
             DefinitionPatternError ref (NotSupported (head unsupported))
     pure
         ( Util.modifyVariablesInT f term
-        , map (Util.modifyVariablesInP f) (preds <> asEquations substitution)
+        , map (Util.modifyVariablesInP f) (preds <> Substitution.asEquations substitution)
         )
 
 internaliseRewriteRuleNoAlias ::
@@ -805,7 +808,7 @@ internaliseRewriteRuleNoAlias partialDefinition exs left right axAttributes = do
     -- to avoid name clashes with patterns from the user;
     -- filter out literal `Top` constraints
     (lhs, requires) <-
-        internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+        internaliseRulePattern
             partialDefinition
             ref
             Nothing
@@ -816,7 +819,7 @@ internaliseRewriteRuleNoAlias partialDefinition exs left right axAttributes = do
             | v `Set.member` existentials' = Util.modifyVarName Util.markAsExVar v
             | otherwise = Util.modifyVarName Util.markAsRuleVar v
     (rhs, ensures) <-
-        internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+        internaliseRulePattern
             partialDefinition
             ref
             Nothing
@@ -872,14 +875,14 @@ internaliseSimpleEquation partialDef precond left right sortVars attrs
     | Syntax.KJApp{} <- left = do
         -- this ensures that `left` is a _term_ (invariant guarded by classifyAxiom)
         (lhs, requires) <-
-            internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+            internaliseRulePattern
                 partialDef
                 (sourceRef attrs)
                 (Just sortVars)
                 (Util.modifyVarName ("Eq#" <>))
                 $ Syntax.KJAnd left.sort [left, precond]
         (rhs, ensures) <-
-            internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+            internaliseRulePattern
                 partialDef
                 (sourceRef attrs)
                 (Just sortVars)
@@ -931,7 +934,7 @@ internaliseCeil ::
 internaliseCeil partialDef left right sortVars attrs = do
     -- this ensures that `left` is a _term_ (invariant guarded by classifyAxiom)
     (lhs, _) <-
-        internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+        internaliseRulePattern
             partialDef
             (sourceRef attrs)
             (Just sortVars)
@@ -970,7 +973,7 @@ internaliseCeil partialDef left right sortVars attrs = do
                 internalisePredicates AllowAlias IgnoreSubsorts (Just sortVars) partialDef [p]
         let
             -- turn substitution-like predicates back into equations
-            constraints = internalPs.boolPredicates <> asEquations internalPs.substitution
+            constraints = internalPs.boolPredicates <> Substitution.asEquations internalPs.substitution
             unsupported = internalPs.unsupported
         unless (null unsupported) $
             throwE $
@@ -1017,9 +1020,9 @@ internaliseFunctionEquation partialDef requires args leftTerm right sortVars att
     argPairs <- mapM internaliseArg args
     let lhs =
             Util.modifyVariablesInT (Util.modifyVarName ("Eq#" <>)) $
-                Util.substituteInTerm (Map.fromList argPairs) left
+                Substitution.substituteInTerm (Map.fromList argPairs) left
     (rhs, ensures) <-
-        internalisePatternEnsureNoSubstitutionOrCeilOrUnsupported
+        internaliseRulePattern
             partialDef
             (sourceRef attrs)
             (Just sortVars)
@@ -1049,7 +1052,9 @@ internaliseFunctionEquation partialDef requires args leftTerm right sortVars att
                 { lhs
                 , rhs
                 , requires =
-                    map (Util.modifyVariablesInP $ Util.modifyVarName ("Eq#" <>)) (preds <> asEquations substitution)
+                    map
+                        (Util.modifyVariablesInP $ Util.modifyVarName ("Eq#" <>))
+                        (preds <> Substitution.asEquations substitution)
                 , ensures
                 , attributes
                 , computedAttributes
