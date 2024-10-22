@@ -1,0 +1,4 @@
+echo "kompiling remainder-predicates.k"
+kompile --backend haskell remainder-predicates.k
+cp remainder-predicates-kompiled/definition.kore remainder-predicates.kore
+rm -r remainder-predicates-kompiled

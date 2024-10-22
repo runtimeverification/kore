@@ -1,0 +1,148 @@
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "reason": "stuck",
+        "depth": 2,
+        "state": {
+            "term": {
+                "format": "KORE",
+                "version": 1,
+                "term": {
+                    "tag": "App",
+                    "name": "Lbl'-LT-'generatedTop'-GT-'",
+                    "sorts": [],
+                    "args": [
+                        {
+                            "tag": "App",
+                            "name": "Lbl'-LT-'k'-GT-'",
+                            "sorts": [],
+                            "args": [
+                                {
+                                    "tag": "App",
+                                    "name": "kseq",
+                                    "sorts": [],
+                                    "args": [
+                                        {
+                                            "tag": "App",
+                                            "name": "inj",
+                                            "sorts": [
+                                                {
+                                                    "tag": "SortApp",
+                                                    "name": "SortState",
+                                                    "args": []
+                                                },
+                                                {
+                                                    "tag": "SortApp",
+                                                    "name": "SortKItem",
+                                                    "args": []
+                                                }
+                                            ],
+                                            "args": [
+                                                {
+                                                    "tag": "App",
+                                                    "name": "Lbltest2State2'LParRParUnds'USE-PATH-CONDITION-IN-EQUATIONS'Unds'State",
+                                                    "sorts": [],
+                                                    "args": []
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "tag": "App",
+                                            "name": "dotk",
+                                            "sorts": [],
+                                            "args": []
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "tag": "App",
+                            "name": "Lbl'-LT-'int'-GT-'",
+                            "sorts": [],
+                            "args": [
+                                {
+                                    "tag": "EVar",
+                                    "name": "Var'Ques'X",
+                                    "sort": {
+                                        "tag": "SortApp",
+                                        "name": "SortInt",
+                                        "args": []
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "tag": "App",
+                            "name": "Lbl'-LT-'generatedCounter'-GT-'",
+                            "sorts": [],
+                            "args": [
+                                {
+                                    "tag": "DV",
+                                    "sort": {
+                                        "tag": "SortApp",
+                                        "name": "SortInt",
+                                        "args": []
+                                    },
+                                    "value": "0"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "predicate": {
+                "format": "KORE",
+                "version": 1,
+                "term": {
+                    "tag": "Equals",
+                    "argSort": {
+                        "tag": "SortApp",
+                        "name": "SortBool",
+                        "args": []
+                    },
+                    "sort": {
+                        "tag": "SortApp",
+                        "name": "SortGeneratedTopCell",
+                        "args": []
+                    },
+                    "first": {
+                        "tag": "DV",
+                        "sort": {
+                            "tag": "SortApp",
+                            "name": "SortBool",
+                            "args": []
+                        },
+                        "value": "true"
+                    },
+                    "second": {
+                        "tag": "App",
+                        "name": "Lbl'UndsEqlsEqls'Int'Unds'",
+                        "sorts": [],
+                        "args": [
+                            {
+                                "tag": "EVar",
+                                "name": "Var'Ques'X",
+                                "sort": {
+                                    "tag": "SortApp",
+                                    "name": "SortInt",
+                                    "args": []
+                                }
+                            },
+                            {
+                                "tag": "DV",
+                                "sort": {
+                                    "tag": "SortApp",
+                                    "name": "SortInt",
+                                    "args": []
+                                },
+                                "value": "42"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

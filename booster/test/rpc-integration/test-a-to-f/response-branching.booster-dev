@@ -156,7 +156,42 @@
                         ]
                     }
                 },
-                "rule-id": "aba8479fef763c749fa1a1837f2591f85d8541ca8837c738cf586de790c6f8b8"
+                "rule-id": "aba8479fef763c749fa1a1837f2591f85d8541ca8837c738cf586de790c6f8b8",
+                "rule-predicate": {
+                    "format": "KORE",
+                    "version": 1,
+                    "term": {
+                        "tag": "Equals",
+                        "argSort": {
+                            "tag": "SortApp",
+                            "name": "SortBool",
+                            "args": []
+                        },
+                        "sort": {
+                            "tag": "SortApp",
+                            "name": "SortGeneratedTopCell",
+                            "args": []
+                        },
+                        "first": {
+                            "tag": "DV",
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "value": "true"
+                        },
+                        "second": {
+                            "tag": "DV",
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "value": "true"
+                        }
+                    }
+                }
             },
             {
                 "term": {
@@ -233,7 +268,42 @@
                         ]
                     }
                 },
-                "rule-id": "3cfae148c63f879628626da1753b07d517f6ac9b414543f7dd8f7b3e8e19329e"
+                "rule-id": "3cfae148c63f879628626da1753b07d517f6ac9b414543f7dd8f7b3e8e19329e",
+                "rule-predicate": {
+                    "format": "KORE",
+                    "version": 1,
+                    "term": {
+                        "tag": "Equals",
+                        "argSort": {
+                            "tag": "SortApp",
+                            "name": "SortBool",
+                            "args": []
+                        },
+                        "sort": {
+                            "tag": "SortApp",
+                            "name": "SortGeneratedTopCell",
+                            "args": []
+                        },
+                        "first": {
+                            "tag": "DV",
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "value": "true"
+                        },
+                        "second": {
+                            "tag": "DV",
+                            "sort": {
+                                "tag": "SortApp",
+                                "name": "SortBool",
+                                "args": []
+                            },
+                            "value": "true"
+                        }
+                    }
+                }
             }
         ]
     }

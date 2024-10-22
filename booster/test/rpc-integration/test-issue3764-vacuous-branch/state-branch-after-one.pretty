@@ -1,0 +1,392 @@
+JSON RPC request
+id: 0
+Method: execute
+cut-point-rules: []
+log-successful-rewrites: True
+log-successful-simplifications: False
+terminal-rules: ['EVM.halt']
+log-failed-simplifications: False
+log-failed-rewrites: False
+max-depth: 3
+State:
+<generatedTop>
+  <foundry>
+    <kevm>
+      <k>
+        #gas [ STATICCALL , STATICCALL ]
+        ~> JUMPI 538 bool2Word(_)_EVM-TYPES_Int_Bool ( ?WORD7:Int ==Int ?WORD7:Int *Int ?WORD3:Int /Word ?WORD3:Int orBool ?WORD3:Int ==Int 0 )
+        ~> #pc[_]_EVM_InternalOp_OpCode ( JUMPI )
+        ~> CONTINUATION:K
+      </k>
+      <exit-code>
+        EXITCODE_CELL:Int
+      </exit-code>
+      <mode>
+        NORMAL
+      </mode>
+      <schedule>
+        SHANGHAI
+      </schedule>
+      <useGas>
+        false
+      </useGas>
+      <ethereum>
+        <evm>
+          <output>
+            b""
+          </output>
+          <statusCode>
+            EVMC_SUCCESS
+          </statusCode>
+          <callStack>
+            .List
+          </callStack>
+          <interimStates>
+            .List
+          </interimStates>
+          <touchedAccounts>
+            SetItem ( 1405310203571408291950365054053061012934685786634 ) SetItem ( 166020153748861866463033272813676692912666046993 ) SetItem ( 398406661162394528054821880250857262101019749666 ) SetItem ( 491460923342184218035706888008750043977755113263 ) SetItem ( 728815563385977040452943777879061427756277306518 ) SetItem ( 902409690331730437625142853483010427629017426509 )
+          </touchedAccounts>
+          <callState>
+            <program>
+              b"`\x80`@R4\x80\x15a\x00\x10W`\x00\x80\xfd[P`\x046\x10a\x00\xcfW`\x005`\xe0\x1c\x80cp\xa0\x821\x11a\x00\x8cW\x80c\x8b\xcc\xbfb\x11a\x00fW\x80c\x8b\xcc\xbfb\x14a\x01\x99W\x80c\xa7s\x84\xc1\x14a\x01\xc3W\x80c\xa9\x05\x9c\xbb\x14a\x01\xd6W\x80c\xce|*\xc2\x14a\x01\xe9W`\x00\x80\xfd[\x80cp\xa0\x821\x14a\x01^W\x80cz(\xfb\x88\x14a\x01qW\x80c\x84\x04\x1aX\x14a\x01\x84W`\x00\x80\xfd[\x80c\t^\xa7\xb3\x14a\x00\xd4W\x80c\x18\x16\r\xdd\x14a\x00\xfcW\x80c\x19 \x84Q\x14a\x01\x0eW\x80c:\x98\xef9\x14a\x01!W\x80cU\xb6\xed\\\x14a\x01*W\x80ciA[\x86\x14a\x01UW[`\x00\x80\xfd[a\x00\xe7a\x00\xe26`\x04a\x05$V[a\x02\tV[`@Q\x90\x15\x15\x81R` \x01[`@Q\x80\x91\x03\x90\xf3[`\x00T[`@Q\x90\x81R` \x01a\x00\xf3V[a\x01\x00a\x01\x1c6`\x04a\x05NV[a\x02 V[a\x01\x00`\x01T\x81V[a\x01\x00a\x0186`\x04a\x05gV[`\x03` \x90\x81R`\x00\x92\x83R`@\x80\x84 \x90\x91R\x90\x82R\x90 T\x81V[a\x01\x00`\x00T\x81V[a\x01\x00a\x01l6`\x04a\x05\x9aV[a\x02;V[a\x01\x00a\x01\x7f6`\x04a\x05NV[a\x02YV[a\x01\x97a\x01\x926`\x04a\x05NV[`\x00UV[\x00[a\x01\x97a\x01\xa76`\x04a\x05$V[`\x01`\x01`\xa0\x1b\x03\x90\x91\x16`\x00\x90\x81R`\x02` R`@\x90 UV[a\x01\x97a\x01\xd16`\x04a\x05NV[`\x01UV[a\x00\xe7a\x01\xe46`\x04a\x05$V[a\x02lV[a\x01\x00a\x01\xf76`\x04a\x05\x9aV[`\x02` R`\x00\x90\x81R`@\x90 T\x81V[`\x00a\x02\x163\x84\x84a\x02yV[P`\x01[\x92\x91PPV[`\x00\x80T`\x01Ta\x021\x90\x84a\x05\xd2V[a\x02\x1a\x91\x90a\x05\xe9V[`\x01`\x01`\xa0\x1b\x03\x81\x16`\x00\x90\x81R`\x02` R`@\x81 Ta\x02\x1a\x90[`\x00`\x01T`\x00T\x83a\x021\x91\x90a\x05\xd2V[`\x00a\x02\x163\x84\x84a\x03FV[`\x01`\x01`\xa0\x1b\x03\x83\x16a\x02\xcdW`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x16`$\x82\x01Ru \xa8()'\xab\"\xaf\xa3)'\xa6\xaf\xad\"\xa9'\xaf\xa0\xa2\")`Q\x1b`D\x82\x01R`d\x01[`@Q\x80\x91\x03\x90\xfd[`\x01`\x01`\xa0\x1b\x03\x82\x16a\x03\x1aW`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x14`$\x82\x01Rs \xa8()'\xab\"\xaf\xaa'\xaf\xad\"\xa9'\xaf\xa0\xa2\")`a\x1b`D\x82\x01R`d\x01a\x02\xc4V[`\x01`\x01`\xa0\x1b\x03\x92\x83\x16`\x00\x90\x81R`\x03` \x90\x81R`@\x80\x83 \x94\x90\x95\x16\x82R\x92\x90\x92R\x91\x90 UV[`\x00a\x03Q\x82a\x02 V[\x90P`\x01`\x01`\xa0\x1b\x03\x84\x16a\x03\xa9W`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x17`$\x82\x01R\x7fTRANSFER_FROM_ZERO_ADDR\x00\x00\x00\x00\x00\x00\x00\x00\x00`D\x82\x01R`d\x01a\x02\xc4V[`\x01`\x01`\xa0\x1b\x03\x83\x16a\x03\xf7W`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x15`$\x82\x01Rt*) \xa7)\xa3\"\xa9/\xaa'\xaf\xad\"\xa9'\xaf\xa0\xa2\")`Y\x1b`D\x82\x01R`d\x01a\x02\xc4V[0`\x01`\x01`\xa0\x1b\x03\x84\x16\x03a\x04OW`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x1a`$\x82\x01R\x7fTRANSFER_TO_STETH_CONTRACT\x00\x00\x00\x00\x00\x00`D\x82\x01R`d\x01a\x02\xc4V[`\x01`\x01`\xa0\x1b\x03\x84\x16`\x00\x90\x81R`\x02` R`@\x90 T\x80\x82\x11\x15a\x04\xabW`@QbF\x1b\xcd`\xe5\x1b\x81R` `\x04\x82\x01R`\x10`$\x82\x01Ro\x10\x90S\x10S\x90\xd1W\xd1V\x10\xd1QQ\x11Q`\x82\x1b`D\x82\x01R`d\x01a\x02\xc4V[a\x04\xb5\x82\x82a\x06\x0bV[`\x01`\x01`\xa0\x1b\x03\x80\x87\x16`\x00\x90\x81R`\x02` R`@\x80\x82 \x93\x90\x93U\x90\x86\x16\x81R Ta\x04\xe5\x90\x83\x90a\x06\x1eV[`\x01`\x01`\xa0\x1b\x03\x90\x94\x16`\x00\x90\x81R`\x02` R`@\x90 \x93\x90\x93UPPPPV[\x805`\x01`\x01`\xa0\x1b\x03\x81\x16\x81\x14a\x05\x1fW`\x00\x80\xfd[\x91\x90PV[`\x00\x80`@\x83\x85\x03\x12\x15a\x057W`\x00\x80\xfd[a\x05@\x83a\x05\x08V[\x94` \x93\x90\x93\x015\x93PPPV[`\x00` \x82\x84\x03\x12\x15a\x05`W`\x00\x80\xfd[P5\x91\x90PV[`\x00\x80`@\x83\x85\x03\x12\x15a\x05zW`\x00\x80\xfd[a\x05\x83\x83a\x05\x08V[\x91Pa\x05\x91` \x84\x01a\x05\x08V[\x90P\x92P\x92\x90PV[`\x00` \x82\x84\x03\x12\x15a\x05\xacW`\x00\x80\xfd[a\x05\xb5\x82a\x05\x08V[\x93\x92PPPV[cNH{q`\xe0\x1b`\x00R`\x11`\x04R`$`\x00\xfd[\x80\x82\x02\x81\x15\x82\x82\x04\x84\x14\x17a\x02\x1aWa\x02\x1aa\x05\xbcV[`\x00\x82a\x06\x06WcNH{q`\xe0\x1b`\x00R`\x12`\x04R`$`\x00\xfd[P\x04\x90V[\x81\x81\x03\x81\x81\x11\x15a\x02\x1aWa\x02\x1aa\x05\xbcV[\x80\x82\x01\x80\x82\x11\x15a\x02\x1aWa\x02\x1aa\x05\xbcV\xfe\xa2dipfsX\"\x12 \x9a\x7f\x12\x1bL\xe9\xb3_\xb0\xd7\x03\x9c\x82hY\xa3\xed\xc7g\xb4\xedJ\xbd_f\xa0\x83,A\x16\xa4\x98dsolcC\x00\x08\x17\x003"
+            </program>
+            <jumpDests>
+              SetItem ( 1015 ) SetItem ( 102 ) SetItem ( 1103 ) SetItem ( 1195 ) SetItem ( 1205 ) SetItem ( 1253 ) SetItem ( 1288 ) SetItem ( 1311 ) SetItem ( 1316 ) SetItem ( 1335 ) SetItem ( 1344 ) SetItem ( 1358 ) SetItem ( 1376 ) SetItem ( 1383 ) SetItem ( 140 ) SetItem ( 1402 ) SetItem ( 1411 ) SetItem ( 1425 ) SetItem ( 1434 ) SetItem ( 1452 ) SetItem ( 1461 ) SetItem ( 1468 ) SetItem ( 1490 ) SetItem ( 1513 ) SetItem ( 1542 ) SetItem ( 1547 ) SetItem ( 1566 ) SetItem ( 16 ) SetItem ( 207 ) SetItem ( 212 ) SetItem ( 226 ) SetItem ( 231 ) SetItem ( 243 ) SetItem ( 252 ) SetItem ( 256 ) SetItem ( 270 ) SetItem ( 284 ) SetItem ( 289 ) SetItem ( 298 ) SetItem ( 312 ) SetItem ( 341 ) SetItem ( 350 ) SetItem ( 364 ) SetItem ( 369 ) SetItem ( 383 ) SetItem ( 388 ) SetItem ( 402 ) SetItem ( 407 ) SetItem ( 409 ) SetItem ( 423 ) SetItem ( 451 ) SetItem ( 465 ) SetItem ( 470 ) SetItem ( 484 ) SetItem ( 489 ) SetItem ( 503 ) SetItem ( 521 ) SetItem ( 534 ) SetItem ( 538 ) SetItem ( 544 ) SetItem ( 561 ) SetItem ( 571 ) SetItem ( 601 ) SetItem ( 620 ) SetItem ( 633 ) SetItem ( 708 ) SetItem ( 717 ) SetItem ( 794 ) SetItem ( 838 ) SetItem ( 849 ) SetItem ( 937 )
+            </jumpDests>
+            <id>
+              1405310203571408291950365054053061012934685786634
+            </id>
+            <caller>
+              902409690331730437625142853483010427629017426509
+            </caller>
+            <callData>
+              b"\x19 \x84Q" +Bytes #buf(_,_)_BUF-SYNTAX_Bytes_Int_Int ( 32 , ?WORD3:Int )
+            </callData>
+            <callValue>
+              0
+            </callValue>
+            <wordStack>
+              ?WORD7:Int *Int ?WORD3:Int : ?WORD3:Int : ?WORD7:Int : 561 : ?WORD8:Int : 0 : ?WORD3:Int : 256 : 421561425 : .WordStack
+            </wordStack>
+            <localMem>
+              b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80"
+            </localMem>
+            <pc>
+              1505
+            </pc>
+            <gas>
+              0
+            </gas>
+            <memoryUsed>
+              0
+            </memoryUsed>
+            <callGas>
+              0
+            </callGas>
+            <static>
+              true
+            </static>
+            <callDepth>
+              5
+            </callDepth>
+          </callState>
+          <substate>
+            <selfDestruct>
+              SELFDESTRUCT_CELL:Set
+            </selfDestruct>
+            <log>
+              ListItem ( {_|_|_}_EVM-TYPES_SubstateLogEntry_Int_List_Bytes ( 398406661162394528054821880250857262101019749666 , ListItem ( 32750714266927819287923570661081367887357914085447966786193978800820148949912 ) ListItem ( ?WORD:Int ) ListItem ( 4 ) , b"" ) )
+            </log>
+            <refund>
+              0
+            </refund>
+            <accessedAccounts>
+              .Set
+            </accessedAccounts>
+            <accessedStorage>
+              .Map
+            </accessedStorage>
+          </substate>
+          <gasPrice>
+            GASPRICE_CELL:Int
+          </gasPrice>
+          <origin>
+            ORIGIN_ID:Int
+          </origin>
+          <blockhashes>
+            BLOCKHASHES_CELL:List
+          </blockhashes>
+          <block>
+            <previousHash>
+              PREVIOUSHASH_CELL:Int
+            </previousHash>
+            <ommersHash>
+              OMMERSHASH_CELL:Int
+            </ommersHash>
+            <coinbase>
+              COINBASE_CELL:Int
+            </coinbase>
+            <stateRoot>
+              STATEROOT_CELL:Int
+            </stateRoot>
+            <transactionsRoot>
+              TRANSACTIONSROOT_CELL:Int
+            </transactionsRoot>
+            <receiptsRoot>
+              RECEIPTSROOT_CELL:Int
+            </receiptsRoot>
+            <logsBloom>
+              LOGSBLOOM_CELL:Bytes
+            </logsBloom>
+            <difficulty>
+              DIFFICULTY_CELL:Int
+            </difficulty>
+            <number>
+              NUMBER_CELL:Int
+            </number>
+            <gasLimit>
+              GASLIMIT_CELL:Int
+            </gasLimit>
+            <gasUsed>
+              GASUSED_CELL:Gas
+            </gasUsed>
+            <timestamp>
+              TIMESTAMP_CELL:Int
+            </timestamp>
+            <extraData>
+              EXTRADATA_CELL:Bytes
+            </extraData>
+            <mixHash>
+              MIXHASH_CELL:Int
+            </mixHash>
+            <blockNonce>
+              BLOCKNONCE_CELL:Int
+            </blockNonce>
+            <baseFee>
+              BASEFEE_CELL:Int
+            </baseFee>
+            <withdrawalsRoot>
+              WITHDRAWALSROOT_CELL:Int
+            </withdrawalsRoot>
+            <ommerBlockHeaders>
+              OMMERBLOCKHEADERS_CELL:JSON
+            </ommerBlockHeaders>
+          </block>
+        </evm>
+        <network>
+          <chainID>
+            CHAINID_CELL:Int
+          </chainID>
+          <accounts>
+            <account>
+              <acctID>
+                532667443394220189835739947317809624605775530598
+              </acctID>
+              <balance>
+                0
+              </balance>
+              <code>
+                b"6==7===6=s\xa0\xcb\x88\x97\x07\xd4&\xa7\xa3\x86\x87\n\x03\xbcp\xd1\xb0iu\x98Z\xf4=\x82\x80>\x90=\x91`+W\xfd[\xf3"
+              </code>
+              <storage>
+                ?STORAGE5:Map [ 0 <- 1859908298493297446258506712967140281756952292642 ]
+              </storage>
+              <origStorage>
+                ?STORAGE5:Map
+              </origStorage>
+              <nonce>
+                1
+              </nonce>
+            </account>
+          </accounts>
+          <txOrder>
+            TXORDER_CELL:List
+          </txOrder>
+          <txPending>
+            TXPENDING_CELL:List
+          </txPending>
+          <messages>
+            MESSAGES_CELL:MessageCellMap
+          </messages>
+        </network>
+      </ethereum>
+    </kevm>
+    <cheatcodes>
+      <prank>
+        <prevCaller>
+          PREVCALLER_CELL:Account
+        </prevCaller>
+        <prevOrigin>
+          PREVORIGIN_CELL:Account
+        </prevOrigin>
+        <newCaller>
+          NEWCALLER_CELL:Account
+        </newCaller>
+        <newOrigin>
+          NEWORIGIN_CELL:Account
+        </newOrigin>
+        <active>
+          false
+        </active>
+        <depth>
+          DEPTH_CELL:Int
+        </depth>
+        <singleCall>
+          false
+        </singleCall>
+      </prank>
+      <expectedRevert>
+        <isRevertExpected>
+          true
+        </isRevertExpected>
+        <expectedReason>
+          b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\xe5\xe6/\xdd\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        </expectedReason>
+        <expectedDepth>
+          0
+        </expectedDepth>
+      </expectedRevert>
+      <expectedOpcode>
+        <isOpcodeExpected>
+          false
+        </isOpcodeExpected>
+        <expectedAddress>
+          EXPECTEDADDRESS_CELL:Account
+        </expectedAddress>
+        <expectedValue>
+          EXPECTEDVALUE_CELL:Int
+        </expectedValue>
+        <expectedData>
+          EXPECTEDDATA_CELL:Bytes
+        </expectedData>
+        <opcodeType>
+          OPCODETYPE_CELL:OpcodeType
+        </opcodeType>
+      </expectedOpcode>
+      <expectEmit>
+        <recordEvent>
+          false
+        </recordEvent>
+        <isEventExpected>
+          false
+        </isEventExpected>
+        <checkedTopics>
+          CHECKEDTOPICS_CELL:List
+        </checkedTopics>
+        <checkedData>
+          CHECKEDDATA_CELL:Bool
+        </checkedData>
+        <expectedEventAddress>
+          EXPECTEDEVENTADDRESS_CELL:Account
+        </expectedEventAddress>
+      </expectEmit>
+      <whitelist>
+        <isCallWhitelistActive>
+          false
+        </isCallWhitelistActive>
+        <isStorageWhitelistActive>
+          false
+        </isStorageWhitelistActive>
+        <addressSet>
+          .Set
+        </addressSet>
+        <storageSlotSet>
+          .Set
+        </storageSlotSet>
+      </whitelist>
+      <mockCalls>
+        .MockCallCellMap (  )
+      </mockCalls>
+    </cheatcodes>
+    <KEVMTracing>
+      <activeTracing>
+        false
+      </activeTracing>
+      <traceStorage>
+        true
+      </traceStorage>
+      <traceWordStack>
+        true
+      </traceWordStack>
+      <traceMemory>
+        true
+      </traceMemory>
+      <recordedTrace>
+        false
+      </recordedTrace>
+      <traceData>
+        .List
+      </traceData>
+    </KEVMTracing>
+  </foundry>
+  <generatedCounter>
+    GENERATEDCOUNTER_CELL:Int
+  </generatedCounter>
+</generatedTop>
+#And { true #Equals ?WORD:Int <Int 5 }
+#And { true #Equals 0 <=Int ?WORD:Int }
+#And { true #Equals ?WORD:Int <=Int 4 }
+#And { true #Equals 0 <=Int ?WORD0:Int }
+#And { true #Equals 0 <=Int ?WORD1:Int }
+#And { true #Equals 0 <=Int ?WORD2:Int }
+#And { true #Equals 0 <=Int ?WORD3:Int }
+#And { true #Equals 0 <=Int ?WORD4:Int }
+#And { true #Equals 0 <=Int ?WORD5:Int }
+#And { true #Equals 0 <=Int ?WORD6:Int }
+#And { true #Equals 0 <=Int ?WORD7:Int }
+#And { true #Equals 0 <=Int ?WORD8:Int }
+#And { true #Equals 0 <=Int ?WORD9:Int }
+#And { true #Equals 0 <=Int ?WORD10:Int }
+#And { true #Equals 0 <=Int ?WORD11:Int }
+#And { true #Equals 0 <=Int ?WORD12:Int }
+#And { true #Equals ?WORD7:Int =/=Int 0 }
+#And { true #Equals ?WORD8:Int =/=Int 0 }
+#And { true #Equals 0 <=Int CALLER_ID:Int }
+#And { true #Equals 0 <=Int ORIGIN_ID:Int }
+#And { true #Equals 0 <=Int NUMBER_CELL:Int }
+#And { true #Equals ?WORD9:Int <=Int ?WORD7:Int }
+#And { true #Equals 0 <=Int TIMESTAMP_CELL:Int }
+#And { true #Equals ?WORD10:Int <=Int ?WORD7:Int }
+#And { true #Equals ?WORD12:Int <=Int ?WORD11:Int }
+#And { true #Equals ?WORD0:Int <=Int TIMESTAMP_CELL:Int }
+#And { true #Equals ?WORD1:Int <=Int TIMESTAMP_CELL:Int }
+#And { true #Equals 0 <=Int VV0_proposalId_114b9705:Int }
+#And { true #Equals ?WORD:Int <Int pow96 }
+#And { true #Equals ?WORD2:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD3:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD4:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD5:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD6:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD7:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD8:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD9:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD10:Int <Int 1000000000000000000000000000 }
+#And { true #Equals ?WORD12:Int <Int 1000000000000000000000000000 }
+#And { true #Equals CALLER_ID:Int <Int pow160 }
+#And { true #Equals ORIGIN_ID:Int <Int pow160 }
+#And { true #Equals CALLER_ID:Int =/=Int 645326474426547203313410069153905908525362434349 }
+#And { true #Equals ORIGIN_ID:Int =/=Int 645326474426547203313410069153905908525362434349 }
+#And { true #Equals CONTRACT_ID:Int =/=Int 645326474426547203313410069153905908525362434349 }
+#And { true #Equals ?WORD0:Int <Int pow256 }
+#And { true #Equals ?WORD1:Int <Int pow256 }
+#And { true #Equals ?WORD2:Int <Int pow256 }
+#And { true #Equals ?WORD3:Int <Int pow256 }
+#And { true #Equals ?WORD4:Int <Int pow256 }
+#And { true #Equals ?WORD5:Int <Int pow256 }
+#And { true #Equals ?WORD6:Int <Int pow256 }
+#And { true #Equals ?WORD7:Int <Int pow256 }
+#And { true #Equals ?WORD8:Int <Int pow256 }
+#And { true #Equals ?WORD9:Int <Int pow256 }
+#And { true #Equals ?WORD10:Int <Int pow256 }
+#And { true #Equals ?WORD11:Int <Int pow256 }
+#And { true #Equals ?WORD12:Int <Int pow256 }
+#And { true #Equals NUMBER_CELL:Int <=Int maxSInt256 }
+#And { true #Equals TIMESTAMP_CELL:Int <Int pow256 }
+#And { true #Equals VV0_proposalId_114b9705:Int <Int pow256 }
+#And { true #Equals TIMESTAMP_CELL:Int -Int ?WORD0:Int <Int 432000 }
+#And { true #Equals 2592000 <=Int TIMESTAMP_CELL:Int -Int ?WORD1:Int }
+#And { true #Equals 0 ==Int chop(_)_WORD_Int_Int ( ?WORD:Int +Int -2 ) }
+#And { true #Equals notBool #range ( 0 < CALLER_ID:Int <= 9 ) }
+#And { true #Equals notBool #range ( 0 < ORIGIN_ID:Int <= 9 ) }
+#And { true #Equals 150000000000000000 *Int ?WORD8:Int <=Int ?WORD4:Int +Int ?WORD3:Int +Int ?WORD2:Int *Int 1000000000000000000 }

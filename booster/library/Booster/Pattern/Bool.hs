@@ -7,9 +7,11 @@ License     : BSD-3-Clause
 module Booster.Pattern.Bool (
     foldAndBool,
     isBottom,
+    isFalse,
     negateBool,
     splitBoolPredicates,
     splitAndBools,
+    collapseAndBools,
     -- patterns
     pattern TrueBool,
     pattern FalseBool,
@@ -188,6 +190,11 @@ foldAndBool (x : xs) = AndBool x $ foldAndBool xs
 isBottom :: Pattern -> Bool
 isBottom = (Predicate FalseBool `elem`) . constraints
 
+isFalse :: Predicate -> Bool
+isFalse = \case
+    (Predicate FalseBool) -> True
+    _ -> False
+
 {- | We want to break apart predicates of type `Y1 andBool ... Yn` apart, in case some of the `Y`s are abstract
 which prevents the original expression from being fed to the LLVM simplifyBool function
 -}
@@ -205,3 +212,7 @@ splitAndBools :: Predicate -> [Predicate]
 splitAndBools p@(Predicate t)
     | AndBool l r <- t = concatMap (splitAndBools . Predicate) [l, r]
     | otherwise = [p]
+
+-- | Inverse of splitAndBools
+collapseAndBools :: [Predicate] -> Predicate
+collapseAndBools = Predicate . foldAndBool . map (\(Predicate p) -> p)

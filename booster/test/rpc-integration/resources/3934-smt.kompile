@@ -2,7 +2,6 @@ set -eux
 
 SCRIPT_DIR=$(dirname $0)
 PLUGIN_DIR=${PLUGIN_DIR:-""}
-SECP=${SECP256K1_DIR:-/usr}
 
 
 if [ -z "$PLUGIN_DIR" ]; then
@@ -19,7 +18,6 @@ else
     PLUGIN_CPP="${PLUGIN_DIR}/include/plugin-c/crypto.cpp ${PLUGIN_DIR}/include/plugin-c/plugin_util.cpp"
 fi
 
-SECP_OPTS="-I${SECP}/include -L${SECP}/lib"
 
 NAME=$(basename ${0%.tar.gz.kompile})
 NAMETGZ=$(basename ${0%.kompile})
@@ -42,7 +40,7 @@ esac
 llvm-kompile 3934-smt.llvm.kore ./dt c -- \
              -fPIC -std=c++17 -o interpreter \
              $PLUGIN_LIBS $PLUGIN_INCLUDE $PLUGIN_CPP \
-             -lcrypto -lssl $LPROCPS ${SECP_OPTS}
+             -lcrypto -lssl $LPROCPS -lsecp256k1
 
 mv interpreter.* 3934-smt.dylib
 
