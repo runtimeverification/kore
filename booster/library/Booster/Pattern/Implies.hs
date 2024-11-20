@@ -165,7 +165,16 @@ runImplies def mLlvmLibrary mSMTOptions antecedent consequent =
                                                         (externaliseExistTerm existsL patL.term)
                                                         (externaliseExistTerm existsR patR.term)
                                                         subst
-                                                else -- here we conservatively abort (incomplete)
+                                                else do
+                                                    -- here we conservatively abort (incomplete)
+                                                    -- print all unclear predicates
+                                                    let unclear = Set.toList $ Set.filter (/= Predicate TrueBool) newPreds
+                                                    Booster.Log.withContext Booster.Log.CtxDetail
+                                                        . Booster.Log.logMessage
+                                                        . renderDefault
+                                                        . hsep
+                                                        . punctuate comma
+                                                        $ map (pretty' @mods) unclear
                                                     pure . Left . RpcError.backendError $ RpcError.Aborted "unknown constraints"
                                         (Left other, _) ->
                                             pure . Left . RpcError.backendError $ RpcError.Aborted (Text.pack . constructorName $ other)
