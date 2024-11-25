@@ -1,0 +1,105 @@
+{
+    "format": "KORE",
+    "version": 1,
+    "term": {
+        "tag": "Not",
+        "sort": {
+            "tag": "SortApp",
+            "name": "SortGeneratedTopCell",
+            "args": []
+        },
+        "arg": {
+            "tag": "Equals",
+            "argSort": {
+                "tag": "SortApp",
+                "name": "SortK",
+                "args": []
+            },
+            "sort": {
+                "tag": "SortApp",
+                "name": "SortGeneratedTopCell",
+                "args": []
+            },
+            "first": {
+                "tag": "App",
+                "name": "kseq",
+                "sorts": [],
+                "args": [
+                    {
+                        "tag": "App",
+                        "name": "inj",
+                        "sorts": [
+                            {
+                                "tag": "SortApp",
+                                "name": "SortState",
+                                "args": []
+                            },
+                            {
+                                "tag": "SortApp",
+                                "name": "SortKItem",
+                                "args": []
+                            }
+                        ],
+                        "args": [
+                            {
+                                "tag": "EVar",
+                                "sort": {
+                                    "tag": "SortApp",
+                                    "name": "SortState",
+                                    "args": []
+                                },
+                                "name": "STATE1"
+                            }
+                        ]
+                    },
+                    {
+                        "tag": "App",
+                        "name": "dotk",
+                        "sorts": [],
+                        "args": []
+                    }
+                ]
+            },
+            "second": {
+                "tag": "App",
+                "name": "kseq",
+                "sorts": [],
+                "args": [
+                    {
+                        "tag": "App",
+                        "name": "inj",
+                        "sorts": [
+                            {
+                                "tag": "SortApp",
+                                "name": "SortState",
+                                "args": []
+                            },
+                            {
+                                "tag": "SortApp",
+                                "name": "SortKItem",
+                                "args": []
+                            }
+                        ],
+                        "args": [
+                            {
+                                "tag": "DV",
+                                "value": "init",
+                                "sort": {
+                                    "tag": "SortApp",
+                                    "name": "SortState",
+                                    "args": []
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "tag": "App",
+                        "name": "dotk",
+                        "sorts": [],
+                        "args": []
+                    }
+                ]
+            }
+        }
+    }
+}

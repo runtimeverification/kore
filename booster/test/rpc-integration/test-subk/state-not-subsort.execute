@@ -18,7 +18,7 @@
                 "args": [
                   {
                     "tag": "App",
-                    "name": "LblisInt",
+                    "name": "LblisState",
                     "sorts": [],
                     "args": [
                       {
@@ -62,7 +62,7 @@
           },
           {
             "tag": "App",
-            "name": "Lbl'-LT-'int'-GT-'",
+            "name": "Lbl'-LT-'x'-GT-'",
             "sorts": [],
             "args": [
               {
@@ -70,7 +70,7 @@
                 "name": "X",
                 "sort": {
                   "tag": "SortApp",
-                  "name": "SortInt",
+                  "name": "SortK",
                   "args": []
                 }
               }

@@ -573,6 +573,11 @@ internalisePred allowAlias checkSubsorts sortVars definition@KoreDefinition{sort
                     else case sortOfTerm v of
                         Internal.SortInt ->
                             pure [BoolPred $ Internal.Predicate $ Internal.NotBool $ Internal.EqualsInt (Internal.Var k) v]
+                        Internal.SortK ->
+                            pure
+                                [ BoolPred . Internal.Predicate . Internal.NotBool $
+                                    Internal.EqualsK (Internal.Var k) v
+                                ]
                         otherSort ->
                             pure
                                 [ BoolPred $
@@ -630,6 +635,9 @@ internalisePred allowAlias checkSubsorts sortVars definition@KoreDefinition{sort
                             pure [SubstitutionPred x t]
                     (Internal.SortInt, _, _) ->
                         pure [BoolPred $ Internal.Predicate $ Internal.EqualsInt a b]
+                    (Internal.SortK, _, _) ->
+                        -- already SortK, so we must not apply the KSeq wrapper pattern
+                        pure [BoolPred $ Internal.Predicate $ Internal.EqualsK a b]
                     (otherSort, _, _) ->
                         pure
                             [ BoolPred $
