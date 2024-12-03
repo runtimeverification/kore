@@ -149,7 +149,7 @@ makeEvaluatePredicate
         Conditional
             { term = ()
             , predicate =
-                Predicate.markSimplified $
+                (if Predicate.isSimplifiedAnyCondition predicate then Predicate.markSimplified else id) $
                     makeNotPredicate $
                         makeAndPredicate predicate $
                             Substitution.toPredicate substitution
