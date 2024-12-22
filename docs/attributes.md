@@ -240,7 +240,7 @@ are passed as arguments for the list.
 smtlib{}("(mod (^ #1 #2) #3)")
 ```
 
-The list may contain special meta-varialbes `#1`, `#2`, ... (not a valid
+The list may contain special meta-variables `#1`, `#2`, ... (not a valid
 SMT-LIB syntax) which indicate the position of the arguments of the application
 pattern.
 

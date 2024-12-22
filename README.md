@@ -212,12 +212,12 @@ me@somewhere:haskell-backend$
 
 #### scripts/performance-tests-{kevm, kontrol, mx}.sh
 
-Call these scripts from the root of the repo to obtain performance numbers for the KEVM and Kontrol test suites. These are necessary for any new feature which is expected to modify the perfromance of the booster and the timings should be includedf in the PR.
+Call these scripts from the root of the repo to obtain performance numbers for the KEVM and Kontrol test suites. These are necessary for any new feature which is expected to modify the perfromance of the booster and the timings should be included in the PR.
 
 
 #### scripts/booster-analysis.sh
 
-This scipt can be used with any folder containing bug reports to build an anlysis of fallback/abort reasons in the booster. To obtain bug reports, first run `PYTEST_PARALLEL=8 scripts/performance-tests-kevm.sh --bug-report`, which will generate tarballs for all the tests and drop them into `scripts/bug-reports/`. Then call `scripts/booster-analysis.sh scripts/booster-analysis.sh scripts/bug-reports/kevm-v1.0.417-main`
+This script can be used with any folder containing bug reports to build an analysis of fallback/abort reasons in the booster. To obtain bug reports, first run `PYTEST_PARALLEL=8 scripts/performance-tests-kevm.sh --bug-report`, which will generate tarballs for all the tests and drop them into `scripts/bug-reports/`. Then call `scripts/booster-analysis.sh scripts/booster-analysis.sh scripts/bug-reports/kevm-v1.0.417-main`
 
 
 ### Generating an integration test from a bug-report.tar.gz

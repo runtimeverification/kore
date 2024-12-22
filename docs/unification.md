@@ -314,7 +314,7 @@ set element as a map element from its value to ().
 List
 ----
 
-If both terms are function symbols of list sort, we conside 5 cases:
+If both terms are function symbols of list sort, we consider 5 cases:
 
 1. If one list is `_List_(l1, Var1)` and the other list is `_List_(l2, Var2)`, where l1 and l2 have no opaque terms, and len(l1) <= len(l2), for i = 1 to len(l1), decompose with the ith element of l1 and l2. Then, remove len(l1) elements from the start of l2 and decompose with Var1 and `_List_(l2, Var2)`
 2. If one list is `_List_(Var1, l1)` and the other list is `_List_(Var2, l2)`, where l1 and l2 have no opaque terms, and len(l1) <= len(l2), for i = 1 to len(l1), decompose with the ith element of l1 and the len(l2) - len(l1) + ith element of l2. Then, remove len(l1) elements from the end of l2 and decompose with Var1 and `_List_(Var2, l2)`
