@@ -91,7 +91,7 @@ lookupParsedAlias name =
 
 {- | Verify and add the named alias to the current module.
 
-The alias is fetched from the cache, if available; otherwise is is verified and
+The alias is fetched from the cache, if available; otherwise is verified and
 cached.
 -}
 verifyAlias :: Id -> AliasVerifier ()
