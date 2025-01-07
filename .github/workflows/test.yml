@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-22.04
+          - runner: [self-hosted, linux, normal]
             os: ubuntu-22.04
             nix: x86_64-linux
           - runner: MacM1
@@ -112,11 +112,52 @@ jobs:
           name: k-framework
           authToken: '${{ secrets.CACHIX_PUBLIC_TOKEN }}'
 
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            kore:
+              - 'kore/**'
+            kore_rpc_types:
+              - 'kore-rpc-types/**'
+            booster:
+              - 'booster/**'
+              - scripts/booster-integration-tests.sh
+            dev_tools:
+              - 'dev-tools/**'
+            project:
+              - 'stack.yaml*'
+              - 'cabal.project*'
+              - 'Makefile'
+              - '*.mk'
+              - 'flake.nix'
+              - 'deps/*'
+              - '.github/*'
+            kore_tests:
+              - 'test/**'
+
       - name: Build
         run: GC_DONT_GC=1 nix build .#kore-exec .#kore-rpc-booster
 
       - name: Test
+        if: ${{ steps.changes.outputs.booster == 'true' || steps.changes.outputs.kore == 'true' || steps.changes.outputs.project == 'true' }}
         run: GC_DONT_GC=1 nix develop .#cabal --command bash -c "hpack ./booster && hpack dev-tools && cabal update && cabal build all && cabal test --enable-tests --test-show-details=direct kore-test unit-tests"
+
+      - name: Run booster integration tests
+        # do not run this unless anything has changed in a relevant directory
+        if: ${{ matrix.runner != 'macos-12' && (steps.changes.outputs.booster == 'true' || steps.changes.outputs.kore_rpc_types == 'true' || steps.changes.outputs.project == 'true') }}
+        env:
+          CONNECTION_ATTEMPTS: 30
+        run: |
+          GC_DONT_GC=1 nix develop .#cabal --command bash -c "scripts/booster-integration-tests.sh"
+
+      - name: Run kore integration tests
+        # do not run this unless anything has changed in a relevant directory
+        if: ${{ matrix.runner != 'macos-12' && (steps.changes.outputs.kore == 'true' || steps.changes.outputs.kore_rpc_types == 'true' || steps.changes.outputs.kore_tests == 'true' || steps.changes.outputs.project == 'true') }}
+        run: |
+          GC_DONT_GC=1 nix develop github:runtimeverification/k/v$(cat deps/k_release)#kore-integration-tests \
+                --override-input haskell-backend . --update-input haskell-backend \
+                --command bash -c "cd test && make -j2 --output-sync test"
 
   nix-integration:
     name: 'Nix / Integration'

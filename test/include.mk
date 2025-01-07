@@ -34,6 +34,11 @@ OUTS += $(foreach TEST, $(TESTS), $(TEST).out)
 GOLDEN += $(foreach OUT, $(OUTS), $(OUT).golden)
 
 KOMPILE_OPTS += --output-definition $(KOMPILED) -Wno unused-var -Wno missing-syntax-module
+
+ifeq "$(shell uname)" "Darwin"
+	KOMPILE_OPTS += --no-haskell-binary
+endif
+
 KRUN_OPTS += --definition $(KOMPILED)
 KORE_EXEC_OPTS += \
 	$(if $(STORE_PROOFS),\
