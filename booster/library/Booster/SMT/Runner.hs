@@ -30,7 +30,9 @@ import Control.Monad.Trans.State
 import Data.ByteString.Builder qualified as BS
 import Data.ByteString.Char8 qualified as BS
 import Data.IORef
+import Data.Map (Map)
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
 import Data.Text (Text, pack)
 import SMTLIB.Backends qualified as Backend
 import SMTLIB.Backends.Process qualified as Backend
@@ -82,22 +84,20 @@ data SMTContext = SMTContext
     , solverClose :: IORef (IO ())
     , mbTranscriptHandle :: Maybe Handle
     , prelude :: [DeclareCommand]
+    , lemmas :: Map SymbolName (Set DeclareCommand)
     }
 
+type SymbolName = BS.ByteString -- replicated from Booster.Pattern.Base
+
 ----------------------------------------
-{- TODO (later)
-- error handling and retries
-  - retry counter in context
-- (possibly) run `get-info` on Unknown responses and enhance Unknown constructor
-  - smtlib2: reason-unknown = memout | incomplete | SExpr
--}
 
 mkContext ::
     LoggerMIO io =>
     SMTOptions ->
     [DeclareCommand] ->
+    Map SymbolName (Set DeclareCommand) ->
     io SMTContext
-mkContext opts prelude = do
+mkContext opts prelude lemmas = do
     logMessage ("Starting SMT solver" :: Text)
     (solver', handle) <- connectToSolver opts.args
     solver <- liftIO $ newIORef solver'
@@ -118,6 +118,7 @@ mkContext opts prelude = do
             , solverClose
             , mbTranscriptHandle
             , prelude
+            , lemmas
             , options = opts
             }
 

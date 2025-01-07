@@ -105,10 +105,10 @@ declareVariables transState = do
 -}
 initSolver :: Log.LoggerMIO io => KoreDefinition -> SMTOptions -> io SMT.SMTContext
 initSolver def smtOptions = Log.withContext Log.CtxSMT $ do
-    prelude <- translatePrelude def
+    (prelude, lemmas) <- translatePrelude def
 
     Log.logMessage ("Starting new SMT solver" :: Text)
-    ctxt <- mkContext smtOptions prelude
+    ctxt <- mkContext smtOptions prelude lemmas
 
     evalSMT ctxt (runPrelude CheckSMTPrelude)
     Log.logMessage ("Successfully initialised SMT solver with " <> (Text.pack . show $ smtOptions))
@@ -126,10 +126,11 @@ noSolver = do
             , solverClose
             , mbTranscriptHandle = Nothing
             , prelude = []
+            , lemmas = mempty
             , options = defaultSMTOptions{retryLimit = Just 0}
             }
 
--- | Stop the solver, initialise a new one, set the timeout and re-check the prelude
+-- | Stop the solver, initialise a new one, set the timeout and re-run prelude (without check)
 hardResetSolver :: Log.LoggerMIO io => SMT io ()
 hardResetSolver = do
     ctxt <- SMT get
@@ -158,14 +159,17 @@ retry cb onTimeout = do
             cb
         _ -> onTimeout
 
-translatePrelude :: Log.LoggerMIO io => KoreDefinition -> io [DeclareCommand]
+translatePrelude ::
+    Log.LoggerMIO io =>
+    KoreDefinition ->
+    io ([DeclareCommand], Map SymbolName (Set DeclareCommand))
 translatePrelude def =
     let prelude = smtDeclarations def
      in case prelude of
             Left err -> do
                 Log.logMessage $ "Error translating definition to SMT: " <> err
                 throwSMT $ "Unable to translate elements of the definition to SMT: " <> err
-            Right decls -> pure decls
+            Right (decls, lemmas) -> pure (decls, lemmas)
 
 pattern CheckSMTPrelude, NoCheckSMTPrelude :: Flag "CheckSMTPrelude"
 pattern CheckSMTPrelude = Flag True
@@ -179,8 +183,11 @@ runPrelude doCheck = do
     Log.logMessage ("Checking definition prelude" :: Text)
     -- send the commands from the definition's SMT prelude
     mapM_ runCmd ctxt.prelude
-    -- optionally check the prelude for consistency
+    -- optionally check prelude and lemmas for consistency
     when (coerce doCheck) $ do
+        -- add all lemmas for the consistency check
+        let allLemmas = Set.toList $ Set.unions $ Map.elems ctxt.lemmas
+        mapM_ runCmd allLemmas
         check <- runCmd CheckSat
         case check of
             Sat -> pure ()
@@ -252,8 +259,10 @@ isSatReturnTransState ctxt ps subst
         Log.withContext Log.CtxAbort $ Log.logMessage $ "SMT translation error: " <> errMsg
         smtTranslateError errMsg
     | Right (smtToCheck, transState) <- translated = Log.withContext Log.CtxSMT $ do
+        -- add relevant SMT lemmas to the SMT assertions
+        let lemmas = selectLemmas ctxt.lemmas ps
         evalSMT ctxt $
-            hardResetSolver >> solve smtToCheck transState
+            hardResetSolver >> solve (lemmas <> smtToCheck) transState
   where
     translated :: Either Text ([DeclareCommand], TranslationState)
     translated =
@@ -427,8 +436,10 @@ checkPredicates ctxt givenPs givenSubst psToCheck
         Log.withContext Log.CtxAbort $ Log.logMessage $ "SMT translation error: " <> errMsg
         smtTranslateError errMsg
     | Right ((smtGiven, sexprsToCheck), transState) <- translated = Log.withContext Log.CtxSMT $ do
+        -- add relevant SMT lemmas to smtGiven
+        let lemmas = selectLemmas ctxt.lemmas (Set.toList $ givenPs <> psToCheck)
         evalSMT ctxt $
-            hardResetSolver >> solve smtGiven sexprsToCheck transState
+            hardResetSolver >> solve (smtGiven <> lemmas) sexprsToCheck transState
   where
     solve ::
         [DeclareCommand] ->

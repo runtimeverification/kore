@@ -15,6 +15,7 @@ module Booster.SMT.Translate (
     backTranslateFrom,
     runTranslator,
     smtSort,
+    selectLemmas,
 ) where
 
 import Control.Monad
@@ -25,9 +26,11 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 qualified as BS
 import Data.Char (isDigit)
 import Data.Coerce (coerce)
+import Data.Foldable (toList)
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
+import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text, pack)
 import Prettyprinter (pretty)
@@ -39,7 +42,7 @@ import Booster.Definition.Base
 import Booster.Pattern.Base
 import Booster.Pattern.Bool
 import Booster.Pattern.Pretty
-import Booster.Pattern.Util (sortOfTerm)
+import Booster.Pattern.Util (filterTermSymbols, isFunctionSymbol, sortOfTerm)
 import Booster.Prettyprinter qualified as Pretty
 import Booster.SMT.Base as SMT
 import Booster.SMT.LowLevelCodec as SMT
@@ -261,7 +264,8 @@ equationToSMTLemma equation
             List [Atom "forall", List varPairs, lemmaRaw]
 
 -- collect and render all declarations from a definition
-smtDeclarations :: KoreDefinition -> Either Text [DeclareCommand]
+smtDeclarations ::
+    KoreDefinition -> Either Text ([DeclareCommand], Map SymbolName (Set DeclareCommand))
 smtDeclarations def
     | Left msg <- translatedLemmas =
         Left $ "Lemma translation failed: " <> msg
@@ -269,7 +273,7 @@ smtDeclarations def
     , not (Map.null finalState.mappings) =
         Left . pack $ "Unexpected final state " <> show (finalState.mappings, finalState.counter)
     | Right (lemmas, _) <- translatedLemmas =
-        Right $ concat [sortDecls, funDecls, lemmas]
+        Right (sortDecls <> funDecls, lemmas)
   where
     -- declare all sorts except Int and Bool
     sortDecls =
@@ -282,14 +286,68 @@ smtDeclarations def
     funDecls =
         mapMaybe declareFunc $ Map.elems def.symbols
 
-    -- declare all SMT lemmas as assertions
-    allRules :: Map k (Map k' [v]) -> [v]
-    allRules = concat . concatMap Map.elems . Map.elems
-    extractLemmas = fmap catMaybes . mapM equationToSMTLemma . allRules
+    -- declare all SMT lemmas as assertions and construct a lookup table Symbol -> Lemmas
+    allSMTEquations :: Theory (RewriteRule t) -> Translator [(RewriteRule t, DeclareCommand)]
+    allSMTEquations =
+        fmap catMaybes
+            . mapM (\e -> fmap (e,) <$> equationToSMTLemma e)
+            . filter (coerce . (.attributes.smtLemma))
+            . concat
+            . concatMap Map.elems
+            . Map.elems
 
+    -- collect function symbols of an equation (LHS + requires, RHS)
+    collectSymbols :: RewriteRule t -> ([SymbolName], [SymbolName])
+    collectSymbols rule =
+        ( collectNames rule.lhs <> concatMap (collectNames . coerce) rule.requires
+        , collectNames rule.rhs
+        )
+
+    -- symbol used on LHS => lookup must include sym -> this rule
+    -- symbol used on RHS => lookups returning this rule must be
+    -- _extended_ by rules reachable from that symbol. Requires a
+    -- transitive closure of the lookup map.
+
+    initialLookup ::
+        Theory (RewriteRule t) ->
+        Translator (Map SymbolName (Set (RewriteRule t, DeclareCommand)))
+    initialLookup = fmap (Map.unionsWith (<>) . map mapFrom) . allSMTEquations
+      where
+        mapFrom (eqn, smt) =
+            Map.fromList [(sym, Set.singleton (eqn, smt)) | sym <- fst $ collectSymbols eqn]
+
+    closeOverSymbols ::
+        forall a t.
+        Ord a =>
+        Map SymbolName (Set (RewriteRule t, a)) ->
+        Map SymbolName (Set (RewriteRule t, a))
+    closeOverSymbols start = go start
+      where
+        keys = Map.keys start -- should not change
+        go ::
+            Map SymbolName (Set (RewriteRule t, a)) -> Map SymbolName (Set (RewriteRule t, a))
+        go current =
+            let new = execState (mapM updateMapFor keys) current
+             in if new == current then new else go new
+
+        updateMapFor ::
+            SymbolName -> State (Map SymbolName (Set (RewriteRule t, a))) ()
+        updateMapFor k = do
+            m <- get
+            case Map.lookup k m of
+                Nothing -> pure () -- should not happen, keys won't change
+                Just eqs -> do
+                    let rhsSyms = concatMap (snd . collectSymbols . fst) $ toList eqs
+                        newEqs = Set.unions $ mapMaybe (flip Map.lookup m) rhsSyms
+                        newM = Map.update (Just . (<> newEqs)) k m
+                    put newM
+
+    translatedLemmas :: Either Text (Map SymbolName (Set DeclareCommand), TranslationState)
     translatedLemmas =
-        runTranslator $
-            (<>) <$> extractLemmas def.functionEquations <*> extractLemmas def.simplifications
+        let trans :: Theory (RewriteRule t) -> Translator (Map SymbolName (Set DeclareCommand))
+            trans = fmap (Map.map (Set.map snd) . closeOverSymbols) . initialLookup
+         in runTranslator $
+                (<>) <$> trans def.simplifications <*> trans def.functionEquations
 
     -- kore-rpc also declares all constructors, with no-junk axioms. WHY?
 
@@ -303,6 +361,16 @@ smtDeclarations def
                     (map smtSort sym.argSorts)
                     (smtSort sym.resultSort)
         | otherwise = Nothing
+
+-- | helper to select SMT lemmas from the context given a predicate to check
+selectLemmas :: Map SymbolName (Set DeclareCommand) -> [Predicate] -> [DeclareCommand]
+selectLemmas m ps =
+    Set.toList $ Set.unions $ mapMaybe (flip Map.lookup m) usedFcts
+  where
+    usedFcts = concatMap (collectNames . coerce) ps
+
+collectNames :: Term -> [SymbolName]
+collectNames = map (.name) . filterTermSymbols isFunctionSymbol
 
 smtName, quoted :: BS.ByteString -> SMTId
 smtName = SMTId
