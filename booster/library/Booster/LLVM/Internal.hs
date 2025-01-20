@@ -19,7 +19,6 @@ module Booster.LLVM.Internal (
     LlvmError (..),
 ) where
 
-import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Exception (IOException)
 import Control.Monad (foldM, forM_, void, (>=>))
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow, catch)
@@ -104,21 +103,19 @@ data API = API
     , simplifyBool :: KorePatternPtr -> IO (Either LlvmError Bool)
     , simplify :: KorePatternPtr -> KoreSortPtr -> IO (Either LlvmError ByteString)
     , collect :: IO ()
-    , mutex :: MVar ()
     }
 
 newtype LLVM a = LLVM (ReaderT API IO a)
     deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
-{- | Uses dlopen to load a .so/.dylib C library at runtime. For doucmentation of flags such as `RTL_LAZY`, consult e.g.
+{- | Uses dlopen to load a .so/.dylib C library at runtime. For documentation of flags such as `RTL_LAZY`, consult e.g.
      https://man7.org/linux/man-pages/man3/dlopen.3.html
 -}
 withDLib :: FilePath -> (Linker.DL -> IO a) -> IO a
 withDLib dlib = Linker.withDL dlib [Linker.RTLD_LAZY]
 
 runLLVM :: API -> LLVM a -> IO a
-runLLVM api (LLVM m) =
-    withMVar api.mutex $ const $ runReaderT m api
+runLLVM api (LLVM m) = runReaderT m api
 
 mkAPI :: Linker.DL -> IO API
 mkAPI dlib = flip runReaderT dlib $ do
@@ -282,8 +279,7 @@ mkAPI dlib = flip runReaderT dlib $ do
                 stderr
                 "[Warn] Using an LLVM backend compiled with --llvm-mutable-bytes (unsound byte array semantics)"
 
-    mutex <- liftIO $ newMVar ()
-    pure API{patt, symbol, sort, simplifyBool, simplify, collect, mutex}
+    pure API{patt, symbol, sort, simplifyBool, simplify, collect}
 
 ask :: LLVM API
 ask = LLVM Reader.ask
