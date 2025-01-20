@@ -14,7 +14,7 @@ if len(sys.argv) > 4:
 else:
     minchange = 0.035
 
-testname = re.compile(r'.*\[(?P<name>.*)\]$')
+testname = re.compile(r'^[^\[]*\[(?P<name>.*)\]$')
 
 def readName(input):
     r = testname.match(input)

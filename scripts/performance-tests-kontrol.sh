@@ -93,7 +93,8 @@ sed -i'' -e "s|'forge', 'build'|'forge', 'build', '--no-auto-detect'|g" src/kont
 sed -i'' -e "s|'forge', 'build'|'forge', 'build', '--no-auto-detect'|g" src/tests/utils.py
 sed -i'' -e "s|'forge', 'build'|'forge', 'build', '--no-auto-detect'|g" src/tests/integration/conftest.py
 # update the lock file to keep poetry from complaining
-poetry lock --no-update
+# option `--no-update` was inverted to `--regenerate` in poetry-2.0.0
+poetry lock --no-update || poetry lock
 
 feature_shell() {
   GC_DONT_GC=1 nix develop . --extra-experimental-features 'nix-command flakes' --override-input kevm/k-framework/haskell-backend $SCRIPT_DIR/../ --ignore-environment --command bash -c "$1"
